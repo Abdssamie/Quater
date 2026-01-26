@@ -1,0 +1,311 @@
+# Architecture Decisions: Maintenance-Driven Updates
+
+**Feature**: Water Quality Lab Management System  
+**Branch**: `001-water-quality-platform`  
+**Date**: 2026-01-25  
+**Context**: Maintenance assessment identified critical long-term risks; this document records validated decisions to mitigate those risks
+
+---
+
+## Executive Summary
+
+Following a comprehensive maintenance assessment, we identified 5 critical risks that would impact long-term maintainability. This document records the architectural decisions made to address these risks, along with rationale and alternatives considered.
+
+**Key Changes**:
+1. ✅ Clarified authentication: ASP.NET Core Identity + OpenIddict (not just OpenIddict)
+2. ✅ Kept React Native for mobile (rejected .NET MAUI due to reliability concerns)
+3. ✅ Simplified conflict resolution: Last-Write-Wins with automatic backup
+4. ✅ Added NSwag for TypeScript generation (prevents DTO drift)
+5. ✅ Simplified mobile scope: Field collection only (no test entry)
+6. ✅ Added location hierarchy support for reporting
+7. ✅ Added test method enumeration (prevents typos)
+8. ✅ Added API versioning (`/api/v1/`) and pagination
+9. ✅ Added audit log archival strategy (90-day hot/cold split)
+10. ❌ Rejected threshold versioning (too complex for MVP)
+
+---
+
+## Decision 1: Authentication Architecture
+
+### Problem
+Maintenance assessment identified confusion between OpenIddict (token server) and user management. Risk of incomplete implementation.
+
+### Decision
+**ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)**
+
+### Rationale
+- **Best of both worlds**: Identity handles user management (registration, password reset, roles), OpenIddict handles token issuance
+- **Standard pattern**: This is the recommended approach in .NET ecosystem
+- **Reduces custom code**: Identity provides built-in user management APIs
+- **Offline-first compatible**: JWT tokens with offline validation
+- **No vendor lock-in**: Both are open-source
+
+### Alternatives Considered
+- **OpenIddict alone**: Would require manual user management implementation (high maintenance burden)
+- **Clerk**: Rejected due to lack of offline support and desktop/mobile SDK
+- **Keycloak**: Enterprise-grade but heavy (Java runtime), overkill for MVP
+
+### Impact
+- **Reduced complexity**: No need to build custom user management
+- **Faster implementation**: Use Identity's built-in APIs
+- **Better maintainability**: Standard .NET pattern, well-documented
+
+---
+
+## Decision 2: Mobile Framework
+
+### Problem
+Maintenance assessment suggested .NET MAUI for 70-80% code reuse with desktop. However, user expressed concerns about MAUI reliability.
+
+### Decision
+**Keep React Native for mobile (reject .NET MAUI)**
+
+### Rationale
+- **User validation**: User confirmed MAUI is unreliable based on experience
+- **React Native maturity**: Battle-tested by Facebook, Instagram, Airbnb
+- **Large ecosystem**: 3.5k+ packages, active community
+- **Proven track record**: Used in production by major companies
+- **Risk mitigation**: MAUI code reuse not worth the reliability risk
+
+### Alternatives Considered
+- **.NET MAUI**: 70-80% code reuse with desktop, but reliability concerns outweigh benefits
+- **Flutter**: Good cross-platform support, but adds another language (Dart)
+- **Xamarin**: Deprecated in favor of MAUI
+
+### Impact
+- **Increased maintenance**: Separate TypeScript codebase for mobile
+- **Mitigation**: NSwag auto-generates TypeScript client from OpenAPI (see 4)
+- **Trade-off**: Reliability and ecosystem maturity over code reuse
+
+---
+
+## Decision 3: Conflict Resolution Strategy
+
+### Problem
+Maintenance assessment warned that user-prompted conflict resolution adds 50% more testing complexity.
+
+### Decision
+**Last-Write-Wins with automatic backup of overwritten data**
+
+### Rationale
+- **Simpler testing**: Reduces testing matrix by 50%
+- **Data safety**: Automatic backup prevents data loss
+- **User-friendly**: Notify user with option to view backup if needed
+- **Audit trail**: Both versions preserved in audit log
+- **MVP-appropriate**: Can add full merge UI in Phase 2 if needed
+
+### Alternatives Considered
+- **User-prompted resolution (original spec)**: Better UX but 50% more testing complexity
+- **Last-Write-Wins without backup**: Simpler but risk of data loss
+- **Operational Transform (OT)**: Too complex for MVP
+
+### Impact
+- **Reduced testing burden**: Fewer conflict scenarios to test
+- **Faster MVP delivery**: Less implementation time
+- **Maintained data safety**: Backup provides safety net
+
+---
+
+## Decision 4: TypeScript Code Generation
+
+### Problem
+Maintenance assessment identified "contract drift" as a major risk: C# DTOs and TypeScript types must be manually kept in sync.
+
+### Decision
+**NSwag generates TypeScript types and API client from OpenAPI spec**
+
+### Rationale
+- **Single source of truth**: Backend OpenAPI spec (auto-generated by Swashbuckle)
+- **Automatic synchronization**: Regenerate on backend changes
+- **Type safety**: Full TypeScript type checking for API calls
+- **Mature tooling**: 6.7k GitHub stars, production-ready
+- **Complete generation**: Types + API client methods + validation
+
+### Alternatives Considered
+- **Manual TypeScript types**: High maintenance burden, prone to drift
+- **TypeGen**: Only generates types, not API client
+- **Typewriter**: Template-based, more complex setup
+- **OpenAPI Generator**: More generic, less .NET-specific
+
+### Impact
+- **Eliminated contract drift**: TypeScript always matches backend
+- **Reduced maintenance**: No manual DTO synchronization
+- **Faster development**: Auto-generated API client methods
+
+---
+
+## Decision 5: Mobile App Scope
+
+### Problem
+Maintenance assessment noted that mobile app trying to match desktop features increases complexity.
+
+### Decision
+**Mobile app limited to field sample collection only (no test result entry or reporting)**
+
+### Rationale
+- **User validation**: User confirmed mobile is for field collectors, not lab technicians
+- **Reduced complexity**: Simpler mobile UI, fewer screens
+- **Faster MVP**: Less mobile development time
+- **Clear separation**: Field work (mobile) vs. lab work (desktop)
+
+### Alternatives Considered
+- **Full feature parity**: Rejected due to complexity and unclear user need
+- **Simplified test entry**: Rejected - lab technicians use desktop
+
+### Impact
+- **Faster mobile development**: Fewer screens and features
+- **Clearer UX**: Mobile app has single, focused purpose
+- **Reduced testing**: Fewer mobile test scenarios
+
+---
+
+## Decision 6: Location Hierarchy
+
+### Problem
+Maintenance assessment identified lack of location hierarchy as a reporting limitation.
+
+### Decision
+**Add optional location hierarchy field (e.g., "Morocco/Casablanca Region/Casablanca/District 5/Well #42")**
+
+### Rationale
+- **Better reporting**: Group samples by region, city, district
+- **Flexible**: Optional field, not required
+- **Simple implementation**: Single string field with delimiter
+- **User concern addressed**: User noted onboarding complexity; optional field mitigates this
+
+### Alternatives Considered
+- **Separate Location entity with parent-child relationships**: Too complex for MVP
+- **No hierarchy (original spec)**: Limits reporting capabilities
+
+### Impact
+- **Improved reporting**: Can filter/group by location hierarchy
+- **Minimal complexity**: Single optional string field
+- **Onboarding consideration**: Document best practices for location naming
+
+---
+
+## Decision 7: Test Method Standardization
+
+### Problem
+Maintenance assessment identified free-text test methods as prone to typos and inconsistent data entry.
+
+### Decisio*Test method enumeration: Titration, Spectrophotometry, Chromatography, Microscopy, Electrode, Culture, Other**
+
+### Rationale
+- **Prevents typos**: Dropdown selection instead of free text
+- **Consistent data**: Standardized method names
+- **Enables validation**: Can validate against known methods
+- **Flexible**: "Other" option for edge cases
+
+### Alternatives Considered
+- **Free text (original spec)**: Flexible but prone to inconsistency
+- **Strict enum without "Other"**: Too restrictive
+
+### Impact
+- **Better data quality**: Consistent test method names
+- **Easier reporting**: Can group by test method
+- **Minimal complexity**: Simple enum with 7 values
+
+---
+
+## Decision 8: API Versioning & Pagination
+
+### Problem
+Maintenance assessment warned that lack of API versioning prevents breaking changes without coordinating all client updates.
+
+### Decision
+**API versioning with `/api/v1/` prefix; pagination with default 100 records per page (max 1000)**
+
+### Rationale
+- **Enables breaking changes**: Can introduce `/api/v2/` without breaking existing clients
+- **Performance**: Pagination prevents loading 10,000+ samples at once
+- **Standard practice**: Industry-standard approach
+- **Minimal cost**: Easy to implement upfront
+
+### Alternatives Considered
+- **No versioning (original spec)**: Cannot make breaking changes
+- **Query parameter versioning**: Less clear than URL prefix
+- **No pagination**: Performance issues with large datasets
+
+### Impact
+- **Future-proof**: Can evolve API without breaking clients
+- **Better performance**: Prevents large result sets
+- **Standard compliance**: Follows REST best practices
+
+---
+
+## Decision 9: Audit Log Archival Strategy
+
+### Problem
+Maintenance assessment warned about unbounded audit log growth causing database bloat and query performance degradation.
+
+### Decision
+**90-day hot/cold archival strategy with nightly background job**
+
+### Rationale
+- **Performance**: Keeps main table small for fast queries
+- **Compliance**: Still retains 7 years of audit logs (regulatory requirement)
+- **Simple implementation**: Nightly job moves old records to archive table
+- **Query strategy**: Application queries hot data first; archive table for historical queries
+
+### Alternatives Considered
+- **No archival (original spec)**: Unbounded growth, performance degradation
+- **2-year archival**: Too long, main table would still grow large
+- **Delete old logs**: Violates regulatory compliance
+
+### Impact
+- **Improved performance**: Main table stays small
+- **Compliance maintained**: 7-year retention in archive table
+- **Minimal complexity**: Simple background job
+
+---
+
+## Decision 10: Threshold Versioning (REJECTED)
+
+### Problem
+Maintenance assessment suggested adding threshold versioning to answer "was this compliant when tested?"
+
+### Decision
+**REJECTED - Not implementing threshold versioning in MVP**
+
+### Rationale
+- **User validation**: User confirmed this is not needed for MVP
+- **Complexity**: Would require effective dates, historical queries, migration strategy
+- **Unclear use case**: WHO standards rarely change; Moroccan standards deferred to Phase 2
+- **Can add later**: If needed, can add in Phase 2 without breaking changn### Alternatives Considered
+- **Implement threshold versioning**: Rejected due to complexity and unclear need
+- **Defer to Phase 2**: Chosen approach
+
+### Impact
+- **Reduced MVP complexity**: One less feature to implement and test
+- **Can add later**: Not a breaking change if needed in Phase 2
+
+---
+
+## Summary of Maintenance Impact
+
+| Risk | Original Spec | Updated Decision | Maintenance Improvement |
+|------|---------------|------------------|-------------------------|
+| Authentication confusion | OpenIddict only | Identity + OpenIddict | Standard pattern, less custom code |
+| Mobile framework uncertainty | React Native | React Native (validated) | Mature ecosystem, proven reliability |
+| Conflict resolution complexity | User-prompted | Last-Write-Wins + backup | 50% less testing complexity |
+| Contract drift | Manual TypeScript | NSwag auto-generation | Zero drift, automatic sync |
+| Mobile scope creep | Unclear | Field collection only | Faster development, clearer UX |
+| Location reporting | Flat structure | Optional hierarchy | Better reporting, minimal complexity |
+| Test method inconsistency | Free text | Enumeration | Better data quality |
+| API evolution | No versioning | `/api/vrefix | Can make breaking changes |
+| Audit log bloat | No archival | 90-day hot/cold split | Better performance |
+| Threshold versioning | Not specified | Explicitly rejected | Reduced MVP complexity |
+
+---
+
+## Next Steps
+
+1. ✅ Update all specifications with validated decisions
+2. ⏳ Update SPECS_UPDATED.md with summary of changes
+3. ⏳ Commit all specification updates to git
+4. ⏳ Begin implementation with validated architecture
+
+---
+
+**Document Status**: ✅ Complete - All decisions validated and documented
