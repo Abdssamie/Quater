@@ -23,11 +23,11 @@ Quater is an open-source, cross-platform water quality lab management system tar
 
 ## Technical Context
 
-**Language/Version**: C# 12 / .NET 8 (Backend + Desktop), JavaScript/TypeScript (Mobile)
+**Language/Version**: C# 13 / .NET 10 (Backend + Desktop), JavaScript/TypeScript (Mobile)
 **Primary Dependencies**: 
 - Desktop: Avalonia UI 11.x (cross-platform XAML framework)
 - Mobile: React Native 0.73+ (JavaScript/TypeScript framework)
-- Backend: ASP.NET Core 8.0, Entity Framework Core 8.0
+- Backend: ASP.NET Core 10.0, Entity Framework Core 10.0
 - Auth: ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)
 - PDF: QuestPDF (C# fluent API)
 - TypeScript Generation: NSwag (generates TypeScript client from OpenAPI)
@@ -254,7 +254,7 @@ docker/
 
 4. **Agent context update**: Deferred
    - Will run `.specify/scripts/bash/update-agent-context.sh opencode` after implementation starts
-   - Technology stack: .NET 8, Avalonia, React Native, OpenIddict, QuestPDF, PostgreSQL, SQLite
+   - Technology stack: .NET 10, Avalonia, React Native, OpenIddict, QuestPDF, PostgreSQL, SQLite
    - Project structure: Multi-platform layout
    - Key architectural decisions: Offline-first, optimistic locking
 

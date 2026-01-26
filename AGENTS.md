@@ -3,8 +3,8 @@
 ## Project Overview
 
 **Quater** is an open-source, cross-platform water quality lab management system with three integrated applications:
-- **Backend API**: ASP.NET Core 8.0 + PostgreSQL (C# 12 / .NET 8)
-- **Desktop App**: Avalonia UI 11.x (Windows/Linux/macOS) (C# 12 / .NET 8)
+- **Backend API**: ASP.NET Core 10.0 + PostgreSQL (C# 13 / .NET 10)
+- **Desktop App**: Avalonia UI 11.x (Windows/Linux/macOS) (C# 13 / .NET 10)
 - **Mobile App**: React Native 0.73+ (Android, field sample collection only)
 
 **Architecture**: Offline-first with bidirectional sync, Last-Write-Wins conflict resolution with automatic backup.
@@ -13,7 +13,7 @@
 
 ## Build, Lint & Test Commands
 
-### Backend (.NET 8)
+### Backend (.NET 10)
 
 ```bash
 # Build
@@ -91,39 +91,83 @@ cd android && ./gradlew assembleRelease
 
 ---
 
-## C# Code Style Guidelines (.NET 8 - C# 12)
+## C# Code Style Guidelines (.NET 10 - C# 13)
 
-**Note**: Project uses C# 12 / .NET 8. Modern C# 13+ features (collection expressions `[]`, `Lock` type, params collections) are NOT available. Use C# 12 equivalents.
+### 🏛️ Type System & Domain Modeling
 
-### Architecture & Type Definition
-
-**Records & Primary Constructors**: Use for DTOs and Value Objects.
+**Discriminated Unions (Workarounds)**: Use abstract record hierarchies for domain states.
 ```csharp
-public sealed record CustomerId(Guid Value);
-public sealed record CustomerDto(CustomerId Id, string Name, string Email)
-{
-    public string[] Tags { get; init; } = Array.Empty<string>(); // C# 12: Use Array.Empty<T>()
-}
+public abstract record OrderState;
+public sealed record Pending(DateTime Created) : OrderState;
+public sealed record Shipped(DateTime Dispatched, string TrackingId) : OrderState;
+public sealed record Cancelled(string Reason) : OrderState;
 ```
 
-**Sealed by Default**: All classes should be `sealed` unless explicitly designed for inheritance.
-
-**Primitive Obsession**: Wrap IDs and domain primitives in `readonly record struct`.
+**Strongly Typed IDs**: Use `readonly record struct` to prevent accidental ID assignment.
 ```csharp
 public readonly record struct SampleId(Guid Value);
+public readonly record struct CustomerId(Guid Value);
 public readonly record struct LocationCoordinate(double Latitude, double Longitude);
 ```
 
-**File-Scoped Namespaces**: Reduce indentation.
+**Collection Expressions**: Always use `[]` for initialization (C# 12+).
+```csharp
+public sealed record CustomerDto(CustomerId Id, string Name, string Email)
+{
+    public string[] Tags { get; init; } = []; // Collection expression
+}
+
+// Arrays
+int[] numbers = [1, 2, 3, 4, 5];
+List<string> names = ["Alice", "Bob", "Charlie"];
+```
+
+**Primary Constructors**: Use for all records and classes to reduce boilerplate.
+```csharp
+public sealed class OrderService(IOrderRepository repo, ILogger<OrderService> logger) : IOrderService
+{
+    public async Task CreateAsync(OrderDto dto, CancellationToken ct)
+    {
+        logger.LogInformation("Creating order");
+        await repo.SaveAsync(dto.ToDomain(), ct);
+    }
+}
+```
+
+**File-Scoped Namespaces**: Always use to save indentation.
 ```csharp
 namespace Quater.Backend.Core.Models;
 
 public sealed class Sample { /* ... */ }
 ```
 
-### Performance & Modern .NET Features
+### 🚀 Performance & Memory Safety
 
-**ValueTask Over Task**: Use `ValueTask<T>` for methods that often complete synchronously.
+**System.Threading.Lock**: In .NET 9+, use the new `Lock` type for better performance.
+```csharp
+private readonly Lock _gate = new();
+
+public void Process()
+{
+    lock (_gate)
+    {
+        // Thread-safe code
+    }
+}
+```
+
+**SearchValues**: Use `SearchValues<T>` for high-frequency string/byte searching.
+```csharp
+private static readonly SearchValues<char> ValidSchemeChars = 
+    SearchValues.Create("abcdefghijklmnopqrstuvwxyz0123456789+-.");
+
+public bool IsValidScheme(ReadOnlySpan<char> scheme)
+{
+    return scheme.ContainsAny(ValidSchemeChars);
+}
+```
+
+**ValueTask Optimization**: Use `ValueTask<T>` for methods that frequently return cached results.
 ```csharp
 public ValueTask<Sample?> GetCachedSampleAsync(Guid id, CancellationToken ct)
 {
@@ -134,6 +178,17 @@ public ValueTask<Sample?> GetCachedSampleAsync(Guid id, CancellationToken ct)
 }
 ```
 
+**Frozen Collections**: Use `ToFrozenDictionary()` and `ToFrozenSet()` for read-only lookups.
+```csharp
+private static readonly FrozenDictionary<string, decimal> Thresholds = 
+    new Dictionary<string, decimal>
+    {
+        ["pH"] = 8.5m,
+        ["Turbidity"] = 5.0m,
+        ["Chlorine"] = 5.0m
+    }.ToFrozenDictionary();
+```
+
 **Span & Memory**: Use `ReadOnlySpan<char>` for high-performance string parsing.
 ```csharp
 public static bool TryParseSampleId(ReadOnlySpan<char> input, out Guid id)
@@ -142,20 +197,9 @@ public static bool TryParseSampleId(ReadOnlySpan<char> input, out Guid id)
 }
 ```
 
-**Async Streams**: Use `IAsyncEnumerable<T>` for streaming large datasets.
-```csharp
-public async IAsyncEnumerable<Sample> GetSamplesAsync([EnumeratorCancellation] CancellationToken ct)
-{
-    await foreach (var sample in _repository.StreamAsync(ct))
-    {
-        yield return sample;
-    }
-}
-```
+### 🧩 Functional Patterns & Logic
 
-### Functional Patterns & Logic
-
-**Switch Expressions**: Use for exhaustive pattern matching and business rules.
+**Switch Expressions**: Use for all assignment logic and pattern matching.
 ```csharp
 public decimal CalculateDiscount(Customer customer) => customer switch
 {
@@ -172,7 +216,13 @@ public string GetSampleStatus(Sample sample) => sample switch
 };
 ```
 
-**Result Pattern**: Avoid exceptions for "expected" failures (Validation, Not Found).
+**Ternary for Simple Logic**: Use ternary operators for simple assignments.
+```csharp
+var status = isCompliant ? "Pass" : "Fail";
+var discount = isPremium ? basePrice * 0.8m : basePrice;
+```
+
+**Result Pattern**: Avoid try-catch for business logic. Use `Result<T, TError>` for explicit failures.
 ```csharp
 public sealed record Result<T>
 {
@@ -196,31 +246,37 @@ public async Task<Result<Sample>> CreateSampleAsync(CreateSampleDto dto, Cancell
 }
 ```
 
-**Pure Functions**: Separate logic from I/O. Static methods for calculations.
+**Pure Logic Extraction**: Move complex math/logic into static methods for testability.
 ```csharp
-public static class Compliator
+public static class ComplianceCalculator
 {
     public static bool IsCompliant(decimal value, decimal threshold) => value <= threshold;
     
     public static ComplianceStatus DetermineStatus(IEnumerable<TestResult> results) =>
         results.All(r => r.IsCompliant) ? ComplianceStatus.Pass : ComplianceStatus.Fail;
+    
+    public static decimal CalculateAverage(IEnumerable<decimal> values) =>
+        values.Any() ? values.Average() : 0m;
 }
 ```
 
-**Explicit Nameof**: Use `nameof` for all logging, guard clauses, and property references.
+**Higher-Order Functions**: Pass `Func<>` or `Action<>` to separate iteration from logic.
 ```csharp
-public SampleService(IRepository<Sample> repository, ILogger<SampleService> logger)
+public async Task ProcessBatchAsync<T>(
+    IEnumerable<T> items,
+    Func<T, CancellationToken, Task> processor,
+    CancellationToken ct)
 {
-    _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    foreach (var item in items)
+    {
+        await processor(item, ct);
+    }
 }
-
-_logger.LogInformation("Sample {SampleId} created successfully", sample.Id);
 ```
 
-### Asynchronous & Safety
+### 🌐 Asynchronous & Concurrency
 
-**CancellationToken**: Always propagate `CancellationToken` to the deepest level.
+**CancellationToken Propagation**: Every async method must accept and pass `CancellationToken`.
 ```csharp
 public async Task<Sample?> GetSampleAsync(Guid id, CancellationToken ct)
 {
@@ -229,9 +285,37 @@ public async Task<Sample?> GetSampleAsync(Guid id, CancellationToken ct)
 }
 ```
 
-**Async All the Way**: Never use `.Result` or `.Wait()`. Use `TaskCompletionSource` with `RunContinuationsAsynchronously`.
+**Task.WhenEach (.NET 9+)**: Process multiple tasks as they complete.
 ```csharp
-var tcs = new TaskCompletionSource<Sample>(TaskCreationOptions.RunContinuationsAsynchronously);
+public async Task ProcessInParallelAsync(IEnumerable<Task<Data>> tasks, CancellationToken ct)
+{
+    await foreach (var task in Task.WhenEach(tasks))
+    {
+        var result = await task; // Guaranteed completed
+        await HandleAsync(result, ct);
+    }
+}
+```
+
+**Avoid Eliding Tasks**: Always use `async/await` for proper exception handling.
+```csharp
+// ❌ BAD: Elides task, loses stack trace
+public Task<Sample> GetSampleAsync(Guid id) => _repository.GetAsync(id);
+
+// ✅ GOOD: Proper async/await
+public async Task<Sample> GetSampleAsync(Guid id, CancellationToken ct)
+{
+    return await _repository.GetAsync(id, ct);
+}
+```
+
+**Async All the Way**: Never use `.Result` or `.Wait()`.
+```csharp
+// ❌ BAD: Blocks thread
+var sample = GetSampleAsync(id).Result;
+
+// ✅ GOOD: Async all the way
+var sample = await GetSampleAsync(id, ct);
 ```
 
 **Nullable Reference Types**: Must be enabled. Treat warnings as errors.
@@ -246,37 +330,74 @@ public sealed class Sample
 }
 ```
 
-**Guard Clauses**: Use `ArgumentNullException.ThrowIfNull(param)`.
+**Guard Clauses**: Use `ArgumentNullException.ThrowIfNull()` and `ArgumentException.ThrowIfNullOrWhiteSpace()`.
 ```csharp
 public async Task<Result<Order>> ProcessAsync(OrderRequest req, CancellationToken ct)
 {
     ArgumentNullException.ThrowIfNull(req);
+    ArgumentException.ThrowIfNullOrWhiteSpace(req.CustomerId, nameof(req.CustomerId));
     
     var order = await _repo.GetAsync(req.Id, ct);
     return order is null ? Result<Order>.Failure("Not Found") : Result<Order>.Success(order);
 }
 ```
 
-### Code Organization
+### 🧪 Testing & Observability
+
+**TimeProvider**: Always inject `TimeProvider` instead of `DateTime.Now` for deterministic testing.
+```csharp
+public sealed class SampleService(ISampleRepository repo, TimeProvider timeProvider)
+{
+    public async Task<Sample> CreateAsync(CreateSampleDto dto, CancellationToken ct)
+    {
+        var sample = new Sample
+        {
+            CreatedAt = timeProvider.GetUtcNow(),
+            // ...
+        };
+        return await repo.AddAsync(sample, ct);
+    }
+}
+
+// In tests
+var fakeTime = new FakeTimeProvider(new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+var service = new SampleService(repo, fakeTime);
+```
+
+**Structured Logging**: Use `nameof` and log properties for searchability.
+```csharp
+_logger.LogInformation(
+    "Sample {SampleId} created by {UserId} at {Location}",
+    sample.Id,
+    userId,
+    sample.Location);
+
+_logger.LogError(
+    exception,
+    "Failed to process sample {SampleId}",
+    sampleId);
+```
+
+**Explicit Nameof**: Use `nameof` for all logging, guard clauses, and property references.
+```csharp
+public SampleService(IRepository<Sample> repository, ILogger<SampleService> logger)
+{
+    _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+}
+```
+
+### 📐 Code Organization
 
 **Composition Over Inheritance**: Use interfaces and decorator pattern.
 ```csharp
-public sealed class LoggingSampleService : ISampleService
+public sealed class LoggingSampleService(ISampleService inner, ILogger logger) : ISampleService
 {
-    private readonly ISampleService _inner;
-    private readonly ILogger _logger;
-    
-    public LoggingSampleService(ISampleService inner, ILogger logger)
-    {
-        _inner = inner;
-        _logger = logger;
-    }
-    
     public async Task<Sample> CreateAsync(CreateSampleDto dto, CancellationToken ct)
     {
-        _logger.LogInformation("Creating sample");
-        var result = await _inner.CreateAsync(dto, ct);
-        _logger.LogInformation("Sample {Id} created", result.Id);
+        logger.LogInformation("Creating sample");
+        var result = await inner.CreateAsync(dto, ct);
+        logger.LogInformation("Sample {Id} created", result.Id);
         return result;
     }
 }
@@ -284,18 +405,25 @@ public sealed class LoggingSampleService : ISampleService
 
 **Minimalist Constructors**: If dependencies > 5, the class likely violates SRP.
 
-**LINQ Over Loops**: Prefer LINQ for readability, loops for performance-critical paths.
+**Static Abstract Interfaces**: Use for factory patterns or polymorphic logic.
 ```csharp
-// Readable
-var compliantSamples = samples.Where(s => s.IsCompliant).ToList();
-
-// Performance-critical
-var compliantSamples = new List<Sample>(samples.Count);
-foreach (var sample in samples)
+public interface IEntity<TSelf> where TSelf : IEntity<TSelf>
 {
-    if (sample.IsCompliant)
-        comntSamples.Add(sample);
+    static abstract TSelf Create(Guid id);
 }
+
+public sealed record Sample : IEntity<Sample>
+{
+    public static Sample Create(Guid id) => new Sample { Id = id };
+}
+```
+
+**Implicit Usings**: Enable in `.csproj` to keep files clean.
+```xml
+<PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+</PropertyGroup>
 ```
 
 ### Naming Conventions
@@ -314,9 +442,10 @@ foreach (var sample in samples)
 ### Imports Order
 
 ```csharp
-// System namespaces first
+// System namespaces first (if not using implicit usings)
 using System;
-using System.Collections.Generic;tem.Linq;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 // Third-party packages
@@ -327,13 +456,6 @@ using FluentValidation;
 using Quater.Backend.Core.Models;
 using Quater.Backend.Core.Interfaces;
 ```
-
-### Error Handling
-
-- Use specific exceptions: `ArgumentNullException`, `InvalidOperationException`
-- Never catch `Exception` unless re-throwing
-- Log exceptions before re-throwing
-- Use `Result<T>` pattern for business logic errors (not exceptions)
 
 ---
 
@@ -362,7 +484,7 @@ using Quater.Backend.Core.Interfaces;
 ### Imports Order
 
 ```typescript
-// React/Reactative first
+// React/React Native first
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button } from 'react-native';
 
@@ -441,3 +563,4 @@ See `specs/001-water-quality-platform/ARCHITECTURE_DECISIONS.md` for full detail
 - **Architecture**: ✅ Validated
 - **Implementation**: ⏳ Not started (ready to begin)
 - **Branch**: `001-water-quality-platform` (monolithic feature approach)
+- **Tech Stack**: C# 13 / .NET 10 (Backend + Desktop), React Native (Mobile)

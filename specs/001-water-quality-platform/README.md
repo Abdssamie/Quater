@@ -48,9 +48,9 @@ This project uses a **monolithic feature approach** where:
 
 ### Components (All in this spec)
 
-1. **Backend API** (.NET 8 + PostgreSQL)
+1. **Backend API** (.NET 10 + PostgreSQL)
    - ASP.NET Core Identity + OpenIddict (OAuth2/OIDC)
-   - Entity Framework Core 8.0
+   - Entity Framework Core 10.0
    - REST API with Swagger/OpenAPI
    - NSwag for TypeScript generation
 
@@ -82,7 +82,7 @@ This project uses a **monolithic feature approach** where:
 - Architecture decisions validated
 
 ### Phase 1: Backend API (Week 1-4)
-- .NET 8 solution setup
+- .NET 10 solution setup
 - PostgreSQL + Docker configuration
 - ASP.NET Core Identity + OpenIddict
 - EF Core entities and migrations
@@ -179,7 +179,7 @@ Run `/speckit.tasks` to generate `tasks.md` with:
 
 ### Option B: Start Implementation Directly
 Begin with backend API:
-1. Set up .NET 8 solution structure
+1. Set up .NET 10 solution structure
 2. Configure PostgreSQL + Docker
 3. Implement ASP.NET Core Identity + OpenIddict
 4. Build EF Core data model

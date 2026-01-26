@@ -156,8 +156,8 @@ Following a comprehensive maintenance assessment, additional changes were made t
 
 ```
 Backend:
-✅ ASP.NET Core 8.0 Web API
-✅ Entity Framework Core 8.0 + PostgreSQL 15+
+✅ ASP.NET Core 10.0 Web API
+✅ Entity Framework Core 10.0 + PostgreSQL 15+
 ✅ ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)
 ✅ QuestPDF for report generation
 ✅ Swashbuckle.AspNetCore for auto-generated OpenAPI/Swagger
@@ -169,7 +169,7 @@ Backend:
 Desktop:
 ✅ Avalonia UI 11.x (Windows, Linux, macOS)
 ✅ ReactiveUI for MVVM
-✅ EntitCore 8.0 + SQLite
+✅ Entity Framework Core 10.0 + SQLite
 ✅ QuestPDF for local report generation
 ✅ Secure token storage (DPAPI/Keychain/Secret Service)
 
