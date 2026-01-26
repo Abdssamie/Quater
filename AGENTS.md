@@ -564,3 +564,4 @@ See `specs/001-water-quality-platform/ARCHITECTURE_DECISIONS.md` for full detail
 - **Implementation**: ⏳ Not started (ready to begin)
 - **Branch**: `001-water-quality-platform` (monolithic feature approach)
 - **Tech Stack**: C# 13 / .NET 10 (Backend + Desktop), React Native (Mobile)
+Use 'bd' for task tracking
