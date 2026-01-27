@@ -26,11 +26,12 @@ Quater is an open-source, cross-platform water quality lab management system tar
 
 **Language/Version**: C# 13 / .NET 10 (Backend + Desktop), JavaScript/TypeScript (Mobile)
 **Primary Dependencies**: 
-- Desktop: Avalonia UI 11.x (cross-platform XAML framework)
+- Desktop: Avalonia UI 11.x (cross-platform XAML framework) with SukiUI
 - Mobile: React Native 0.73+ (JavaScript/TypeScript framework)
 - Backend: ASP.NET Core 10.0, Entity Framework Core 10.0
 - Auth: ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)
 - Background Jobs: Quartz.NET (audit archival)
+- Desktop UI: SukiUI (Modern desktop UI theme & controls)
 - Logging: Serilog (Backend/Desktop), react-native-logs (Mobile)
 - PDF: QuestPDF (C# fluent API)
 - TypeScript Generation: NSwag (generates TypeScript client from OpenAPI)
@@ -192,6 +193,10 @@ docker/
    - Decision: Avalonia for Desktop + React Native for Mobile
    - Rationale: Avalonia mobile is immature; React Native is production-ready with massive ecosystem
 
+11. **Desktop UI Library**
+    - Decision: SukiUI
+    - Rationale: Provides polished, modern UI controls out-of-the-box (themes, toasts, dialogs), reducing custom UI development time.
+
 2. **Authentication System**
    - Decision: ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)
    - Rationale: Best of both worlds - Identity handles user management, OpenIddict handles token issuance; no vendor lock-in, offline JWT support, native .NET integration, production-ready
@@ -287,3 +292,10 @@ docker/
 ---
 
 **Plan Status**: Phase 0 research required before proceeding to Phase 1 design.
+
+**Phase 2 Options** (decide after Phase 1):
+1. **Authentication & Authorization**: ASP.NET Core Identity + OpenIddict setup
+2. **User Story 1**: Mobile field sample collection (highest priority)
+3. **Corrective Actions Module**: Task assignment and tracking for non-compliant results (closes the loop on quality failures)
+4. **Backend API**: REST endpoints for samples and test results
+5. **Desktop UI**: Avalonia views and view models for sample management

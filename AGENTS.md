@@ -1,144 +1,116 @@
-# Quater Water Quality Lab Management System
-This is a monorepo project for the Quater water quality lab management system.
+# Agent Instructions - Quater Water Quality Lab Management System
 
-## Project Structure
+## Project Overview
+
+**Quater** is an open-source, cross-platform water quality lab management system with three integrated applications:
+- **Backend API**: ASP.NET Core 10.0 + PostgreSQL (C# 13 / .NET 10)
+- **Desktop App**: Avalonia UI 11.x (Windows/Linux/macOS) (C# 13 / .NET 10)
+- **Mobile App**: React Native 0.73+ (Android, field sample collection only)
+
+**Architecture**: Offline-first with bidirectional sync, Last-Write-Wins conflict resolution with automatic backup.
+
+---
+
+## Monorepo Structure
+
 - `backend/` - ASP.NET Core 10.0 Web API & Core Logic
-- `desktop/` - Avalonia UI 11.x Desktop Application (Windows/Linux/macOS)
-- `mobile/` - React Native 0.73+ Mobile Application (Android)
+- `desktop/` - Avalonia UI 11.x Desktop Application
+- `mobile/` - React Native 0.73+ Mobile Application
 - `specs/` - Feature specifications and planning documents (Speckit)
 
-## Monorepo Conventions
-- **Backend**: C# 13, .NET 10, PostgreSQL, Entity Framework Core
-- **Desktop**: C# 13, .NET 10, Avalonia UI, SukiUI
-- **Mobile**: TypeScript, React Native, Yarn
-- **Task Tracking**: Use `bd` (Beads) for all task tracking.
+**Note**: Coding guidelines and build commands for each platform are located in their respective directories (`backend/AGENTS.md`, `desktop/AGENTS.md`, `mobile/AGENTS.md`) and are automatically loaded via `opencode.json`.
 
 ---
 
-## Build, Lint & Test Commands
+## Working with Beads (Issue Tracking)
 
-### Backend (.NET 10)
+Beads is used for task tracking and dependencies. **Use beads for strategic work** (multi-session, dependencies, discovered work).
+
+### Quick Commands
+
 ```bash
-# Build
-dotnet build backend/Quater.Backend.sln
-dotnet build backend/Quater.Backend.sln --configuration Release
-
-# Run tests
-dotnet test backend/tests/Quater.Backend.Api.Tests/
-dotnet test backend/tests/Quater.Backend.Core.Tests/
-dotnet test backend/tests/Quater.Backend.Sync.Tests/
-
-# Run single test
-dotnet test --filter "FullyQualifiedName=Quater.Backend.Api.Tests.SampleControllerTests.CreateSample_ValidData_ReturnsCreated"
-dotnet test --filter "FullyQualifiedName~SampleController"
-
-# Run with coverage
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-
-# Lint
-dotnet format backend/Quater.Backend.sln --verify-no-changes
-
-# Run API locally
-cd backend/src/Quater.Backend.Api
-dotnet run
+bd ready                                  # Find available work
+bd show quater-1                          # View issue details
+bd update quater-1 --status=in_progress   # Claim work
+bd close quater-1                         # Complete work
+bd create --title="..." --type=task --priority=2  # Create issue
+bd dep add quater-2 quater-1              # quater-2 depends on quater-1
+bd sync --from-main                       # Sync beads from main branch
 ```
 
-### Desktop (Avalonia)
-```bash
-# Build
-dotnet build desktop/Quater.Desktop.sln
-
-# Run tests
-dotnet test desktop/tests/Quater.Desktop.Tests/
-dotnet test desktop/tests/Quater.Desktop.Data.Tests/
-
-# Run desktop app
-cd desktop/src/Quater.Desktop
-dotnet run
-```
-
-### Mobile (React Native)
-```bash
-cd mobile/
-
-# Install dependencies
-yarn install
-
-# Lint & Format
-yarn lint
-yarn lint:fix
-
-# Type check
-yarn type-check
-
-# Run tests
-yarn test
-yarn test SampleScreen.test.tsx
-yarn test --testNamePattern="should create sample"
-
-# Build & run Android
-yarn android
-```
-
----
-
-## C# Code Style Guidelines (Backend/Desktop)
-
-### Core Principles
-- **Version**: .NET 10, C# 13
-- **Nullability**: `#nullable enable` is required. Treat warnings as errors.
-- **Implicit Usings**: Enabled.
-
-### Type System & Patterns
-- **Primary Constructors**: Use for all classes/records to reduce boilerplate.
-- **File-Scoped Namespaces**: Always use to save indentation.
-- **Collection Expressions**: Use `[]` for initialization.
-- **Discriminated Unions**: Use abstract record hierarchies.
-- **Strongly Typed IDs**: Use `readonly record struct`.
-
-### Async & Performance
-- **CancellationTokens**: Propagate to all async methods.
-- **Async All the Way**: Never use `.Result` or `.Wait()`.
-- **TimeProvider**: Inject `TimeProvider` instead of using `DateTime.Now`.
-- **Structured Logging**: Use `nameof` and log properties.
-
-### Organization
-- **PascalCase**: Classes, methods, properties.
-- **camelCase**: Local variables, parameters, private fields.
-- **Imports Order**: System -> Third-party -> Project.
-
----
-
-## TypeScript/React Native Guidelines (Mobile)
-
-### Configuration
-- **Linter**: ESLint with `@react-native` and `@typescript-eslint/recommended`.
-- **Formatter**: Prettier (Single quotes, no semi-colons, 100 char width).
-
-### Principles
-- **Strict Typing**: No `any`. Use `unknown` if necessary. Explicit return types.
-- **Components**: Functional components with hooks.
-- **State**: Local state with `useState`, global with Context/Redux (if applicable).
-- **Navigation**: React Navigation.
-
-### Naming
-- **PascalCase**: Components, types, interfaces.
-- **camelCase**: Variables, functions, hooks.
-- **UPPER_SNAKE_CASE**: Constants.
-
----
-
-## Workflow & Protocol
-
-### Beads (Task Tracking)
-Use `bd` to manage tasks.
-- `bd ready`: Find work.
-- `bd update <id> --status=in_progress`: Start work.
-- `bd close <id>`: Finish work.
-- `bd sync`: Sync with remote.
+**Priority Levels**: 0 (critical) → 1 (high) → 2 (medium) → 3 (low) → 4 (backlog)
 
 ### Session Close Protocol (MANDATORY)
-1. **Close Issues**: `bd close <ids>`
-2. **Sync Beads**: `bd sync --from-main`
-3. **Commit Code**: `git add . && git commit -m "..."`
-4. **Push**: `git push` (Ensure success!)
+
+Before ending a session, you MUST:
+1. Close completed beads issues: `bd close quater-1 quater-2 ...`
+2. Run `bd sync --from-main` to pull latest beads updates
+3. Commit code changes: `git add . && git commit -m "..."`
+4. **DO NOT push to remote** - This is an ephemeral branch, merge to main locally
+
+---
+
+## Working with Speckit (Specifications)
+
+Speckit manages feature specifications. All specs are in `specs/001-water-quality-platform/`.
+
+### Key Files
+
+- **spec.md**: User stories and requirements (v1.2)
+- **plan.md**: Implementation plan, tech stack, project structure
+- **data-model.md**: Complete data model for all components
+- **research.md**: Technology decisions and rationale
+- **ARCHITECTURE_DECISIONS.md**: 10 validated architecture decisions
+- **contracts/sync.schema.json**: Bidirectional sync protocol
+
+---
+
+## Key Architecture Decisions
+
+1. **Authentication**: ASP.NET Core Identity + OpenIddict (OAuth2/OIDC)
+2. **Mobile Framework**: React Native (rejected .NET MAUI for reliability)
+3. **Mobile Scope**: Field sample collection ONLY (no test entry/reporting)
+4. **Conflict Resolution**: Last-Write-Wins with automatic backup
+5. **TypeScript Generation**: NSwag auto-generates from OpenAPI (eliminates contract drift)
+6. **API Versioning**: `/api/v1/` prefix for all endpoints
+7. **Test Methods**: Enumeration (7 standard methods + Other)
+8. **Audit Archival**: 90-day hot/cold split with nightly background job
+
+See `specs/001-water-quality-platform/ARCHITECTURE_DECISIONS.md` for full details.
+
+---
+
+## Project Status
+
+- **Specifications**: ✅ Complete (v1.2)
+- **Architecture**: ✅ Validated
+- **Implementation**: ⏳ Not started (ready to begin)
+- **Branch**: `001-water-quality-platform` (monolithic feature approach)
+- **Tech Stack**: C# 13 / .NET 10 (Backend + Desktop), React Native (Mobile)
+Use 'bd' for task tracking
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds

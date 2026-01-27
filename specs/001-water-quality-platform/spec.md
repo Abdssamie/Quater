@@ -162,7 +162,9 @@ A consultant is hired to deploy the system for a new organization with specific 
 - **FR-017**: Desktop app MUST support manual sync with backend (upload/download button)
 - **FR-018**: Desktop app MUST display sync status and handle sync errors gracefully
 - **FR-019**: Desktop app MUST work offline with SQLite database; all features except sync should function without internet
-- **FR-020**: Desktop app MUST run on Windows, Linux, and macOS via Avalonia UI framework
+- **FR-020**: Desktop app MUST run on Windows, Linux, and macOS via Avalonia UI framework using SukiUI for the user interface theme and controls
+- **FR-021**: Desktop app MUST use SukiUI controls for standard UI elements (forms, dialogs, toasts) to ensure a modern and consistent look and feel
+- **FR-022**: (Phase 2) Desktop app MUST allow creating "Corrective Action" tasks linked to failed test results (e.g., "Retest required", "Treatment ordered") and assigning them to users
 
 #### Mobile Application (Field Data Collection)
 
@@ -289,6 +291,7 @@ A consultant is hired to deploy the system for a new organization with specific 
 ### Technical Constraints
 
 - Desktop app must support Windows, Linux, macOS (Avalonia framework requirement)
+- Desktop app must use SukiUI library for UI controls and theming
 - Mobile app must support Android via React Native (iOS support deferred to Phase 2)
 - Offline-first architecture requires SQLite on all clients
 - Sync engine must handle network interruptions gracefully
@@ -405,4 +408,6 @@ The following strategic decisions have been made:
 | 1.2 | 2026-01-25 | AI Assistant | Maintenance-driven architecture updates: Clarified mobile scope (field collection only, no test entry - FR-030-FR-038 updated); Updated conflict resolution to Last-Write-Wins with automatic backup (FR-053, FR-071, Assumption 7 updated); Added API versioning `/api/v1/` and pagination (FR-058-FR-060 added); Integrated NSwag for TypeScript generation (FR-060, Assumption 8 updated); Added location hierarchy support (Sample entity updated); Added test method enumeration (TestResult entity updated); Added audit log archival strategy with 90-day hot/cold split (FR-096 added, AuditLog/AuditLogArchive entities added, Assumption 6 updated); Clarified ASP.NET Core Identity + OpenIddict integration (Assumption 8, Clarifications updated) |
 | 1.3 | 2026-01-25 | AI Assistant | Added mandatory logging libraries: Serilog (Backend/Desktop) and react-native-logs (Mobile) to Technical Constraints. |
 | 1.4 | 2026-01-25 | AI Assistant | Resolved duplication: FR-053 now references FR-070+ (Sync) and FR-055 references FR-090 (Audit). Specified Quartz.NET for background jobs in Plan. |
+| 1.5 | 2026-01-25 | AI Assistant | Added SukiUI as the mandatory UI library for the Desktop application (FR-020, FR-021, Technical Constraints). |
+| 1.6 | 2026-01-25 | AI Assistant | Added "Corrective Actions Module" to Phase 2 roadmap (Plan.md) and FR-022 (Spec.md) to close the quality workflow loop, aligning closer with SafetyCulture capabilities. |
 
