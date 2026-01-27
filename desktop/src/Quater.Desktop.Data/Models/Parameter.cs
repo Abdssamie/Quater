@@ -5,6 +5,20 @@ namespace Quater.Desktop.Data.Models;
 /// <summary>
 /// Represents a water quality parameter with compliance thresholds.
 /// Desktop/offline version with same schema as backend Parameter entity.
+/// 
+/// ⚠️ IMPORTANT: MODEL SYNCHRONIZATION REQUIRED ⚠️
+/// This model is duplicated in 3 locations:
+/// 1. Backend: backend/src/Quater.Backend.Core/Models/Parameter.cs (master)
+/// 2. Desktop: desktop/src/Quater.Desktop.Data/Models/Parameter.cs (THIS FILE)
+/// 3. Mobile: mobile/src/models/Parameter.ts (TypeScript - to be generated from API)
+/// 
+/// When backend Parameter.cs changes:
+/// - Copy schema changes to this file
+/// - Keep all fields identical (names, types, attributes)
+/// - Update QuaterLocalContext.cs entity configuration if needed
+/// - Run migration: dotnet ef migrations add [MigrationName] --project desktop/src/Quater.Desktop.Data
+/// 
+/// TODO (Phase 3): Refactor to use shared models project to eliminate duplication
 /// </summary>
 public class Parameter
 {

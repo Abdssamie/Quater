@@ -5,6 +5,25 @@ namespace Quater.Desktop.Data.Models;
 /// <summary>
 /// Represents a single water quality test performed on a sample.
 /// Desktop/offline version with same schema as backend TestResult entity.
+/// 
+/// ⚠️ IMPORTANT: MODEL SYNCHRONIZATION REQUIRED ⚠️
+/// This model is duplicated in 3 locations:
+/// 1. Backend: backend/src/Quater.Backend.Core/Models/TestResult.cs (master - uses C# enums)
+/// 2. Desktop: desktop/src/Quater.Desktop.Data/Models/TestResult.cs (THIS FILE - uses string enums)
+/// 3. Mobile: mobile/src/models/TestResult.ts (TypeScript - to be generated from API)
+/// 
+/// When backend TestResult.cs changes:
+/// - Copy schema changes to this file
+/// - Convert C# enums (TestMethod, ComplianceStatus) to string properties
+/// - Keep all other fields identical (names, types, attributes)
+/// - Update QuaterLocalContext.cs entity configuration if needed
+/// - Run migration: dotnet ef migrations add [MigrationName] --project desktop/src/Quater.Desktop.Data
+/// 
+/// Enum Mapping:
+/// - Backend TestMethod enum → Desktop string: "Titration", "Spectrophotometry", etc.
+/// - Backend ComplianceStatus enum → Desktop string: "pass", "fail", "warning"
+/// 
+/// TODO (Phase 3): Refactor to use shared models project to eliminate duplication
 /// </summary>
 public class TestResult
 {
