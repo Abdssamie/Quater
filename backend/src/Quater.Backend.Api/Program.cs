@@ -3,8 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Validation.AspNetCore;
 using Quater.Backend.Core.Models;
 using Quater.Backend.Data;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
