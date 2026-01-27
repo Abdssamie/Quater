@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Time.Testing;
 using Quater.Backend.Core.Enums;
 using Quater.Backend.Core.Models;
 using Quater.Backend.Core.Validators;
@@ -8,7 +9,15 @@ namespace Quater.Backend.Core.Tests.Models;
 
 public class SampleTests
 {
-    private readonly SampleValidator _validator = new();
+    private readonly FakeTimeProvider _timeProvider;
+    private readonly SampleValidator _validator;
+
+    public SampleTests()
+    {
+        _timeProvider = new FakeTimeProvider();
+        _timeProvider.SetUtcNow(new DateTimeOffset(2025, 1, 1, 12, 0, 0, TimeSpan.Zero));
+        _validator = new SampleValidator(_timeProvider);
+    }
 
     [Fact]
     public void CreateSample_WithValidData_ShouldPassValidation()
@@ -20,13 +29,13 @@ public class SampleTests
             CollectorName = "John Doe",
             LocationLatitude = 34.0,
             LocationLongitude = -5.0,
-            CollectionDate = DateTime.UtcNow,
+            CollectionDate = _timeProvider.GetUtcNow().DateTime,
             LabId = Guid.NewGuid(),
             Status = SampleStatus.Pending,
             Type = SampleType.DrinkingWater,
             CreatedBy = "System",
-            CreatedDate = DateTime.UtcNow,
-            LastModified = DateTime.UtcNow,
+            CreatedDate = _timeProvider.GetUtcNow().DateTime,
+            LastModified = _timeProvider.GetUtcNow().DateTime,
             LastModifiedBy = "System",
             Version = 1
         };
@@ -63,10 +72,11 @@ public class SampleTests
     public void CreateSample_WithFutureDate_ShouldFailValidation()
     {
         // Arrange
+        var futureDate = _timeProvider.GetUtcNow().AddDays(1).DateTime;
         var sample = new Sample
         {
             CollectorName = "Time Traveler",
-            CollectionDate = DateTime.UtcNow.AddDays(1), // Future date
+            CollectionDate = futureDate, // Future date
             LabId = Guid.NewGuid()
         };
 

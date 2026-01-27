@@ -5,7 +5,7 @@ namespace Quater.Backend.Core.Validators;
 
 public class SampleValidator : AbstractValidator<Sample>
 {
-    public SampleValidator()
+    public SampleValidator(TimeProvider timeProvider)
     {
         RuleFor(x => x.CollectorName)
             .NotEmpty().WithMessage("Collector name is required")
@@ -24,7 +24,7 @@ public class SampleValidator : AbstractValidator<Sample>
             .MaximumLength(1000).WithMessage("Notes must not exceed 1000 characters");
 
         RuleFor(x => x.CollectionDate)
-            .LessThanOrEqualTo(x => DateTime.UtcNow).WithMessage("Collection date cannot be in the future");
+            .LessThanOrEqualTo(x => timeProvider.GetUtcNow().DateTime).WithMessage("Collection date cannot be in the future");
             
         RuleFor(x => x.LabId)
             .NotEmpty().WithMessage("Lab ID is required");

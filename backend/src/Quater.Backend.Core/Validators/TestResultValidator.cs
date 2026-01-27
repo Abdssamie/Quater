@@ -5,7 +5,7 @@ namespace Quater.Backend.Core.Validators;
 
 public class TestResultValidator : AbstractValidator<TestResult>
 {
-    public TestResultValidator()
+    public TestResultValidator(TimeProvider timeProvider)
     {
         RuleFor(x => x.SampleId)
             .NotEmpty().WithMessage("Sample ID is required");
@@ -22,7 +22,7 @@ public class TestResultValidator : AbstractValidator<TestResult>
             .MaximumLength(20).WithMessage("Unit must not exceed 20 characters");
 
         RuleFor(x => x.TestDate)
-            .LessThanOrEqualTo(x => DateTime.UtcNow).WithMessage("Test date cannot be in the future");
+            .LessThanOrEqualTo(x => timeProvider.GetUtcNow().DateTime).WithMessage("Test date cannot be in the future");
 
         RuleFor(x => x.TechnicianName)
             .NotEmpty().WithMessage("Technician name is required")
