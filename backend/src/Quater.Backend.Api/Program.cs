@@ -1,8 +1,21 @@
+using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Add DbContext (temporary configuration for migrations)
+builder.Services.AddDbContext<QuaterDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+        "Host=localhost;Database=quater;Username=postgres;Password=postgres"));
+
+// Add Identity
+builder.Services.AddIdentity<Quater.Backend.Core.Models.User, Microsoft.AspNetCore.Identity.IdentityRole>()
+    .AddEntityFrameworkStores<QuaterDbContext>();
 
 var app = builder.Build();
 
