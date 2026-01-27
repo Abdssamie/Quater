@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Validation.AspNetCore;
+using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Core.Models;
 using Quater.Backend.Data;
+using Quater.Backend.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,6 +65,12 @@ builder.Services.AddOpenIddict()
         options.UseLocalServer();
         options.UseAspNetCore();
     });
+
+// Register TimeProvider
+builder.Services.AddSingleton(TimeProvider.System);
+
+// Register Services
+builder.Services.AddScoped<ISampleService, SampleService>();
 
 var app = builder.Build();
 

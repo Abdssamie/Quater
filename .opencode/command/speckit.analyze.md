@@ -1,5 +1,5 @@
 ---
-description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.
+description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and Beads issues after issue generation.
 ---
 
 ## User Input
@@ -12,7 +12,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.
+Identify inconsistencies, duplications, ambiguities, and underspecified items across the core artifacts (`spec.md`, `plan.md`, and Beads issues) before implementation. This command MUST run only after `/speckit.tasks` has successfully created Beads issues.
 
 ## Operating Constraints
 
@@ -24,13 +24,17 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 ### 1. Initialize Analysis Context
 
-Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
+Run `.specify/scripts/bash/check-prerequisites.sh --json` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
 
 - SPEC = FEATURE_DIR/spec.md
 - PLAN = FEATURE_DIR/plan.md
-- TASKS = FEATURE_DIR/tasks.md
 
-Abort with an error message if any required file is missing (instruct the user to run missing prerequisite command).
+Check for Beads issues by running:
+```bash
+bd stats --json
+```
+
+Abort with an error message if spec.md or plan.md is missing, or if no Beads issues exist (instruct the user to run `/speckit.tasks` to create issues first).
 For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 ### 2. Load Artifacts (Progressive Disclosure)
@@ -52,13 +56,13 @@ Load only the minimal necessary context from each artifact:
 - Phases
 - Technical constraints
 
-**From tasks.md:**
+**From Beads issues:**
 
-- Task IDs
-- Descriptions
-- Phase grouping
-- Parallel markers [P]
-- Referenced file paths
+- Issue IDs (use `bd list --json` to get all issues)
+- Issue titles and descriptions (use `bd show <id> --json` for details)
+- Issue priorities and statuses
+- Issue dependencies (use `bd dep list --json`)
+- Referenced file paths in issue descriptions
 
 **From constitution:**
 
@@ -70,7 +74,7 @@ Create internal representations (do not include raw artifacts in output):
 
 - **Requirements inventory**: Each functional + non-functional requirement with a stable key (derive slug based on imperative phrase; e.g., "User can upload file" → `user-can-upload-file`)
 - **User story/action inventory**: Discrete user actions with acceptance criteria
-- **Task coverage mapping**: Map each task to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs or key phrases)
+- **Issue coverage mapping**: Map each Beads issue to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs, user story labels [US1, US2], or key phrases)
 - **Constitution rule set**: Extract principle names and MUST/SHOULD normative statements
 
 ### 4. Detection Passes (Token-Efficient Analysis)
@@ -91,7 +95,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 - Requirements with verbs but missing object or measurable outcome
 - User stories missing acceptance criteria alignment
-- Tasks referencing files or components not defined in spec/plan
+- Issues referencing files or components not defined in spec/plan
 
 #### D. Constitution Alignment
 
@@ -100,15 +104,15 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 #### E. Coverage Gaps
 
-- Requirements with zero associated tasks
-- Tasks with no mapped requirement/story
-- Non-functional requirements not reflected in tasks (e.g., performance, security)
+- Requirements with zero associated issues
+- Issues with no mapped requirement/story
+- Non-functional requirements not reflected in issues (e.g., performance, security)
 
 #### F. Inconsistency
 
 - Terminology drift (same concept named differently across files)
 - Data entities referenced in plan but absent in spec (or vice versa)
-- Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
+- Issue dependency contradictions (e.g., integration issues before foundational setup issues without proper dependency chain)
 - Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
 
 ### 5. Severity Assignment
@@ -117,7 +121,7 @@ Use this heuristic to prioritize findings:
 
 - **CRITICAL**: Violates constitution MUST, missing core spec artifact, or requirement with zero coverage that blocks baseline functionality
 - **HIGH**: Duplicate or conflicting requirement, ambiguous security/performance attribute, untestable acceptance criterion
-- **MEDIUM**: Terminology drift, missing non-functional task coverage, underspecified edge case
+- **MEDIUM**: Terminology drift, missing non-functional issue coverage, underspecified edge case
 - **LOW**: Style/wording improvements, minor redundancy not affecting execution order
 
 ### 6. Produce Compact Analysis Report
@@ -134,18 +138,18 @@ Output a Markdown report (no file writes) with the following structure:
 
 **Coverage Summary Table:**
 
-| Requirement Key | Has Task? | Task IDs | Notes |
-|-----------------|-----------|----------|-------|
+| Requirement Key | Has Issue? | Issue IDs | Notes |
+|-----------------|------------|-----------|-------|
 
 **Constitution Alignment Issues:** (if any)
 
-**Unmapped Tasks:** (if any)
+**Unmapped Issues:** (if any)
 
 **Metrics:**
 
 - Total Requirements
-- Total Tasks
-- Coverage % (requirements with >=1 task)
+- Total Issues (from `bd stats`)
+- Coverage % (requirements with >=1 issue)
 - Ambiguity Count
 - Duplication Count
 - Critical Issues Count
@@ -156,7 +160,7 @@ At end of report, output a concise Next Actions block:
 
 - If CRITICAL issues exist: Recommend resolving before `/speckit.implement`
 - If only LOW/MEDIUM: User may proceed, but provide improvement suggestions
-- Provide explicit command suggestions: e.g., "Run /speckit.specify with refinement", "Run /speckit.plan to adjust architecture", "Manually edit tasks.md to add coverage for 'performance-metrics'"
+- Provide explicit command suggestions: e.g., "Run /speckit.specify with refinement", "Run /speckit.plan to adjust architecture", "Use `bd create` to add issues for missing coverage like 'performance-metrics'"
 
 ### 8. Offer Remediation
 
