@@ -18,8 +18,9 @@ Quater is an open-source, cross-platform water quality lab management system tar
 - Location: GPS coordinates + optional text description + optional hierarchy for reporting
 - API Documentation: Auto-generated via Swashbuckle.AspNetCore
 - TypeScript Generation: NSwag generates TypeScript types and API client from OpenAPI spec
-- Audit Archival: 90-day hot/cold split strategy (nightly background job)
+- Audit Archival: 90-day hot/cold split strategy (nightly background job via Quartz.NET)
 - Test Methods: Enumeration (Titration, Spectrophotometry, Chromatography, Microscopy, Electrode, Culture, Other)
+- Logging: Serilog (Backend/Desktop) + react-native-logs (Mobile)
 
 ## Technical Context
 
@@ -29,6 +30,8 @@ Quater is an open-source, cross-platform water quality lab management system tar
 - Mobile: React Native 0.73+ (JavaScript/TypeScript framework)
 - Backend: ASP.NET Core 10.0, Entity Framework Core 10.0
 - Auth: ASP.NET Core Identity (user management) + OpenIddict OAuth2/OpenID Connect (token server)
+- Background Jobs: Quartz.NET (audit archival)
+- Logging: Serilog (Backend/Desktop), react-native-logs (Mobile)
 - PDF: QuestPDF (C# fluent API)
 - TypeScript Generation: NSwag (generates TypeScript client from OpenAPI)
 - Database: SQLite (client-side), PostgreSQL 15+ (backend)
@@ -216,6 +219,14 @@ docker/
 8. **Audit Log Archival**
    - Decision: 90-day hot/cold split with nightly background job
    - Rationale: Keeps main table small for fast queries; prevents unbounded growth
+
+9. **Logging**
+   - Decision: Serilog (Backend/Desktop) + react-native-logs (Mobile)
+   - Rationale: Serilog is the .NET industry standard; react-native-logs provides bridge to native console/file systems
+
+10. **Background Jobs**
+    - Decision: Quartz.NET
+    - Rationale: Lightweight, standard .NET scheduler, supports persistent jobs (needed for reliability)
 
 **Output**: `research.md` with all decisions, rationales, and alternatives considered (COMPLETE)
 

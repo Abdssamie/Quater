@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Quater.Desktop.Data;
 using Quater.Desktop.ViewModels;
+using Serilog;
 
 namespace Quater.Desktop;
 
@@ -21,11 +22,20 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // Configure Serilog
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
         // Configure services
         var services = new ServiceCollection();
         services.AddDbContext<QuaterLocalContext>(options =>
             options.UseSqlite("Data Source=quater.db"));
             
+        services.AddLogging(loggingBuilder =>
+            loggingBuilder.AddSerilog(dispose: true));
+
         Services = services.BuildServiceProvider();
 
         // Migrate database
@@ -38,7 +48,7 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Migration failed: {ex.Message}");
+                Log.Error(ex, "Migration failed");
             }
         }
 
@@ -51,6 +61,8 @@ public partial class App : Application
             {
                 DataContext = new MainViewModel()
             };
+            
+            desktop.Exit += (sender, e) => Log.CloseAndFlush();
         }
 
         base.OnFrameworkInitializationCompleted();

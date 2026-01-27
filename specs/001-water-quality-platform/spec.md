@@ -183,9 +183,9 @@ A consultant is hired to deploy the system for a new organization with specific 
 - **FR-050**: Backend MUST provide RESTful API endpoints for: user authentication, sample CRUD, test result CRUD, and sync operations
 - **FR-051**: Backend MUST implement authentication via OpenIddict OAuth2/OpenID Connect with JWT token validation
 - **FR-052**: Backend MUST validate all incoming data against WHO + Moroccan standards
-- **FR-053**: Backend MUST implement bidirectional sync with conflict resolution: Last-Write-Wins with automatic backup of overwritten data; when conflict detected, notify user showing summary of both versions with option to keep local changes or reload remote version; include optional notes field for user to document resolution reason; both versions preserved in audit log with resolution notes
+- **FR-053**: Backend MUST implement bidirectional sync with conflict resolution as defined in the Data Synchronization section (FR-070 through FR-075)
 - **FR-054**: Backend MUST store data in PostgreSQL database
-- **FR-055**: Backend MUST maintain audit logs for all data modifications (who, what, when)
+- **FR-055**: Backend MUST maintain audit logs for all data modifications as defined in the Compliance & Audit section (FR-090)
 - **FR-056**: Backend MUST generate compliance reports on demand using QuestPDF
 - **FR-057**: Backend MUST support role-based access control (Admin, Technician, Viewer) via ASP.NET Core Identity and OpenIddict claims
 - **FR-058**: Backend MUST provide API versioning using `/api/v1/` prefix for all endpoints
@@ -294,6 +294,7 @@ A consultant is hired to deploy the system for a new organization with specific 
 - Sync engine must handle network interruptions gracefully
 - Backend must support PostgreSQL (no other database engines in MVP)
 - Authentication must support offline JWT token validation (OpenIddict requirement)
+- Logging must use Serilog for .NET components and react-native-logs for mobile app
 
 ### Business Constraints
 
@@ -402,3 +403,6 @@ The following strategic decisions have been made:
 | 1.0 | 2025-01-25 | AI Assistant | Initial specification based on strategic plan |
 | 1.1 | 2026-01-25 | AI Assistant | Added conflict resolution clarification: optimistic locking with last-write-wins, version tracking, conflict notification UI, optional resolution notes field; Removed photo storage from MVP scope (FR-032 removed, FR-004/FR-030 updated, Sample entity updated, edge cases updated, SC-001 updated); Integrated OpenIddict for authentication and user management (FR-010, FR-051, FR-057, FR-110-FR-114 updated, User entity updated, Assumption 8 updated); Specified location capture as GPS coordinates + optional text description (FR-004, FR-030, Sample entity updated); Integrated QuestPDF for PDF report generation with default templates for MVP (FR-016, FR-056, FR-092, FR-095 added, SC-003 updated, User Story 6 updated); Updated mobile framework to React Native (FR-036, FR-038 added, Technical Constraints updated) |
 | 1.2 | 2026-01-25 | AI Assistant | Maintenance-driven architecture updates: Clarified mobile scope (field collection only, no test entry - FR-030-FR-038 updated); Updated conflict resolution to Last-Write-Wins with automatic backup (FR-053, FR-071, Assumption 7 updated); Added API versioning `/api/v1/` and pagination (FR-058-FR-060 added); Integrated NSwag for TypeScript generation (FR-060, Assumption 8 updated); Added location hierarchy support (Sample entity updated); Added test method enumeration (TestResult entity updated); Added audit log archival strategy with 90-day hot/cold split (FR-096 added, AuditLog/AuditLogArchive entities added, Assumption 6 updated); Clarified ASP.NET Core Identity + OpenIddict integration (Assumption 8, Clarifications updated) |
+| 1.3 | 2026-01-25 | AI Assistant | Added mandatory logging libraries: Serilog (Backend/Desktop) and react-native-logs (Mobile) to Technical Constraints. |
+| 1.4 | 2026-01-25 | AI Assistant | Resolved duplication: FR-053 now references FR-070+ (Sync) and FR-055 references FR-090 (Audit). Specified Quartz.NET for background jobs in Plan. |
+
