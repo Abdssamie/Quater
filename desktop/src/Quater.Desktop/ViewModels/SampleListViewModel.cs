@@ -3,7 +3,8 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Quater.Desktop.Data.Models;
+using Quater.Shared.Models;
+using Quater.Shared.Enums;
 using Quater.Desktop.Data.Repositories;
 
 namespace Quater.Desktop.ViewModels;
@@ -19,7 +20,7 @@ public partial class SampleListViewModel : ObservableObject
     private Sample? _selectedSample;
 
     [ObservableProperty]
-    private string? _statusFilter;
+    private SampleStatus? _statusFilter;
 
     [ObservableProperty]
     private DateTime? _startDateFilter;
