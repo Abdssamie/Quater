@@ -83,12 +83,32 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
     options.AddInterceptors(softDeleteInterceptor, auditTrailInterceptor);
 });
 
-// Add Identity
-builder.Services.AddIdentity<User, IdentityRole>()
+// Configure ASP.NET Core Identity with lockout settings
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    // Password settings
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    
+    // Lockout settings - 5 failed attempts, 15 minute lockout
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+    
+    // User settings
+    options.User.RequireUniqueEmail = true;
+    
+    // Sign-in settings
+    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedAccount = false;
+})
     .AddEntityFrameworkStores<QuaterDbContext>()
     .AddDefaultTokenProviders();
 
-// Add OpenIddict
+// Configure OpenIddict for OAuth2/OIDC authentication
 builder.Services.AddOpenIddict()
     .AddCore(options =>
     {
@@ -97,18 +117,33 @@ builder.Services.AddOpenIddict()
     })
     .AddServer(options =>
     {
-        options.SetTokenEndpointUris("/connect/token");
+        // Configure token endpoints
+        options.SetTokenEndpointUris("/api/auth/token")
+               .SetUserinfoEndpointUris("/api/auth/userinfo");
 
+        // Enable OAuth2/OIDC flows
         options.AllowPasswordFlow();
         options.AllowRefreshTokenFlow();
 
+        // Accept anonymous clients (no client_id/client_secret required)
         options.AcceptAnonymousClients();
 
+        // Configure token lifetimes
+        options.SetAccessTokenLifetime(TimeSpan.FromHours(1));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
+
+        // Register scopes
+        options.RegisterScopes("api", "offline_access");
+
+        // Use development certificates (replace with real certificates in production)
         options.AddDevelopmentEncryptionCertificate()
                .AddDevelopmentSigningCertificate();
 
+        // Enable ASP.NET Core integration
         options.UseAspNetCore()
-               .EnableTokenEndpointPassthrough();
+               .EnableTokenEndpointPassthrough()
+               .EnableUserinfoEndpointPassthrough()
+               .DisableTransportSecurityRequirement(); // Only for development
     })
     .AddValidation(options =>
     {
@@ -124,6 +159,27 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();
+
+// Configure role-based authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    // AdminOnly policy - requires Admin role
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c => c.Type == "role" && c.Value == "Admin")));
+    
+    // TechnicianOrAbove policy - requires Technician or Admin role
+    options.AddPolicy("TechnicianOrAbove", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c => c.Type == "role" && 
+                (c.Value == "Admin" || c.Value == "Technician"))));
+    
+    // ViewerOrAbove policy - requires any authenticated user (Viewer, Technician, or Admin)
+    options.AddPolicy("ViewerOrAbove", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c => c.Type == "role" && 
+                (c.Value == "Admin" || c.Value == "Technician" || c.Value == "Viewer"))));
+});
 
 // Register Services
 builder.Services.AddScoped<ISampleService, SampleService>();
