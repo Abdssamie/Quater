@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a water quality parameter with compliance thresholds.
 /// </summary>
-public class Parameter
+public class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -70,4 +71,23 @@ public class Parameter
     /// </summary>
     [Required]
     public DateTime LastModified { get; set; }
+
+    // IAuditable interface properties
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+
+    // ISoftDelete interface properties
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
+
+    // ISyncable interface properties
+    public DateTime LastSyncedAt { get; set; }
+    public string? SyncVersion { get; set; }
+
+    // IConcurrent interface properties
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }

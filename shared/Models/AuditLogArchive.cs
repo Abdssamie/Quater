@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Archived audit logs older than 90 days (cold storage).
 /// </summary>
-public class AuditLogArchive
+public class AuditLogArchive : IEntity
 {
     /// <summary>
     /// Unique identifier (UUID)

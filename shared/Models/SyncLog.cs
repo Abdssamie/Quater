@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Tracks synchronization between clients and server.
 /// </summary>
-public class SyncLog
+public class SyncLog : IEntity, ISyncable
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -69,6 +70,10 @@ public class SyncLog
     /// </summary>
     [Required]
     public DateTime CreatedDate { get; set; }
+
+    // ISyncable interface properties
+    public DateTime LastSyncedAt { get; set; }
+    public string? SyncVersion { get; set; }
 
     // Navigation properties
     public User User { get; set; } = null!;

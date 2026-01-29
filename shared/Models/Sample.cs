@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Quater.Shared.Enums;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a water sample collected from a specific location at a specific time.
 /// </summary>
-public class Sample
+public class Sample : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -121,6 +122,23 @@ public class Sample
     /// </summary>
     [Required]
     public DateTime CreatedDate { get; set; }
+
+    // IAuditable interface properties
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+
+    // ISoftDelete interface properties
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
+
+    // ISyncable interface properties
+    public DateTime LastSyncedAt { get; set; }
+    public string? SyncVersion { get; set; }
+
+    // IConcurrent interface properties
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;

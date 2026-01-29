@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Quater.Shared.Enums;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
@@ -8,7 +9,7 @@ namespace Quater.Shared.Models;
 /// Represents a system user with role-based access.
 /// Extends ASP.NET Core Identity IdentityUser.
 /// </summary>
-public class User : IdentityUser
+public class User : IdentityUser, IAuditable, IConcurrent
 {
     /// <summary>
     /// User role for access control
@@ -38,6 +39,16 @@ public class User : IdentityUser
     /// </summary>
     [Required]
     public bool IsActive { get; set; } = true;
+
+    // IAuditable interface properties
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+
+    // IConcurrent interface properties
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;

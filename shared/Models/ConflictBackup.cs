@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Quater.Shared.Enums;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
@@ -7,7 +8,7 @@ namespace Quater.Shared.Models;
 /// Stores backup copies of conflicting records during synchronization.
 /// Allows recovery and manual conflict resolution.
 /// </summary>
-public class ConflictBackup
+public class ConflictBackup : IEntity, IAuditable
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -87,6 +88,12 @@ public class ConflictBackup
     /// </summary>
     [Required]
     public DateTime CreatedDate { get; set; }
+
+    // IAuditable interface properties
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;

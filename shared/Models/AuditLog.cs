@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Tracks all data modifications for compliance and conflict resolution.
 /// </summary>
-public class AuditLog
+public class AuditLog : IEntity
 {
     /// <summary>
     /// Unique identifier (UUID)
