@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Time.Testing;
-using Quater.Backend.Core.Enums;
-using Quater.Backend.Core.Models;
+using Quater.Shared.Enums;
+using Quater.Shared.Models;
 using Quater.Backend.Core.Validators;
 using Xunit;
 

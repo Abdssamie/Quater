@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Quater.Backend.Core.Models;
+using Quater.Shared.Models;
 
 namespace Quater.Backend.Data;
 
@@ -24,6 +24,25 @@ public class QuaterDbContext : IdentityDbContext<User>
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
 
+    /// <summary>
+    /// Configures the entity models and their relationships for the database.
+    /// </summary>
+    /// <remarks>
+    /// This DbContext uses the Core Domain Pattern with shared models from Quater.Shared.
+    /// 
+    /// Enum Handling Strategy (PostgreSQL):
+    /// - All enum properties use HasConversion&lt;string&gt;() for string storage
+    /// - This ensures compatibility with the desktop SQLite database
+    /// - Enums are stored as their string representation (e.g., "Pending", "Admin")
+    /// 
+    /// Example enum configuration:
+    /// <code>
+    /// entity.Property(e => e.Status)
+    ///     .HasConversion&lt;string&gt;();  // Stores SampleStatus.Pending as "Pending"
+    /// </code>
+    /// 
+    /// See docs/architecture/core-domain-pattern.md for more information.
+    /// </remarks>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -101,6 +120,8 @@ public class QuaterDbContext : IdentityDbContext<User>
         {
             entity.ToTable("Users");
 
+            // Enum stored as string for compatibility with SQLite desktop app
+            // UserRole.Admin -> "Admin", UserRole.Technician -> "Technician"
             entity.Property(e => e.Role)
                 .IsRequired()
                 .HasConversion<string>();
@@ -152,6 +173,8 @@ public class QuaterDbContext : IdentityDbContext<User>
 
             entity.HasKey(e => e.Id);
 
+            // Enum stored as string for compatibility with SQLite desktop app
+            // SampleType.DrinkingWater -> "DrinkingWater"
             entity.Property(e => e.Type)
                 .IsRequired()
                 .HasConversion<string>();
@@ -178,6 +201,8 @@ public class QuaterDbContext : IdentityDbContext<User>
             entity.Property(e => e.Notes)
                 .HasMaxLength(1000);
 
+            // Enum stored as string for compatibility with SQLite desktop app
+            // SampleStatus.Pending -> "Pending"
             entity.Property(e => e.Status)
                 .IsRequired()
                 .HasConversion<string>();
@@ -269,10 +294,14 @@ public class QuaterDbContext : IdentityDbContext<User>
                 .IsRequired()
                 .HasMaxLength(100);
 
+            // Enum stored as string for compatibility with SQLite desktop app
+            // TestMethod.Spectrophotometry -> "Spectrophotometry"
             entity.Property(e => e.TestMethod)
                 .IsRequired()
                 .HasConversion<string>();
 
+            // Enum stored as string for compatibility with SQLite desktop app
+            // ComplianceStatus.Pass -> "Pass"
             entity.Property(e => e.ComplianceStatus)
                 .IsRequired()
                 .HasConversion<string>();

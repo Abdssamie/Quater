@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
-using Quater.Backend.Core.Models;
+using Quater.Shared.Models;
 using Quater.Backend.Data;
 
 namespace Quater.Backend.Services;

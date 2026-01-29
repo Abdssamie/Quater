@@ -1,27 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Quater.Backend.Core.Enums;
+using Quater.Shared.Enums;
 
-namespace Quater.Backend.Core.Models;
+namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a water sample collected from a specific location at a specific time.
-/// 
-/// ⚠️ IMPORTANT: MODEL SYNCHRONIZATION REQUIRED ⚠️
-/// This model is duplicated in 3 locations:
-/// 1. Backend: backend/src/Quater.Backend.Core/Models/Sample.cs (THIS FILE - uses C# enums)
-/// 2. Desktop: desktop/src/Quater.Desktop.Data/Models/Sample.cs (uses string enums for SQLite)
-/// 3. Mobile: mobile/src/models/Sample.ts (TypeScript - to be generated from API)
-/// 
-/// When modifying this model:
-/// - Update desktop/src/Quater.Desktop.Data/Models/Sample.cs with same schema
-/// - Convert C# enums to string properties for desktop (SQLite compatibility)
-/// - Regenerate mobile TypeScript types from OpenAPI/Swagger after backend changes
-/// - Update QuaterDbContext.cs entity configuration if relationships change
-/// - Update QuaterLocalContext.cs entity configuration for desktop
-/// - Run migrations: dotnet ef migrations add [MigrationName] for both backend and desktop
-/// 
-/// TODO (Phase 3): Refactor to use shared models project to eliminate duplication
 /// </summary>
 public class Sample
 {

@@ -27,6 +27,7 @@ dotnet run
 ### 🏛️ Type System & Domain Modeling
 
 **Discriminated Unions (Workarounds)**: Use abstract record hierarchies for domain states.
+
 ```csharp
 public abstract record OrderState;
 public sealed record Pending(DateTime Created) : OrderState;
@@ -35,6 +36,7 @@ public sealed record Cancelled(string Reason) : OrderState;
 ```
 
 **Strongly Typed IDs**: Use `readonly record struct` to prevent accidental ID assignment.
+
 ```csharp
 public readonly record struct SampleId(Guid Value);
 public readonly record struct CustomerId(Guid Value);
@@ -42,6 +44,7 @@ public readonly record struct LocationCoordinate(double Latitude, double Longitu
 ```
 
 **Collection Expressions**: Always use `[]` for initialization (C# 12+).
+
 ```csharp
 public sealed record CustomerDto(CustomerId Id, string Name, string Email)
 {
@@ -54,6 +57,7 @@ List<string> names = ["Alice", "Bob", "Charlie"];
 ```
 
 **Primary Constructors**: Use for all records and classes to reduce boilerplate.
+
 ```csharp
 public sealed class OrderService(IOrderRepository repo, ILogger<OrderService> logger) : IOrderService
 {
@@ -66,6 +70,7 @@ public sealed class OrderService(IOrderRepository repo, ILogger<OrderService> lo
 ```
 
 **File-Scoped Namespaces**: Always use to save indentation.
+
 ```csharp
 namespace Quater.Backend.Core.Models;
 
@@ -75,6 +80,7 @@ public sealed class Sample { /* ... */ }
 ### 🚀 Performance & Memory Safety
 
 **System.Threading.Lock**: In .NET 9+, use the new `Lock` type for better performance.
+
 ```csharp
 private readonly Lock _gate = new();
 
@@ -88,8 +94,9 @@ public void Process()
 ```
 
 **SearchValues**: Use `SearchValues<T>` for high-frequency string/byte searching.
+
 ```csharp
-private static readonly SearchValues<char> ValidSchemeChars = 
+private static readonly SearchValues<char> ValidSchemeChars =
     SearchValues.Create("abcdefghijklmnopqrstuvwxyz0123456789+-.");
 
 public bool IsValidScheme(ReadOnlySpan<char> scheme)
@@ -99,19 +106,21 @@ public bool IsValidScheme(ReadOnlySpan<char> scheme)
 ```
 
 **ValueTask Optimization**: Use `ValueTask<T>` for methods that frequently return cached results.
+
 ```csharp
 public ValueTask<Sample?> GetCachedSampleAsync(Guid id, CancellationToken ct)
 {
     if (_cache.TryGetValue(id, out var sample))
         return ValueTask.FromResult<Sample?>(sample);
-    
+
     return new ValueTask<Sample?>(LoadFromDatabaseAsync(id, ct));
 }
 ```
 
 **Frozen Collections**: Use `ToFrozenDictionary()` and `ToFrozenSet()` for read-only lookups.
+
 ```csharp
-private static readonly FrozenDictionary<string, decimal> Thresholds = 
+private static readonly FrozenDictionary<string, decimal> Thresholds =
     new Dictionary<string, decimal>
     {
         ["pH"] = 8.5m,
@@ -121,6 +130,7 @@ private static readonly FrozenDictionary<string, decimal> Thresholds =
 ```
 
 **Span & Memory**: Use `ReadOnlySpan<char>` for high-performance string parsing.
+
 ```csharp
 public static bool TryParseSampleId(ReadOnlySpan<char> input, out Guid id)
 {
@@ -131,6 +141,7 @@ public static bool TryParseSampleId(ReadOnlySpan<char> input, out Guid id)
 ### 🧩 Functional Patterns & Logic
 
 **Switch Expressions**: Use for all assignment logic and pattern matching.
+
 ```csharp
 public decimal CalculateDiscount(Customer customer) => customer switch
 {
@@ -148,19 +159,21 @@ public string GetSampleStatus(Sample sample) => sample switch
 ```
 
 **Ternary for Simple Logic**: Use ternary operators for simple assignments.
+
 ```csharp
 var status = isCompliant ? "Pass" : "Fail";
 var discount = isPremium ? basePrice * 0.8m : basePrice;
 ```
 
 **Result Pattern**: Avoid try-catch for business logic. Use `Result<T, TError>` for explicit failures.
+
 ```csharp
 public sealed record Result<T>
 {
     public bool IsSuccess { get; init; }
     public T? Value { get; init; }
     public string? Error { get; init; }
-    
+
     public static Result<T> Success(T value) => new() { IsSuccess = true, Value = value };
     public static Result<T> Failure(string error) => new() { IsSuccess = false, Error = error };
 }
@@ -169,29 +182,31 @@ public async Task<Result<Sample>> CreateSampleAsync(CreateSampleDto dto, Cancell
 {
     if (dto is null)
         return Result<Sample>.Failure("Sample data is required");
-    
+
     var sample = new Sample { /* ... */ };
     await _repository.AddAsync(sample, ct);
-    
+
     return Result<Sample>.Success(sample);
 }
 ```
 
 **Pure Logic Extraction**: Move complex math/logic into static methods for testability.
+
 ```csharp
 public static class ComplianceCalculator
 {
     public static bool IsCompliant(decimal value, decimal threshold) => value <= threshold;
-    
+
     public static ComplianceStatus DetermineStatus(IEnumerable<TestResult> results) =>
         results.All(r => r.IsCompliant) ? ComplianceStatus.Pass : ComplianceStatus.Fail;
-    
+
     public static decimal CalculateAverage(IEnumerable<decimal> values) =>
         values.Any() ? values.Average() : 0m;
 }
 ```
 
 **Higher-Order Functions**: Pass `Func<>` or `Action<>` to separate iteration from logic.
+
 ```csharp
 public async Task ProcessBatchAsync<T>(
     IEnumerable<T> items,
@@ -208,6 +223,7 @@ public async Task ProcessBatchAsync<T>(
 ### 🌐 Asynchronous & Concurrency
 
 **CancellationToken Propagation**: Every async method must accept and pass `CancellationToken`.
+
 ```csharp
 public async Task<Sample?> GetSampleAsync(Guid id, CancellationToken ct)
 {
@@ -217,6 +233,7 @@ public async Task<Sample?> GetSampleAsync(Guid id, CancellationToken ct)
 ```
 
 **Task.WhenEach (.NET 9+)**: Process multiple tasks as they complete.
+
 ```csharp
 public async Task ProcessInParallelAsync(IEnumerable<Task<Data>> tasks, CancellationToken ct)
 {
@@ -229,6 +246,7 @@ public async Task ProcessInParallelAsync(IEnumerable<Task<Data>> tasks, Cancella
 ```
 
 **Avoid Eliding Tasks**: Always use `async/await` for proper exception handling.
+
 ```csharp
 // ❌ BAD: Elides task, loses stack trace
 public Task<Sample> GetSampleAsync(Guid id) => _repository.GetAsync(id);
@@ -241,6 +259,7 @@ public async Task<Sample> GetSampleAsync(Guid id, CancellationToken ct)
 ```
 
 **Async All the Way**: Never use `.Result` or `.Wait()`.
+
 ```csharp
 // ❌ BAD: Blocks thread
 var sample = GetSampleAsync(id).Result;
@@ -250,6 +269,7 @@ var sample = await GetSampleAsync(id, ct);
 ```
 
 **Nullable Reference Types**: Must be enabled. Treat warnings as errors.
+
 ```csharp
 #nullable enable
 
@@ -262,12 +282,13 @@ public sealed class Sample
 ```
 
 **Guard Clauses**: Use `ArgumentNullException.ThrowIfNull()` and `ArgumentException.ThrowIfNullOrWhiteSpace()`.
+
 ```csharp
 public async Task<Result<Order>> ProcessAsync(OrderRequest req, CancellationToken ct)
 {
     ArgumentNullException.ThrowIfNull(req);
     ArgumentException.ThrowIfNullOrWhiteSpace(req.CustomerId, nameof(req.CustomerId));
-    
+
     var order = await _repo.GetAsync(req.Id, ct);
     return order is null ? Result<Order>.Failure("Not Found") : Result<Order>.Success(order);
 }
@@ -276,6 +297,7 @@ public async Task<Result<Order>> ProcessAsync(OrderRequest req, CancellationToke
 ### 🧪 Testing & Observability
 
 **TimeProvider**: Always inject `TimeProvider` instead of `DateTime.Now` for deterministic testing.
+
 ```csharp
 public sealed class SampleService(ISampleRepository repo, TimeProvider timeProvider)
 {
@@ -296,6 +318,7 @@ var service = new SampleService(repo, fakeTime);
 ```
 
 **Structured Logging**: Use `nameof` and log properties for searchability.
+
 ```csharp
 _logger.LogInformation(
     "Sample {SampleId} created by {UserId} at {Location}",
@@ -310,6 +333,7 @@ _logger.LogError(
 ```
 
 **Explicit Nameof**: Use `nameof` for all logging, guard clauses, and property references.
+
 ```csharp
 public SampleService(IRepository<Sample> repository, ILogger<SampleService> logger)
 {
@@ -321,6 +345,7 @@ public SampleService(IRepository<Sample> repository, ILogger<SampleService> logg
 ### 📐 Code Organization
 
 **Composition Over Inheritance**: Use interfaces and decorator pattern.
+
 ```csharp
 public sealed class LoggingSampleService(ISampleService inner, ILogger logger) : ISampleService
 {
@@ -337,6 +362,7 @@ public sealed class LoggingSampleService(ISampleService inner, ILogger logger) :
 **Minimalist Constructors**: If dependencies > 5, the class likely violates SRP.
 
 **Static Abstract Interfaces**: Use for factory patterns or polymorphic logic.
+
 ```csharp
 public interface IEntity<TSelf> where TSelf : IEntity<TSelf>
 {
@@ -350,6 +376,7 @@ public sealed record Sample : IEntity<Sample>
 ```
 
 **Implicit Usings**: Enable in `.csproj` to keep files clean.
+
 ```xml
 <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>

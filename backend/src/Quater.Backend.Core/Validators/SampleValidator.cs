@@ -1,5 +1,5 @@
 using FluentValidation;
-using Quater.Backend.Core.Models;
+using Quater.Shared.Models;
 
 namespace Quater.Backend.Core.Validators;
 

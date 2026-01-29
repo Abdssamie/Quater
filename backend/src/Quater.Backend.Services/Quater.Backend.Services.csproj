@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Quater.Backend.Core\Quater.Backend.Core.csproj" />
     <ProjectReference Include="..\Quater.Backend.Data\Quater.Backend.Data.csproj" />
+    <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

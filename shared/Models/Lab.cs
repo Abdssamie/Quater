@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Quater.Backend.Core.Models;
+namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a water quality lab organization.

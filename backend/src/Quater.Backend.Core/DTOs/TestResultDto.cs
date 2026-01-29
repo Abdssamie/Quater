@@ -1,4 +1,4 @@
-using Quater.Backend.Core.Enums;
+using Quater.Shared.Enums;
 
 namespace Quater.Backend.Core.DTOs;
 

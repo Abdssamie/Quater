@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
-using Quater.Backend.Core.Enums;
+using Quater.Shared.Enums;
 
-namespace Quater.Backend.Core.Models;
+namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a system user with role-based access.

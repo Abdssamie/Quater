@@ -5,7 +5,7 @@ using OpenIddict.Validation.AspNetCore;
 using Quartz;
 using Quater.Backend.Api.Jobs;
 using Quater.Backend.Core.Interfaces;
-using Quater.Backend.Core.Models;
+using Quater.Shared.Models;
 using Quater.Backend.Data;
 using Quater.Backend.Services;
 using Serilog;

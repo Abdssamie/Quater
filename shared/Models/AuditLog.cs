@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Quater.Backend.Core.Models;
+namespace Quater.Shared.Models;
 
 /// <summary>
-/// Archived audit logs older than 90 days (cold storage).
+/// Tracks all data modifications for compliance and conflict resolution.
 /// </summary>
-public class AuditLogArchive
+public class AuditLog
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -71,10 +71,10 @@ public class AuditLogArchive
     public string? IpAddress { get; set; }
 
     /// <summary>
-    /// UTC timestamp when record was archived
+    /// Flag indicating if record is archived (for 90-day archival strategy)
     /// </summary>
     [Required]
-    public DateTime ArchivedDate { get; set; }
+    public bool IsArchived { get; set; } = false;
 
     // Navigation properties
     public User User { get; set; } = null!;

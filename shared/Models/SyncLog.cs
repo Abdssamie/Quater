@@ -1,24 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Quater.Backend.Core.Models;
+namespace Quater.Shared.Models;
 
 /// <summary>
 /// Tracks synchronization between clients and server.
-/// 
-/// ⚠️ IMPORTANT: MODEL SYNCHRONIZATION REQUIRED ⚠️
-/// This model is duplicated in 3 locations:
-/// 1. Backend: backend/src/Quater.Backend.Core/Models/SyncLog.cs (THIS FILE)
-/// 2. Desktop: desktop/src/Quater.Desktop.Data/Models/SyncLog.cs (same schema)
-/// 3. Mobile: mobile/src/models/SyncLog.ts (TypeScript - to be generated from API)
-/// 
-/// When modifying this model:
-/// - Update desktop/src/Quater.Desktop.Data/Models/SyncLog.cs with same schema
-/// - Regenerate mobile TypeScript types from OpenAPI/Swagger after backend changes
-/// - Update QuaterDbContext.cs entity configuration if relationships change
-/// - Update QuaterLocalContext.cs entity configuration for desktop
-/// - Run migrations: dotnet ef migrations add [MigrationName] for both backend and desktop
-/// 
-/// TODO (Phase 3): Refactor to use shared models project to eliminate duplication
 /// </summary>
 public class SyncLog
 {
