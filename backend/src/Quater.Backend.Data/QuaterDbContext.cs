@@ -23,6 +23,7 @@ public class QuaterDbContext : IdentityDbContext<User>
     public DbSet<SyncLog> SyncLogs { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
+    public DbSet<ConflictBackup> ConflictBackups { get; set; } = null!;
 
     /// <summary>
     /// Configures the entity models and their relationships for the database.
@@ -70,6 +71,9 @@ public class QuaterDbContext : IdentityDbContext<User>
 
         // Configure AuditLogArchive entity
         ConfigureAuditLogArchive(modelBuilder);
+
+        // Configure ConflictBackup entity
+        ConfigureConflictBackup(modelBuilder);
     }
 
     private void ConfigureLab(ModelBuilder modelBuilder)
@@ -557,6 +561,78 @@ public class QuaterDbContext : IdentityDbContext<User>
 
             entity.HasIndex(e => e.ArchivedDate)
                 .HasDatabaseName("IX_AuditLogArchive_ArchivedDate");
+        });
+    }
+
+    private void ConfigureConflictBackup(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ConflictBackup>(entity =>
+        {
+            entity.ToTable("ConflictBackups");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.EntityId)
+                .IsRequired();
+
+            entity.Property(e => e.EntityType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ServerVersion)
+                .IsRequired();
+
+            entity.Property(e => e.ClientVersion)
+                .IsRequired();
+
+            // Enum stored as string for compatibility with SQLite desktop app
+            // ConflictResolutionStrategy.LastWriteWins -> "LastWriteWins"
+            entity.Property(e => e.ResolutionStrategy)
+                .IsRequired()
+                .HasConversion<string>();
+
+            entity.Property(e => e.ConflictDetectedAt)
+                .IsRequired();
+
+            entity.Property(e => e.ResolvedAt);
+
+            entity.Property(e => e.ResolvedBy)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.ResolutionNotes)
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.DeviceId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.LabId)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedDate)
+                .IsRequired();
+
+            // Indexes
+            entity.HasIndex(e => new { e.EntityType, e.EntityId })
+                .HasDatabaseName("IX_ConflictBackups_EntityType_EntityId");
+
+            entity.HasIndex(e => e.ConflictDetectedAt)
+                .HasDatabaseName("IX_ConflictBackups_ConflictDetectedAt");
+
+            entity.HasIndex(e => e.ResolvedAt)
+                .HasDatabaseName("IX_ConflictBackups_ResolvedAt");
+
+            entity.HasIndex(e => e.LabId)
+                .HasDatabaseName("IX_ConflictBackups_LabId");
+
+            entity.HasIndex(e => e.DeviceId)
+                .HasDatabaseName("IX_ConflictBackups_DeviceId");
+
+            // Relationships
+            entity.HasOne(e => e.Lab)
+                .WithMany()
+                .HasForeignKey(e => e.LabId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
