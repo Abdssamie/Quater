@@ -78,6 +78,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validat
 // Register Services
 builder.Services.AddScoped<ISampleService, SampleService>();
 builder.Services.AddScoped<ITestResultService, TestResultService>();
+builder.Services.AddScoped<IParameterService, ParameterService>();
 
 // Configure Quartz.NET
 builder.Services.AddQuartz(q =>

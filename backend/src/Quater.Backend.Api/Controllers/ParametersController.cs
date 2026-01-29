@@ -1,0 +1,115 @@
+using Microsoft.AspNetCore.Mvc;
+using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Interfaces;
+
+namespace Quater.Backend.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class ParametersController(IParameterService parameterService) : ControllerBase
+{
+    /// <summary>
+    /// Get all parameters with pagination
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedResult<ParameterDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<ParameterDto>>> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        if (pageNumber < 1 || pageSize < 1 || pageSize > 100)
+            return BadRequest("Invalid pagination parameters");
+
+        var result = await parameterService.GetAllAsync(pageNumber, pageSize, ct);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get active parameters only
+    /// </summary>
+    [HttpGet("active")]
+    [ProducesResponseType(typeof(IEnumerable<ParameterDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ParameterDto>>> GetActive(CancellationToken ct = default)
+    {
+        var result = await parameterService.GetActiveAsync(ct);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get parameter by ID
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ParameterDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ParameterDto>> GetById(Guid id, CancellationToken ct = default)
+    {
+        var parameter = await parameterService.GetByIdAsync(id, ct);
+        if (parameter == null)
+            return NotFound(new { message = $"Parameter with ID {id} not found" });
+
+        return Ok(parameter);
+    }
+
+    /// <summary>
+    /// Create a new parameter
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ParameterDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ParameterDto>> Create(
+        [FromBody] CreateParameterDto dto,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var created = await parameterService.CreateAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update an existing parameter
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ParameterDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ParameterDto>> Update(
+        Guid id,
+        [FromBody] UpdateParameterDto dto,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var updated = await parameterService.UpdateAsync(id, dto, ct);
+            if (updated == null)
+                return NotFound(new { message = $"Parameter with ID {id} not found" });
+
+            return Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Delete a parameter (soft delete - marks as inactive)
+    /// </summary>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
+    {
+        var deleted = await parameterService.DeleteAsync(id, ct);
+        if (!deleted)
+            return NotFound(new { message = $"Parameter with ID {id} not found" });
+
+        return NoContent();
+    }
+}
