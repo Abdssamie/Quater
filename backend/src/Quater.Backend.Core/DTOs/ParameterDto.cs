@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Quater.Backend.Core.DTOs;
 
 /// <summary>
@@ -23,12 +25,24 @@ public class ParameterDto
 /// </summary>
 public class CreateParameterDto
 {
+    [Required(ErrorMessage = "Parameter name is required")]
+    [MaxLength(100, ErrorMessage = "Parameter name cannot exceed 100 characters")]
     public string Name { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Unit is required")]
+    [MaxLength(20, ErrorMessage = "Unit cannot exceed 20 characters")]
     public string Unit { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue, ErrorMessage = "WHO threshold must be non-negative")]
     public double? WhoThreshold { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "Moroccan threshold must be non-negative")]
     public double? MoroccanThreshold { get; set; }
+
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
+
+    [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
     public string? Description { get; set; }
 }
 
@@ -37,12 +51,25 @@ public class CreateParameterDto
 /// </summary>
 public class UpdateParameterDto
 {
+    [Required(ErrorMessage = "Parameter name is required")]
+    [MaxLength(100, ErrorMessage = "Parameter name cannot exceed 100 characters")]
     public string Name { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Unit is required")]
+    [MaxLength(20, ErrorMessage = "Unit cannot exceed 20 characters")]
     public string Unit { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue, ErrorMessage = "WHO threshold must be non-negative")]
     public double? WhoThreshold { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "Moroccan threshold must be non-negative")]
     public double? MoroccanThreshold { get; set; }
+
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
+
+    [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
     public string? Description { get; set; }
+
     public bool IsActive { get; set; }
 }
