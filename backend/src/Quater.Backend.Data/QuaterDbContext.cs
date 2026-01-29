@@ -31,16 +31,13 @@ public class QuaterDbContext : IdentityDbContext<User>
     /// <remarks>
     /// This DbContext uses the Core Domain Pattern with shared models from Quater.Shared.
     /// 
+    /// Entity configurations are defined in separate IEntityTypeConfiguration classes
+    /// in the Configurations folder for better organization and maintainability.
+    /// 
     /// Enum Handling Strategy (PostgreSQL):
     /// - All enum properties use HasConversion&lt;string&gt;() for string storage
     /// - This ensures compatibility with the desktop SQLite database
     /// - Enums are stored as their string representation (e.g., "Pending", "Admin")
-    /// 
-    /// Example enum configuration:
-    /// <code>
-    /// entity.Property(e => e.Status)
-    ///     .HasConversion&lt;string&gt;();  // Stores SampleStatus.Pending as "Pending"
-    /// </code>
     /// 
     /// See docs/architecture/core-domain-pattern.md for more information.
     /// </remarks>
@@ -48,32 +45,8 @@ public class QuaterDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure Lab entity
-        ConfigureLab(modelBuilder);
-
-        // Configure User entity
-        ConfigureUser(modelBuilder);
-
-        // Configure Sample entity
-        ConfigureSample(modelBuilder);
-
-        // Configure TestResult entity
-        ConfigureTestResult(modelBuilder);
-
-        // Configure Parameter entity
-        ConfigureParameter(modelBuilder);
-
-        // Configure SyncLog entity
-        ConfigureSyncLog(modelBuilder);
-
-        // Configure AuditLog entity
-        ConfigureAuditLog(modelBuilder);
-
-        // Configure AuditLogArchive entity
-        ConfigureAuditLogArchive(modelBuilder);
-
-        // Configure ConflictBackup entity
-        ConfigureConflictBackup(modelBuilder);
+        // Apply all entity configurations from the current assembly
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(QuaterDbContext).Assembly);
     }
 
     private void ConfigureLab(ModelBuilder modelBuilder)
