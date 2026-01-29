@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Validation.AspNetCore;
 using Quartz;
 using Quater.Backend.Api.Jobs;
+using Quater.Backend.Api.Middleware;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
@@ -28,6 +29,26 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Configure CORS for desktop and mobile clients
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("QuaterCorsPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5000",  // Desktop app
+                "http://localhost:5001",  // Desktop app (alternate)
+                "capacitor://localhost",  // Mobile app (Capacitor)
+                "ionic://localhost",      // Mobile app (Ionic)
+                "http://localhost",       // Mobile app (local dev)
+                "http://localhost:8100"   // Mobile app (Ionic dev server)
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+            .WithExposedHeaders("Content-Disposition"); // For file downloads
+    });
+});
 
 // Register HttpContextAccessor for CurrentUserService
 builder.Services.AddHttpContextAccessor();
@@ -129,6 +150,12 @@ builder.Services.AddQuartz(q =>
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var app = builder.Build();
+
+// Add global exception handler (must be first in pipeline)
+app.UseGlobalExceptionHandler();
+
+// Configure CORS (must be before authentication/authorization)
+app.UseCors("QuaterCorsPolicy");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
