@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Quater.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Quater.Desktop.Views.SampleDetailView"
+             x:DataType="vm:SampleDetailViewModel">
+  
+  <Design.DataContext>
+    <vm:SampleDetailViewModel />
+  </Design.DataContext>
+
+  <ScrollViewer>
+    <StackPanel Margin="20" Spacing="15" MaxWidth="600">
+      
+      <!-- Header -->
+      <TextBlock Text="Sample Details"
+                 FontSize="24"
+                 FontWeight="Bold"
+                 Margin="0,0,0,10" />
+
+      <!-- Error Message -->
+      <Border Background="#FFEBEE"
+              BorderBrush="#F44336"
+              BorderThickness="1"
+              CornerRadius="4"
+              Padding="10"
+              IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+        <TextBlock Text="{Binding ErrorMessage}"
+                   Foreground="#C62828"
+                   TextWrapping="Wrap" />
+      </Border>
+
+      <!-- Sample Type -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Sample Type *" FontWeight="SemiBold" />
+        <ComboBox ItemsSource="{Binding SampleTypes}"
+                  SelectedItem="{Binding Type}"
+                  HorizontalAlignment="Stretch"
+                  IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Location Coordinates -->
+      <Grid ColumnDefinitions="*,10,*" RowDefinitions="Auto,Auto">
+        <StackPanel Grid.Column="0" Spacing="5">
+          <TextBlock Text="Latitude *" FontWeight="SemiBold" />
+          <TextBox Text="{Binding LocationLatitude}"
+                   Watermark="-90 to 90"
+                   IsEnabled="{Binding !IsBusy}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Spacing="5">
+          <TextBlock Text="Longitude *" FontWeight="SemiBold" />
+          <TextBox Text="{Binding LocationLongitude}"
+                   Watermark="-180 to 180"
+                   IsEnabled="{Binding !IsBusy}" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Location Description -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Location Description" FontWeight="SemiBold" />
+        <TextBox Text="{Binding LocationDescription}"
+                 Watermark="e.g., Municipal Well #3"
+                 MaxLength="200"
+                 IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Location Hierarchy -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Location Hierarchy" FontWeight="SemiBold" />
+        <TextBox Text="{Binding LocationHierarchy}"
+                 Watermark="e.g., Morocco/Casablanca/District 5"
+                 MaxLength="500"
+                 IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Collection Date -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Collection Date *" FontWeight="SemiBold" />
+        <DatePicker SelectedDate="{Binding CollectionDate}"
+                    HorizontalAlignment="Stretch"
+                    IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Collector Name -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Collector Name *" FontWeight="SemiBold" />
+        <TextBox Text="{Binding CollectorName}"
+                 Watermark="Technician name"
+                 MaxLength="100"
+                 IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Status -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Status *" FontWeight="SemiBold" />
+        <ComboBox ItemsSource="{Binding SampleStatuses}"
+                  SelectedItem="{Binding Status}"
+                  HorizontalAlignment="Stretch"
+                  IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Notes -->
+      <StackPanel Spacing="5">
+        <TextBlock Text="Notes" FontWeight="SemiBold" />
+        <TextBox Text="{Binding Notes}"
+                 Watermark="Additional notes about the sample"
+                 MaxLength="1000"
+                 Height="100"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 IsEnabled="{Binding !IsBusy}" />
+      </StackPanel>
+
+      <!-- Action Buttons -->
+      <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+        <Button Content="Save"
+                Command="{Binding SaveCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                Classes="accent"
+                Padding="20,8" />
+        
+        <Button Content="Cancel"
+                Command="{Binding CancelCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                Padding="20,8" />
+      </StackPanel>
+
+      <!-- Required Fields Note -->
+      <TextBlock Text="* Required fields"
+                 FontSize="12"
+                 Foreground="Gray"
+                 Margin="0,10,0,0" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>
