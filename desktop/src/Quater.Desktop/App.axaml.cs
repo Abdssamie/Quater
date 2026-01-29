@@ -36,6 +36,12 @@ public partial class App : Application
         services.AddLogging(loggingBuilder =>
             loggingBuilder.AddSerilog(dispose: true));
 
+        // Register TimeProvider for testable time operations
+        services.AddSingleton(TimeProvider.System);
+
+        // Register application services
+        services.AddScoped<Services.IReportService, Services.ReportService>();
+
         Services = services.BuildServiceProvider();
 
         // Migrate database
