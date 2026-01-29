@@ -129,6 +129,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validat
 builder.Services.AddScoped<ISampleService, SampleService>();
 builder.Services.AddScoped<ITestResultService, TestResultService>();
 builder.Services.AddScoped<IParameterService, ParameterService>();
+// TODO: Uncomment when services are implemented by other agents
+// builder.Services.AddScoped<ILabService, LabService>();
+// builder.Services.AddScoped<IUserService, UserService>();
+// builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
 
 // Configure Quartz.NET
 builder.Services.AddQuartz(q =>
