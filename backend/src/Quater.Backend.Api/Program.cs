@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Validation.AspNetCore;
@@ -71,8 +72,12 @@ builder.Services.AddOpenIddict()
 // Register TimeProvider
 builder.Services.AddSingleton(TimeProvider.System);
 
+// Register FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();
+
 // Register Services
 builder.Services.AddScoped<ISampleService, SampleService>();
+builder.Services.AddScoped<ITestResultService, TestResultService>();
 
 // Configure Quartz.NET
 builder.Services.AddQuartz(q =>

@@ -8,14 +8,14 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SamplesController(ISampleService sampleService) : ControllerBase
+public class TestResultsController(ITestResultService testResultService) : ControllerBase
 {
     /// <summary>
-    /// Get all samples with pagination
+    /// Get all test results with pagination
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResult<SampleDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<SampleDto>>> GetAll(
+    [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<TestResultDto>>> GetAll(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)
@@ -23,18 +23,17 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
         if (pageNumber < 1 || pageSize < 1 || pageSize > 100)
             return BadRequest("Invalid pagination parameters");
 
-        var result = await sampleService.GetAllAsync(pageNumber, pageSize, ct);
+        var result = await testResultService.GetAllAsync(pageNumber, pageSize, ct);
         return Ok(result);
     }
 
     /// <summary>
-    /// Get samples by lab ID with pagination
+    /// Get test results by sample ID with pagination
     /// </summary>
-    [HttpGet("lab/{labId}")]
-    [ProducesResponseType(typeof(PagedResult<SampleDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResult<SampleDto>>> GetByLabId(
-        Guid labId,
+    [HttpGet("sample/{sampleId}")]
+    [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<TestResultDto>>> GetBySampleId(
+        Guid sampleId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)
@@ -42,70 +41,74 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
         if (pageNumber < 1 || pageSize < 1 || pageSize > 100)
             return BadRequest("Invalid pagination parameters");
 
-        var result = await sampleService.GetByLabIdAsync(labId, pageNumber, pageSize, ct);
+        var result = await testResultService.GetBySampleIdAsync(sampleId, pageNumber, pageSize, ct);
         return Ok(result);
     }
 
     /// <summary>
-    /// Get sample by ID
+    /// Get test result by ID
     /// </summary>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(SampleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TestResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<SampleDto>> GetById(Guid id, CancellationToken ct = default)
+    public async Task<ActionResult<TestResultDto>> GetById(Guid id, CancellationToken ct = default)
     {
-        var sample = await sampleService.GetByIdAsync(id, ct);
-        if (sample == null)
-            return NotFound(new { message = $"Sample with ID {id} not found" });
+        var testResult = await testResultService.GetByIdAsync(id, ct);
+        if (testResult == null)
+            return NotFound(new { message = $"Test result with ID {id} not found" });
         
-        return Ok(sample);
+        return Ok(testResult);
     }
 
     /// <summary>
-    /// Create a new sample
+    /// Create a new test result
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(SampleDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(TestResultDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<SampleDto>> Create(
-        [FromBody] CreateSampleDto dto,
+    public async Task<ActionResult<TestResultDto>> Create(
+        [FromBody] CreateTestResultDto dto,
         CancellationToken ct = default)
     {
         try
         {
             // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = "system";
             
-            var created = await sampleService.CreateAsync(dto, userId, ct);
+            var created = await testResultService.CreateAsync(dto, userId, ct);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ValidationException ex)
         {
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>
-    /// Update an existing sample
+    /// Update an existing test result
     /// </summary>
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(SampleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TestResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<SampleDto>> Update(
+    public async Task<ActionResult<TestResultDto>> Update(
         Guid id,
-        [FromBody] UpdateSampleDto dto,
+        [FromBody] UpdateTestResultDto dto,
         CancellationToken ct = default)
     {
         try
         {
             // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = "system";
             
-            var updated = await sampleService.UpdateAsync(id, dto, userId, ct);
+            var updated = await testResultService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
-                return NotFound(new { message = $"Sample with ID {id} not found" });
+                return NotFound(new { message = $"Test result with ID {id} not found" });
 
             return Ok(updated);
         }
@@ -120,16 +123,16 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
     }
 
     /// <summary>
-    /// Delete a sample (soft delete)
+    /// Delete a test result (soft delete)
     /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await sampleService.DeleteAsync(id, ct);
+        var deleted = await testResultService.DeleteAsync(id, ct);
         if (!deleted)
-            return NotFound(new { message = $"Sample with ID {id} not found" });
+            return NotFound(new { message = $"Test result with ID {id} not found" });
 
         return NoContent();
     }
