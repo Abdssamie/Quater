@@ -1,7 +1,7 @@
 import Geolocation from 'react-native-geolocation-service';
 import { Platform, PermissionsAndroid } from 'react-native';
-import { LocationCoordinates, LocationResult, LocationError } from '../types/Location';
-import { logger } from './logger';
+import type { LocationCoordinates, LocationResult, LocationError } from '@/types/Location';
+import { logger } from '@/services/logger';
 
 class LocationService {
   private lastKnownLocation: LocationCoordinates | null = null;

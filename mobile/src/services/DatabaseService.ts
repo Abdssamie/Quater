@@ -1,6 +1,6 @@
 import SQLite from 'react-native-sqlite-storage';
-import { Sample, CreateSampleDto } from '../types/Sample';
-import { logger } from './logger';
+import type { Sample, CreateSampleDto } from '@/types/Sample';
+import { logger } from '@/services/logger';
 
 SQLite.enablePromise(true);
 

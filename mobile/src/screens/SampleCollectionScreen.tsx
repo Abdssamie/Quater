@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -12,19 +11,20 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../types/navigation';
-import { SampleType } from '../types/Sample';
-import { databaseService } from '../services/DatabaseService';
-import { locationService } from '../services/LocationService';
-import { SampleTypePicker } from '../components/SampleTypePicker';
-import { LocationDisplay } from '../components/LocationDisplay';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { logger } from '../services/logger';
+import type { RootStackParamList } from '@/types/navigation';
+import type { SampleType } from '@/types/Sample';
+import { databaseService } from '@/services/DatabaseService';
+import { locationService } from '@/services/LocationService';
+import { SampleTypePicker } from '@/components/SampleTypePicker';
+import { LocationDisplay } from '@/components/LocationDisplay';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { ErrorMessage } from '@/components/ErrorMessage';
+import { logger } from '@/services/logger';
+import { styles } from './SampleCollectionScreen.styles';
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'SampleCollection'>;
 
-export const SampleCollectionScreen: React.FC = () => {
+export const SampleCollectionScreen = React.memo(() => {
   const navigation = useNavigation<NavigationProp>();
 
   // Form state
@@ -42,7 +42,7 @@ export const SampleCollectionScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
-  const handleCaptureLocation = async (): Promise<void> => {
+  const handleCaptureLocation = useCallback(async (): Promise<void> => {
     setIsLoadingLocation(true);
     setError('');
 
@@ -70,9 +70,9 @@ export const SampleCollectionScreen: React.FC = () => {
     } finally {
       setIsLoadingLocation(false);
     }
-  };
+  }, []);
 
-  const validateForm = (): string | null => {
+  const validateForm = useCallback((): string | null => {
     if (!collectorName.trim()) {
       return 'Collector name is required';
     }
@@ -98,9 +98,9 @@ export const SampleCollectionScreen: React.FC = () => {
     }
 
     return null;
-  };
+  }, [collectorName, latitude, longitude, locationDescription, locationHierarchy, notes]);
 
-  const handleSaveSample = async (): Promise<void> => {
+  const handleSaveSample = useCallback(async (): Promise<void> => {
     setError('');
 
     // Validate form
@@ -143,9 +143,9 @@ export const SampleCollectionScreen: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [validateForm, sampleType, latitude, longitude, locationDescription, locationHierarchy, collectorName, notes, navigation]);
 
-  const handleCancel = (): void => {
+  const handleCancel = useCallback((): void => {
     Alert.alert(
       'Cancel',
       'Are you sure you want to cancel? All data will be lost.',
@@ -158,7 +158,23 @@ export const SampleCollectionScreen: React.FC = () => {
         },
       ]
     );
-  };
+  }, [navigation]);
+
+  const handleLatitudeChange = useCallback((text: string): void => {
+    setLatitude(parseFloat(text) || 0);
+  }, []);
+
+  const handleLongitudeChange = useCallback((text: string): void => {
+    setLongitude(parseFloat(text) || 0);
+  }, []);
+
+  const textAreaStyle = useMemo(() => [styles.input, styles.textArea], []);
+  const cancelButtonStyle = useMemo(() => [styles.button, styles.cancelButton], []);
+  const cancelButtonTextStyle = useMemo(() => [styles.buttonText, styles.cancelButtonText], []);
+  const saveButtonStyle = useMemo(() => [styles.button, styles.saveButton], []);
+  const showLocationDisplay = latitude !== 0 && longitude !== 0;
+  const showManualLocation = locationSource === 'manual';
+  const captureButtonText = latitude === 0 ? 'Capture Location' : 'Refresh Location';
 
   return (
     <KeyboardAvoidingView
@@ -179,7 +195,7 @@ export const SampleCollectionScreen: React.FC = () => {
             <LoadingSpinner message="Capturing location..." />
           ) : (
             <>
-              {latitude !== 0 && longitude !== 0 && (
+              {showLocationDisplay && (
                 <LocationDisplay
                   latitude={latitude}
                   longitude={longitude}
@@ -193,11 +209,11 @@ export const SampleCollectionScreen: React.FC = () => {
                 disabled={isLoadingLocation}
               >
                 <Text style={styles.buttonText}>
-                  {latitude === 0 ? 'Capture Location' : 'Refresh Location'}
+                  {captureButtonText}
                 </Text>
               </TouchableOpacity>
 
-              {locationSource === 'manual' && (
+              {showManualLocation && (
                 <View style={styles.manualLocationContainer}>
                   <Text style={styles.label}>Manual Coordinates</Text>
                   <View style={styles.row}>
@@ -206,7 +222,7 @@ export const SampleCollectionScreen: React.FC = () => {
                       <TextInput
                         style={styles.input}
                         value={latitude.toString()}
-                        onChangeText={(text) => setLatitude(parseFloat(text) || 0)}
+                        onChangeText={handleLatitudeChange}
                         keyboardType="numeric"
                         placeholder="-90 to 90"
                       />
@@ -216,7 +232,7 @@ export const SampleCollectionScreen: React.FC = () => {
                       <TextInput
                         style={styles.input}
                         value={longitude.toString()}
-                        onChangeText={(text) => setLongitude(parseFloat(text) || 0)}
+                        onChangeText={handleLongitudeChange}
                         keyboardType="numeric"
                         placeholder="-180 to 180"
                       />
@@ -264,7 +280,7 @@ export const SampleCollectionScreen: React.FC = () => {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Notes</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={textAreaStyle}
             value={notes}
             onChangeText={setNotes}
             placeholder="Additional notes about this sample"
@@ -276,15 +292,15 @@ export const SampleCollectionScreen: React.FC = () => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
+            style={cancelButtonStyle}
             onPress={handleCancel}
             disabled={isSaving}
           >
-            <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancel</Text>
+            <Text style={cancelButtonTextStyle}>Cancel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
+            style={saveButtonStyle}
             onPress={handleSaveSample}
             disabled={isSaving}
           >
@@ -298,103 +314,4 @@ export const SampleCollectionScreen: React.FC = () => {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  section: {
-    marginVertical: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  inputGroup: {
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#333',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  halfWidth: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  manualLocationContainer: {
-    marginTop: 12,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginRight: 8,
-  },
-  cancelButtonText: {
-    color: '#666',
-  },
-  saveButton: {
-    flex: 1,
-    marginLeft: 8,
-  },
 });

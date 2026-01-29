@@ -1,14 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { SampleType } from '../types/Sample';
+import type { SampleType } from '@/types/Sample';
+import { styles } from './SampleTypePicker.styles';
 
 interface SampleTypePickerProps {
   value: SampleType;
   onValueChange: (value: SampleType) => void;
 }
 
-export const SampleTypePicker: React.FC<SampleTypePickerProps> = ({
+export const SampleTypePicker = React.memo<SampleTypePickerProps>(({
   value,
   onValueChange,
 }) => {
@@ -30,30 +31,4 @@ export const SampleTypePicker: React.FC<SampleTypePickerProps> = ({
       </View>
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    backgroundColor: '#FFF',
-    ...Platform.select({
-      android: {
-        overflow: 'hidden',
-      },
-    }),
-  },
-  picker: {
-    height: 50,
-  },
 });

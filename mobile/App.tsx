@@ -5,14 +5,17 @@
 
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppNavigator } from './src/navigation/AppNavigator';
+import { AppNavigator } from '@/navigation/AppNavigator';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const App: React.FC = () => {
+const App = React.memo(() => {
   return (
-    <SafeAreaProvider>
-      <AppNavigator />
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AppNavigator />
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
-};
+});
 
 export default App;

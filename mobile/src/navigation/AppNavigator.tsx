@@ -1,17 +1,18 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import type { RootStackParamList } from '../types/navigation';
-import { HomeScreen } from '../screens/HomeScreen';
-import { SampleListScreen } from '../screens/SampleListScreen';
-import { SampleCollectionScreen } from '../screens/SampleCollectionScreen';
-import { SampleScreen } from '../screens/SampleScreen';
-import { databaseService } from '../services/DatabaseService';
-import { logger } from '../services/logger';
+import type { RootStackParamList } from '@/types/navigation';
+import { HomeScreen } from '@/screens/HomeScreen';
+import { SampleListScreen } from '@/screens/SampleListScreen';
+import { SampleCollectionScreen } from '@/screens/SampleCollectionScreen';
+import { SampleScreen } from '@/screens/SampleScreen';
+import { databaseService } from '@/services/DatabaseService';
+import { logger } from '@/services/logger';
+import { navigationTheme } from './AppNavigator.styles';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-export const AppNavigator: React.FC = () => {
+export const AppNavigator = React.memo(() => {
   useEffect(() => {
     const initializeDatabase = async (): Promise<void> => {
       try {
@@ -33,15 +34,7 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="SampleList"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#007AFF',
-          },
-          headerTintColor: '#FFF',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
+        screenOptions={navigationTheme}
       >
         <Stack.Screen
           name="SampleList"
@@ -66,4 +59,4 @@ export const AppNavigator: React.FC = () => {
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+});
