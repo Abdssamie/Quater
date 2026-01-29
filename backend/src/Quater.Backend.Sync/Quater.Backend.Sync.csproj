@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
+    <ProjectReference Include="../Quater.Backend.Core/Quater.Backend.Core.csproj" />
+    <ProjectReference Include="../Quater.Backend.Data/Quater.Backend.Data.csproj" />
   </ItemGroup>
 
 </Project>

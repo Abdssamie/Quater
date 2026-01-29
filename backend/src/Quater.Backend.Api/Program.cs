@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Validation.AspNetCore;
 using Quartz;
@@ -17,10 +18,24 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
+// Configure Serilog with Console, File, and PostgreSQL sinks
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+    "Host=localhost;Database=quater;Username=postgres;Password=postgres";
+
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.PostgreSQL(
+        connectionString: connectionString,
+        tableName: "Logs",
+        needAutoCreateTable: true,
+        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -185,6 +200,13 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<ISampleService, SampleService>();
 builder.Services.AddScoped<ITestResultService, TestResultService>();
 builder.Services.AddScoped<IParameterService, ParameterService>();
+
+// TODO: Uncomment when Sync services are implemented by other agents
+// builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
+// builder.Services.AddScoped<ISyncLogService, Quater.Backend.Sync.SyncLogService>();
+// builder.Services.AddScoped<IBackupService, Quater.Backend.Sync.BackupService>();
+// builder.Services.AddScoped<IConflictResolver, Quater.Backend.Sync.ConflictResolver>();
+
 // TODO: Uncomment when services are implemented by other agents
 // builder.Services.AddScoped<ILabService, LabService>();
 // builder.Services.AddScoped<IUserService, UserService>();
