@@ -1,4 +1,4 @@
-namespace Quater.Backend.Core.Enums;
+namespace Quater.Shared.Enums;
 
 /// <summary>
 /// Compliance status of a test result against water quality standards.

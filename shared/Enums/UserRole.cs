@@ -1,4 +1,4 @@
-namespace Quater.Backend.Core.Enums;
+namespace Quater.Shared.Enums;
 
 /// <summary>
 /// User roles for role-based access control.

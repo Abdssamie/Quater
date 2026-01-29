@@ -1,4 +1,4 @@
-namespace Quater.Backend.Core.Enums;
+namespace Quater.Shared.Enums;
 
 /// <summary>
 /// Types of water samples that can be collected and tested.

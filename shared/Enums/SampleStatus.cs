@@ -1,4 +1,4 @@
-namespace Quater.Backend.Core.Enums;
+namespace Quater.Shared.Enums;
 
 /// <summary>
 /// Current status of a water sample in the testing workflow.

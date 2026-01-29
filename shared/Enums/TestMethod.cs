@@ -1,4 +1,4 @@
-namespace Quater.Backend.Core.Enums;
+namespace Quater.Shared.Enums;
 
 /// <summary>
 /// Laboratory methods used for water quality testing.
