@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Quater.Desktop.Data.Models;
+using Quater.Shared.Models;
+using Quater.Shared.Enums;
 
 namespace Quater.Desktop.Data.Repositories;
 
@@ -20,15 +21,15 @@ public class SampleRepository(QuaterLocalContext context, TimeProvider timeProvi
     }
 
     public async Task<IEnumerable<Sample>> GetFilteredAsync(
-        string? status = null,
+        SampleStatus? status = null,
         DateTime? startDate = null,
         DateTime? endDate = null,
         CancellationToken ct = default)
     {
         var query = context.Samples.Where(s => !s.IsDeleted);
 
-        if (!string.IsNullOrEmpty(status))
-            query = query.Where(s => s.Status == status);
+        if (status.HasValue)
+            query = query.Where(s => s.Status == status.Value);
 
         if (startDate.HasValue)
             query = query.Where(s => s.CollectionDate >= startDate.Value);

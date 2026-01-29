@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Quater.Desktop.Data.Models;
+using Quater.Shared.Models;
+using Quater.Shared.Enums;
+using Quater.Shared.Infrastructure.Converters;
 
 namespace Quater.Desktop.Data;
 
@@ -62,7 +64,7 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.Type)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasConversion(new SampleTypeConverter());
 
             entity.Property(e => e.LocationLatitude)
                 .IsRequired();
@@ -88,7 +90,7 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.Status)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasConversion(new SampleStatusConverter());
 
             entity.Property(e => e.Version)
                 .IsRequired()
@@ -179,11 +181,11 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.TestMethod)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasConversion(new TestMethodConverter());
 
             entity.Property(e => e.ComplianceStatus)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasConversion(new ComplianceStatusConverter());
 
             entity.Property(e => e.Version)
                 .IsRequired()
