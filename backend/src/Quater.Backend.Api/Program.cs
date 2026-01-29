@@ -35,8 +35,24 @@ builder.Services.AddDbContext<QuaterDbContext>(options =>
     options.UseOpenIddict();
 });
 
-// Add Identity
-builder.Services.AddIdentity<User, IdentityRole>()
+// Add Identity with password requirements
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    // Password requirements
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+    
+    // User settings
+    options.User.RequireUniqueEmail = true;
+})
     .AddEntityFrameworkStores<QuaterDbContext>()
     .AddDefaultTokenProviders();
 
@@ -49,16 +65,36 @@ builder.Services.AddOpenIddict()
     })
     .AddServer(options =>
     {
-        options.SetTokenEndpointUris("/connect/token");
+        // Enable the token endpoint
+        options.SetTokenEndpointUris("/api/auth/token");
+        
+        // Enable the password and refresh token flows
+        options.AllowPasswordFlow()
+               .AllowRefreshTokenFlow();
 
-        options.AllowPasswordFlow();
-        options.AllowRefreshTokenFlow();
-
+        // Accept anonymous clients (no client authentication required)
         options.AcceptAnonymousClients();
-
-        options.AddDevelopmentEncryptionCertificate()
-               .AddDevelopmentSigningCertificate();
-
+        
+        // Register signing and encryption credentials (RS256 for JWT)
+        if (builder.Environment.IsDevelopment())
+        {
+            options.AddDevelopmentEncryptionCertificate()
+                   .AddDevelopmentSigningCertificate();
+        }
+        else
+        {
+            // TODO: In production, use real certificates
+            // options.AddEncryptionCertificate(...)
+            //        .AddSigningCertificate(...);
+            options.AddDevelopmentEncryptionCertificate()
+                   .AddDevelopmentSigningCertificate();
+        }
+        
+        // Configure token lifetimes
+        options.SetAccessTokenLifetime(TimeSpan.FromHours(1));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
+        
+        // Register the ASP.NET Core host and configure the ASP.NET Core-specific options
         options.UseAspNetCore()
                .EnableTokenEndpointPassthrough();
     })
@@ -117,11 +153,19 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<QuaterDbContext>();
         context.Database.Migrate();
+        
+        // Seed initial data
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+        var seederLogger = loggerFactory.CreateLogger<Quater.Backend.Api.Services.DatabaseSeeder>();
+        var timeProvider = services.GetRequiredService<TimeProvider>();
+        var seeder = new Quater.Backend.Api.Services.DatabaseSeeder(context, userManager, seederLogger, timeProvider);
+        await seeder.SeedAsync();
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 
