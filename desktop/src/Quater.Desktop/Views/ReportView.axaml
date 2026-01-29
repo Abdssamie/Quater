@@ -1,0 +1,302 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Quater.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="Quater.Desktop.Views.ReportView"
+             x:DataType="vm:ReportViewModel">
+
+  <Design.DataContext>
+    <vm:ReportViewModel />
+  </Design.DataContext>
+
+  <ScrollViewer>
+    <StackPanel Margin="20" Spacing="20" MaxWidth="1200">
+
+      <!-- Header -->
+      <TextBlock Text="Compliance Reports"
+                 FontSize="28"
+                 FontWeight="Bold"
+                 Margin="0,0,0,10" />
+
+      <!-- Status Message -->
+      <Border Background="#E3F2FD"
+              BorderBrush="#2196F3"
+              BorderThickness="1"
+              CornerRadius="4"
+              Padding="12"
+              IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+        <TextBlock Text="{Binding StatusMessage}"
+                   Foreground="#1565C0"
+                   TextWrapping="Wrap"
+                   FontSize="13" />
+      </Border>
+
+      <!-- Report Parameters Section -->
+      <Border BorderBrush="#E0E0E0"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="20"
+              Background="#FAFAFA">
+        <StackPanel Spacing="15">
+
+          <TextBlock Text="Report Parameters"
+                     FontSize="18"
+                     FontWeight="SemiBold"
+                     Margin="0,0,0,5" />
+
+          <!-- Date Range -->
+          <Grid ColumnDefinitions="*,20,*" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Column="0" Spacing="5">
+              <TextBlock Text="Start Date *" FontWeight="SemiBold" />
+              <DatePicker SelectedDate="{Binding StartDate}"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding !IsGenerating}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Spacing="5">
+              <TextBlock Text="End Date *" FontWeight="SemiBold" />
+              <DatePicker SelectedDate="{Binding EndDate}"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding !IsGenerating}" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Sample Type Filters -->
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Sample Types" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding SampleTypes}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <CheckBox Content="{Binding Name}"
+                            IsChecked="{Binding IsSelected}"
+                            IsEnabled="{Binding !$parent[UserControl].((vm:ReportViewModel)DataContext).IsGenerating}"
+                            Margin="0,0,15,5" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Leave all unchecked to include all sample types"
+                       FontSize="11"
+                       Foreground="Gray"
+                       FontStyle="Italic" />
+          </StackPanel>
+
+          <!-- Additional Filters -->
+          <StackPanel Spacing="8">
+            <TextBlock Text="Filters" FontWeight="SemiBold" />
+            <CheckBox Content="Completed samples only"
+                      IsChecked="{Binding CompletedOnly}"
+                      IsEnabled="{Binding !IsGenerating}" />
+            <CheckBox Content="Include archived samples"
+                      IsChecked="{Binding IncludeArchived}"
+                      IsEnabled="{Binding !IsGenerating}" />
+          </StackPanel>
+
+          <!-- Action Buttons -->
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+            <Button Content="Generate Report"
+                    Command="{Binding GenerateReportCommand}"
+                    IsEnabled="{Binding !IsGenerating}"
+                    Classes="accent"
+                    Padding="20,10"
+                    FontSize="14"
+                    FontWeight="SemiBold" />
+
+            <Button Content="Clear"
+                    Command="{Binding ClearReportCommand}"
+                    IsEnabled="{Binding HasReportData}"
+                    Padding="20,10"
+                    FontSize="14" />
+          </StackPanel>
+
+        </StackPanel>
+      </Border>
+
+      <!-- Loading Indicator -->
+      <Border Background="#FFF3E0"
+              BorderBrush="#FF9800"
+              BorderThickness="1"
+              CornerRadius="4"
+              Padding="15"
+              IsVisible="{Binding IsGenerating}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="⏳" FontSize="20" VerticalAlignment="Center" />
+          <TextBlock Text="Generating report, please wait..."
+                     FontSize="14"
+                     VerticalAlignment="Center"
+                     Foreground="#E65100" />
+        </StackPanel>
+      </Border>
+
+      <!-- Report Summary Section -->
+      <Border BorderBrush="#E0E0E0"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="20"
+              Background="#FAFAFA"
+              IsVisible="{Binding HasReportData}">
+        <StackPanel Spacing="15">
+
+          <StackPanel Orientation="Horizontal" Spacing="15">
+            <TextBlock Text="Report Summary"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+
+            <Button Content="Export to PDF"
+                    Command="{Binding ExportToPdfCommand}"
+                    IsEnabled="{Binding !IsGenerating}"
+                    Classes="accent"
+                    Padding="15,8"
+                    FontSize="13" />
+          </StackPanel>
+
+          <!-- Summary Statistics Grid -->
+          <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="15" RowSpacing="10">
+
+            <!-- Total Samples -->
+            <Border Grid.Column="0" Grid.Row="0"
+                    Background="#E3F2FD"
+                    CornerRadius="4"
+                    Padding="15">
+              <StackPanel Spacing="5">
+                <TextBlock Text="Total Samples"
+                           FontSize="12"
+                           Foreground="#1565C0"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ReportData.Summary.TotalSamples}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="#0D47A1" />
+              </StackPanel>
+            </Border>
+
+            <!-- Compliant Samples -->
+            <Border Grid.Column="1" Grid.Row="0"
+                    Background="#E8F5E9"
+                    CornerRadius="4"
+                    Padding="15">
+              <StackPanel Spacing="5">
+                <TextBlock Text="Compliant Samples"
+                           FontSize="12"
+                           Foreground="#2E7D32"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ReportData.Summary.CompliantSamples}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="#1B5E20" />
+              </StackPanel>
+            </Border>
+
+            <!-- Non-Compliant Samples -->
+            <Border Grid.Column="2" Grid.Row="0"
+                    Background="#FFEBEE"
+                    CornerRadius="4"
+                    Padding="15">
+              <StackPanel Spacing="5">
+                <TextBlock Text="Non-Compliant"
+                           FontSize="12"
+                           Foreground="#C62828"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ReportData.Summary.NonCompliantSamples}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="#B71C1C" />
+              </StackPanel>
+            </Border>
+
+            <!-- Compliance Rate -->
+            <Border Grid.Column="3" Grid.Row="0"
+                    Background="#FFF3E0"
+                    CornerRadius="4"
+                    Padding="15">
+              <StackPanel Spacing="5">
+                <TextBlock Text="Compliance Rate"
+                           FontSize="12"
+                           Foreground="#E65100"
+                           FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <TextBlock Text="{Binding ReportData.Summary.ComplianceRate, StringFormat='{}{0:F2}'}"
+                             FontSize="24"
+                             FontWeight="Bold"
+                             Foreground="#BF360C" />
+                  <TextBlock Text="%"
+                             FontSize="18"
+                             FontWeight="Bold"
+                             Foreground="#BF360C"
+                             VerticalAlignment="Bottom"
+                             Margin="0,0,0,3" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <!-- Total Tests -->
+            <Border Grid.Column="0" Grid.Row="1"
+                    Background="#F3E5F5"
+                    CornerRadius="4"
+                    Padding="15">
+              <StackPanel Spacing="5">
+                <TextBlock Text="Total Tests"
+                           FontSize="12"
+                           Foreground="#6A1B9A"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ReportData.Summary.TotalTests}"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="#4A148C" />
+              </StackPanel>
+            </Border>
+
+          </Grid>
+
+          <!-- Additional Info -->
+          <TextBlock FontSize="12" Foreground="Gray">
+            <Run Text="Report generated at:" />
+            <Run Text="{Binding ReportData.GeneratedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss} UTC'}" FontWeight="SemiBold" />
+          </TextBlock>
+
+        </StackPanel>
+      </Border>
+
+      <!-- Help Text -->
+      <Border Background="#F5F5F5"
+              BorderBrush="#BDBDBD"
+              BorderThickness="1"
+              CornerRadius="4"
+              Padding="15"
+              IsVisible="{Binding !HasReportData}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="ℹ️ How to Generate Reports"
+                     FontSize="14"
+                     FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#424242">
+            <Run Text="1. Select a date range for the report (up to 365 days)" />
+            <LineBreak />
+            <Run Text="2. Optionally filter by sample types" />
+            <LineBreak />
+            <Run Text="3. Choose whether to include only completed samples and/or archived samples" />
+            <LineBreak />
+            <Run Text="4. Click 'Generate Report' to create the compliance report" />
+            <LineBreak />
+            <Run Text="5. Review the summary statistics and export to PDF if needed" />
+          </TextBlock>
+          <TextBlock Text="⚡ Performance: Reports with 100+ samples generate in under 10 seconds"
+                     FontSize="11"
+                     FontStyle="Italic"
+                     Foreground="#616161" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

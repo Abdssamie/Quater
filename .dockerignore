@@ -1,0 +1,80 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+HANDOFF.md
+MODEL_SYNC_GUIDE.md
+AGENTS.md
+
+# Specs and planning
+specs/
+.specify/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+**/bin/
+**/obj/
+**/BuildHost-*/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+
+# .NET
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+project.lock.json
+
+# Node.js (for mobile)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Mobile
+mobile/
+desktop/
+
+# Tests
+**/__tests__/
+**/tests/
+*.Tests/
+
+# Logs
+*.log
+logs/
+[Ll]og/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Beads
+.beads/
+
+# OpenCode
+.opencode/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
