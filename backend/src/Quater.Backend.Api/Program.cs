@@ -7,6 +7,10 @@ using Quater.Backend.Api.Jobs;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
+using Quater.Backend.Data.Interceptors;
+using Quater.Backend.Data.Interfaces;
+using Quater.Backend.Data.Repositories;
+using Quater.Backend.Data.Seeders;
 using Quater.Backend.Services;
 using Serilog;
 
@@ -25,15 +29,37 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext
-builder.Services.AddDbContext<QuaterDbContext>(options =>
+// Register HttpContextAccessor for CurrentUserService
+builder.Services.AddHttpContextAccessor();
+
+// Register CurrentUserService for audit trail
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// Register EF Core Interceptors
+builder.Services.AddScoped<SoftDeleteInterceptor>();
+builder.Services.AddScoped<AuditTrailInterceptor>(sp =>
 {
+    var currentUserService = sp.GetRequiredService<ICurrentUserService>();
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+    var ipAddress = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+    return new AuditTrailInterceptor(currentUserService, ipAddress);
+});
+
+// Add DbContext with interceptors
+builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
+{
+    var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
+    var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
+    
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection") ?? 
         "Host=localhost;Database=quater;Username=postgres;Password=postgres");
     
     // Register the entity sets needed by OpenIddict.
     options.UseOpenIddict();
+    
+    // Add interceptors
+    options.AddInterceptors(softDeleteInterceptor, auditTrailInterceptor);
 });
 
 // Add Identity
@@ -71,6 +97,9 @@ builder.Services.AddOpenIddict()
 
 // Register TimeProvider
 builder.Services.AddSingleton(TimeProvider.System);
+
+// Register Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();
@@ -115,19 +144,25 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply migrations on startup
+// Apply migrations and seed database on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<QuaterDbContext>();
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        
+        // Apply migrations
         context.Database.Migrate();
+        
+        // Seed database
+        await DatabaseSeeder.SeedAsync(context, userManager);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 
