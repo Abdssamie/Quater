@@ -1,0 +1,73 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*~
+
+# Test results
+**/TestResults/
+**/*.trx
+**/*.coverage
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Environment and secrets
+.env
+.env.*
+*.pfx
+*.p12
+appsettings.*.json
+!appsettings.json
+!appsettings.Production.json
+
+# Logs
+logs/
+*.log
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+specs/
+
+# Desktop and mobile projects (not needed for backend)
+desktop/
+mobile/
+
+# Beads and project management
+.beads/
+.specify/
+.opencode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
