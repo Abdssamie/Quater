@@ -3,8 +3,8 @@ using Asp.Versioning;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Quartz;
-using Quater.Backend.Api.Infrastructure;
 using Quater.Backend.Api.Jobs;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Core.Interfaces;
@@ -31,12 +31,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Quater Water Quality Management API",
         Version = "v1",
         Description = "REST API for managing water quality testing data, compliance calculations, and laboratory operations",
-        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        Contact = new OpenApiContact
         {
             Name = "Quater Development Team",
             Email = "support@quater.app"
@@ -52,23 +52,21 @@ builder.Services.AddSwaggerGen(options =>
     }
 
     // Add security definition for Bearer token authentication
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
         Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        In = ParameterLocation.Header,
     });
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -105,13 +103,13 @@ builder.Services.AddCors(options =>
     {
         // Get allowed origins from configuration
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-            ?? new[] { "http://localhost:5000" }; // Fallback for development
+            ?? ["http://localhost:5000"]; // Fallback for development
         
         // In production, validate that all origins use HTTPS
         if (!builder.Environment.IsDevelopment())
         {
-            var httpOrigins = allowedOrigins.Where(o => o.StartsWith("http://", StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (httpOrigins.Any())
+            var httpOrigins = allowedOrigins.Where(o => o.StartsWith("https://", StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (httpOrigins.Length != 0)
             {
                 throw new InvalidOperationException(
                     $"Production environment does not allow HTTP origins. Found: {string.Join(", ", httpOrigins)}. " +
@@ -206,14 +204,15 @@ builder.Services.AddOpenIddict()
         // Enable OAuth2/OIDC flows
         options.AllowPasswordFlow();
         options.AllowRefreshTokenFlow();
-
-        // Accept anonymous clients (no client_id/client_secret required)
-        options.AcceptAnonymousClients();
+        
+        var tokenConfig = builder.Configuration.GetSection("Identity:AccessTokenLifetime");
+        
+        var refreshTokenLifetime = tokenConfig.GetValue<int>("RefreshTokenLifetimeDays");
+        var accessTokenLifetime = tokenConfig.GetValue<int>("AccessTokenLifetimeHours");
 
         // Configure token lifetimes
-        options.SetAccessTokenLifetime(TimeSpan.FromHours(1));
-        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
-
+        options.SetAccessTokenLifetime(TimeSpan.FromHours(accessTokenLifetime));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(refreshTokenLifetime));
         // Register scopes
         options.RegisterScopes("api", "offline_access");
 
@@ -226,31 +225,25 @@ builder.Services.AddOpenIddict()
         }
         else
         {
-            // In production, load certificates from configuration
-            // Supports multiple loading strategies:
-            // 1. Base64 encoded (Docker/K8s secrets): OpenIddict:EncryptionCertificateBase64
-            // 2. File path: OpenIddict:EncryptionCertificatePath
-            // 3. Windows Certificate Store: OpenIddict:EncryptionCertificateThumbprint
+            // In production, load certificates from file system
+            // Use X509CertificateLoader.LoadPkcs12FromFile (modern .NET API)
+            var encryptionCertPath = builder.Configuration["OpenIddict:EncryptionCertificatePath"]
+                ?? throw new InvalidOperationException("OpenIddict:EncryptionCertificatePath is required in production");
+            var encryptionCertPassword = builder.Configuration["OpenIddict:EncryptionCertificatePassword"];
             
-            // Create a simple console logger for certificate loading during startup
-            using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
-            {
-                loggingBuilder.AddConsole();
-                loggingBuilder.SetMinimumLevel(LogLevel.Information);
-            });
-            var logger = loggerFactory.CreateLogger("CertificateLoader");
+            var signingCertPath = builder.Configuration["OpenIddict:SigningCertificatePath"]
+                ?? throw new InvalidOperationException("OpenIddict:SigningCertificatePath is required in production");
+            var signingCertPassword = builder.Configuration["OpenIddict:SigningCertificatePassword"];
             
-            var encryptionCert = CertificateLoader.LoadCertificate(
-                builder.Configuration, 
-                "Encryption",
-                logger);
-            CertificateLoader.ValidateCertificate(encryptionCert, "Encryption", logger);
+            var encryptionCert = X509CertificateLoader.LoadPkcs12FromFile(
+                encryptionCertPath,
+                encryptionCertPassword,
+                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
             
-            var signingCert = CertificateLoader.LoadCertificate(
-                builder.Configuration, 
-                "Signing",
-                logger);
-            CertificateLoader.ValidateCertificate(signingCert, "Signing", logger);
+            var signingCert = X509CertificateLoader.LoadPkcs12FromFile(
+                signingCertPath,
+                signingCertPassword,
+                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
             
             options.AddEncryptionCertificate(encryptionCert)
                    .AddSigningCertificate(signingCert);
@@ -289,19 +282,17 @@ builder.Services.AddAuthorization(options =>
     // AdminOnly policy - requires Admin role
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c.Type == "role" && c.Value == "Admin")));
+            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" })));
     
     // TechnicianOrAbove policy - requires Technician or Admin role
     options.AddPolicy("TechnicianOrAbove", policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c.Type == "role" && 
-                (c.Value == "Admin" || c.Value == "Technician"))));
+            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" or "Technician" })));
     
     // ViewerOrAbove policy - requires any authenticated user (Viewer, Technician, or Admin)
     options.AddPolicy("ViewerOrAbove", policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c.Type == "role" && 
-                (c.Value == "Admin" || c.Value == "Technician" || c.Value == "Viewer"))));
+            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" or "Technician" or "Viewer" })));
 });
 
 // Register Services
