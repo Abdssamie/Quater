@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,11 @@ using Quater.Backend.Data.Repositories;
 using Quater.Backend.Data.Seeders;
 using Quater.Backend.Services;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog with Console, File, and PostgreSQL sinks
+// Configure Serilog with Console and File sinks (PostgreSQL sink configured separately)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? 
     "Host=localhost;Database=quater;Username=postgres;Password=postgres";
 
@@ -31,11 +33,6 @@ Log.Logger = new LoggerConfiguration()
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 30,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .WriteTo.PostgreSQL(
-        connectionString: connectionString,
-        tableName: "Logs",
-        needAutoCreateTable: true,
-        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -44,6 +41,27 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Configure API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+}).AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+// Register Redis connection for rate limiting
+builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString") 
+        ?? "localhost:6379,abortConnect=false";
+    return StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString);
+});
 
 // Configure CORS for desktop and mobile clients
 builder.Services.AddCors(options =>
@@ -236,6 +254,12 @@ var app = builder.Build();
 // Add global exception handler (must be first in pipeline)
 app.UseGlobalExceptionHandler();
 
+// Add security headers middleware
+app.UseSecurityHeaders();
+
+// Add rate limiting middleware
+app.UseRateLimiting();
+
 // Configure CORS (must be before authentication/authorization)
 app.UseCors("QuaterCorsPolicy");
 
@@ -246,7 +270,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// HTTPS redirection and HSTS
 app.UseHttpsRedirection();
+app.UseHsts();
 
 app.UseAuthentication();
 app.UseAuthorization();
