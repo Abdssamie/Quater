@@ -1,3 +1,4 @@
+using Quater.Shared.Enums;
 using Quater.Shared.Models;
 
 namespace Quater.Backend.Core.Interfaces;
@@ -13,7 +14,7 @@ public interface ISyncLogService
     Task<SyncLog> CreateSyncLogAsync(
         string deviceId,
         string userId,
-        string status,
+        SyncStatus status,
         CancellationToken ct = default);
 
     /// <summary>
@@ -21,7 +22,7 @@ public interface ISyncLogService
     /// </summary>
     Task UpdateSyncLogAsync(
         Guid syncLogId,
-        string status,
+        SyncStatus status,
         int recordsSynced,
         int conflictsDetected,
         int conflictsResolved,

@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
+using Quater.Shared.Enums;
 using Quater.Shared.Models;
 
 namespace Quater.Backend.Sync;
@@ -23,7 +26,7 @@ public class SyncLogService : ISyncLogService
     public async Task<SyncLog> CreateSyncLogAsync(
         string deviceId,
         string userId,
-        string status,
+        SyncStatus status,
         CancellationToken ct = default)
     {
         var now = _timeProvider.GetUtcNow().UtcDateTime;
@@ -51,7 +54,7 @@ public class SyncLogService : ISyncLogService
     /// <inheritdoc/>
     public async Task UpdateSyncLogAsync(
         Guid syncLogId,
-        string status,
+        SyncStatus status,
         int recordsSynced,
         int conflictsDetected,
         int conflictsResolved,
@@ -60,7 +63,7 @@ public class SyncLogService : ISyncLogService
     {
         var syncLog = await _context.SyncLogs.FindAsync(new object[] { syncLogId }, ct);
         if (syncLog == null)
-            throw new InvalidOperationException($"SyncLog with ID {syncLogId} not found");
+            throw new NotFoundException(ErrorMessages.SyncLogNotFound);
 
         syncLog.Status = status;
         syncLog.RecordsSynced = recordsSynced;
@@ -79,7 +82,7 @@ public class SyncLogService : ISyncLogService
         CancellationToken ct = default)
     {
         return await _context.SyncLogs
-            .Where(s => s.DeviceId == deviceId && s.UserId == userId && s.Status == "success")
+            .Where(s => s.DeviceId == deviceId && s.UserId == userId && s.Status == SyncStatus.Synced)
             .OrderByDescending(s => s.LastSyncTimestamp)
             .FirstOrDefaultAsync(ct);
     }
@@ -108,7 +111,7 @@ public class SyncLogService : ISyncLogService
             .CountAsync(s => s.DeviceId == deviceId && s.UserId == userId, ct);
 
         var failed = await _context.SyncLogs
-            .CountAsync(s => s.DeviceId == deviceId && s.UserId == userId && s.Status == "failed", ct);
+            .CountAsync(s => s.DeviceId == deviceId && s.UserId == userId && s.Status == SyncStatus.Failed, ct);
 
         return (total, failed);
     }

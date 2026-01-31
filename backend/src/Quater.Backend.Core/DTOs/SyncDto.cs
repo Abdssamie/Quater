@@ -46,7 +46,7 @@ public record SyncStatusResponse
     public string DeviceId { get; init; } = string.Empty;
     public string UserId { get; init; } = string.Empty;
     public DateTime LastSyncTimestamp { get; init; }
-    public string Status { get; init; } = string.Empty;
+    public SyncStatus Status { get; init; } = SyncStatus.Pending;
     public int TotalSyncs { get; init; }
     public int FailedSyncs { get; init; }
     public int PendingConflicts { get; init; }

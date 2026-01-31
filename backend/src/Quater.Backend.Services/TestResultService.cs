@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Shared.Enums;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
@@ -76,7 +78,7 @@ public class TestResultService(
         // Verify sample exists
         var sampleExists = await context.Samples.AnyAsync(s => s.Id == dto.SampleId && !s.IsDeleted, ct);
         if (!sampleExists)
-            throw new InvalidOperationException($"Sample with ID {dto.SampleId} not found");
+            throw new NotFoundException(ErrorMessages.SampleNotFound);
 
         // Calculate compliance status based on parameter thresholds
         var complianceStatus = await CalculateComplianceStatusAsync(dto.ParameterName, dto.Value, ct);
@@ -118,7 +120,7 @@ public class TestResultService(
 
         // Check version for optimistic concurrency
         if (existing.Version != dto.Version)
-            throw new DbUpdateConcurrencyException("Test result has been modified by another user");
+            throw new ConflictException(ErrorMessages.ConcurrencyConflict);
 
         var now = timeProvider.GetUtcNow().DateTime;
 

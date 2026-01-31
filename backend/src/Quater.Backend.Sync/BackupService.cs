@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;
@@ -71,7 +73,7 @@ public class BackupService : IBackupService
     {
         var backup = await _context.ConflictBackups.FindAsync(new object[] { backupId }, ct);
         if (backup == null)
-            throw new InvalidOperationException($"ConflictBackup with ID {backupId} not found");
+            throw new NotFoundException(ErrorMessages.ConflictBackupNotFound);
 
         backup.ResolvedAt = _timeProvider.GetUtcNow().UtcDateTime;
         backup.ResolvedBy = resolvedBy;

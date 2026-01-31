@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
@@ -35,11 +36,10 @@ public class SyncLog : IEntity, ISyncable
     public DateTime LastSyncTimestamp { get; set; }
 
     /// <summary>
-    /// Sync status: "success", "failed", "in_progress"
+    /// Sync status
     /// </summary>
     [Required]
-    [MaxLength(20)]
-    public string Status { get; set; } = string.Empty;
+    public SyncStatus Status { get; set; } = SyncStatus.Pending;
 
     /// <summary>
     /// Error details if sync failed

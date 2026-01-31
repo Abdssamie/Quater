@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
@@ -43,7 +44,7 @@ public class SyncService : ISyncService
         var syncLog = await _syncLogService.CreateSyncLogAsync(
             request.DeviceId,
             request.UserId,
-            "in_progress",
+            SyncStatus.InProgress,
             ct);
 
         try
@@ -83,7 +84,7 @@ public class SyncService : ISyncService
             // Update sync log with success
             await _syncLogService.UpdateSyncLogAsync(
                 syncLog.Id,
-                "success",
+                SyncStatus.Synced,
                 recordsSynced,
                 conflictsDetected,
                 conflictsResolved,
@@ -107,7 +108,7 @@ public class SyncService : ISyncService
             // Update sync log with failure
             await _syncLogService.UpdateSyncLogAsync(
                 syncLog.Id,
-                "failed",
+                SyncStatus.Failed,
                 0,
                 0,
                 0,
@@ -137,7 +138,7 @@ public class SyncService : ISyncService
         var syncLog = await _syncLogService.CreateSyncLogAsync(
             request.DeviceId,
             request.UserId,
-            "in_progress",
+            SyncStatus.InProgress,
             ct);
 
         try
@@ -157,7 +158,7 @@ public class SyncService : ISyncService
             // Update sync log with success
             await _syncLogService.UpdateSyncLogAsync(
                 syncLog.Id,
-                "success",
+                SyncStatus.Synced,
                 entities.Count,
                 0,
                 0,
@@ -181,7 +182,7 @@ public class SyncService : ISyncService
             // Update sync log with failure
             await _syncLogService.UpdateSyncLogAsync(
                 syncLog.Id,
-                "failed",
+                SyncStatus.Failed,
                 0,
                 0,
                 0,
@@ -225,7 +226,7 @@ public class SyncService : ISyncService
             DeviceId = deviceId,
             UserId = userId,
             LastSyncTimestamp = lastSync?.LastSyncTimestamp ?? DateTime.MinValue,
-            Status = lastSync?.Status ?? "never_synced",
+            Status = lastSync?.Status ?? SyncStatus.Pending,
             TotalSyncs = total,
             FailedSyncs = failed,
             PendingConflicts = pendingConflicts
@@ -254,7 +255,7 @@ public class SyncService : ISyncService
         return samples.Select(s => new SyncEntityData
         {
             Id = s.Id,
-            EntityType = "Sample",
+            EntityType = nameof(Sample),
             Data = JsonSerializer.Serialize(s),
             LastModified = s.LastSyncedAt,
             IsDeleted = s.IsDeleted
@@ -272,7 +273,7 @@ public class SyncService : ISyncService
         return testResults.Select(t => new SyncEntityData
         {
             Id = t.Id,
-            EntityType = "TestResult",
+            EntityType = nameof(TestResult),
             Data = JsonSerializer.Serialize(t),
             LastModified = t.LastSyncedAt,
             IsDeleted = t.IsDeleted
@@ -290,7 +291,7 @@ public class SyncService : ISyncService
         return parameters.Select(p => new SyncEntityData
         {
             Id = p.Id,
-            EntityType = "Parameter",
+            EntityType = nameof(Parameter),
             Data = JsonSerializer.Serialize(p),
             LastModified = p.LastSyncedAt,
             IsDeleted = p.IsDeleted

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
@@ -59,7 +61,7 @@ public class LabService(
         // Check for duplicate name
         var exists = await context.Labs.AnyAsync(l => l.Name == dto.Name && !l.IsDeleted, ct);
         if (exists)
-            throw new InvalidOperationException($"Lab with name '{dto.Name}' already exists");
+            throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
         var now = timeProvider.GetUtcNow().DateTime;
 
@@ -92,7 +94,7 @@ public class LabService(
         var duplicateExists = await context.Labs
             .AnyAsync(l => l.Name == dto.Name && l.Id != id && !l.IsDeleted, ct);
         if (duplicateExists)
-            throw new InvalidOperationException($"Lab with name '{dto.Name}' already exists");
+            throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
         var now = timeProvider.GetUtcNow().DateTime;
 

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
@@ -86,7 +88,7 @@ public class UserService(
         // Verify lab exists
         var labExists = await context.Labs.AnyAsync(l => l.Id == dto.LabId && !l.IsDeleted, ct);
         if (!labExists)
-            throw new InvalidOperationException($"Lab with ID {dto.LabId} not found");
+            throw new NotFoundException(ErrorMessages.LabNotFound);
 
         var now = timeProvider.GetUtcNow().DateTime;
 
@@ -106,7 +108,7 @@ public class UserService(
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to create user: {errors}");
+            throw new BadRequestException($"{ErrorMessages.UserCreationFailed}: {errors}");
         }
 
         // Reload user with Lab navigation property
@@ -140,7 +142,7 @@ public class UserService(
             // Verify lab exists
             var labExists = await context.Labs.AnyAsync(l => l.Id == dto.LabId.Value && !l.IsDeleted, ct);
             if (!labExists)
-                throw new InvalidOperationException($"Lab with ID {dto.LabId.Value} not found");
+                throw new NotFoundException(ErrorMessages.LabNotFound);
 
             user.LabId = dto.LabId.Value;
         }
@@ -155,7 +157,7 @@ public class UserService(
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to update user: {errors}");
+            throw new BadRequestException($"{ErrorMessages.UserUpdateFailed}: {errors}");
         }
 
         // Reload user with Lab navigation property

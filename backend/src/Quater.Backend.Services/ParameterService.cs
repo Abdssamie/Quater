@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
@@ -57,7 +59,7 @@ public class ParameterService(
         // Check for duplicate name
         var exists = await context.Parameters.AnyAsync(p => p.Name == dto.Name, ct);
         if (exists)
-            throw new InvalidOperationException($"Parameter with name '{dto.Name}' already exists");
+            throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
         var now = timeProvider.GetUtcNow().DateTime;
 
@@ -92,7 +94,7 @@ public class ParameterService(
         var duplicateExists = await context.Parameters
             .AnyAsync(p => p.Name == dto.Name && p.Id != id, ct);
         if (duplicateExists)
-            throw new InvalidOperationException($"Parameter with name '{dto.Name}' already exists");
+            throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
         var now = timeProvider.GetUtcNow().DateTime;
 

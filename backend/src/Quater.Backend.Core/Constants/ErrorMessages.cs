@@ -48,12 +48,17 @@ public static class ErrorMessages
     public const string UserNotFound = "User not found.";
     public const string UserAlreadyExists = "A user with this email already exists.";
     public const string InvalidRole = "Invalid user role.";
+    public const string UserCreationFailed = "Failed to create user.";
+    public const string UserUpdateFailed = "Failed to update user.";
 
     // Sync errors
     public const string SyncFailed = "Synchronization failed. Please try again.";
     public const string SyncConflict = "A synchronization conflict occurred.";
     public const string SyncInProgress = "A synchronization is already in progress.";
     public const string NoChangesToSync = "No changes to synchronize.";
+    public const string SyncLogNotFound = "Sync log not found.";
+    public const string ConflictBackupNotFound = "Conflict backup not found.";
+    public const string ManualResolutionRequired = "Manual conflict resolution requires user intervention.";
 
     // Import/Export errors
     public const string ImportFailed = "Import failed. Please check the file format and try again.";

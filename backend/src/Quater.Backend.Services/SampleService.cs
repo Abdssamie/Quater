@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Shared.Enums;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
@@ -112,7 +114,7 @@ public class SampleService(
 
         // Check version for optimistic concurrency
         if (existing.Version != dto.Version)
-            throw new DbUpdateConcurrencyException("Sample has been modified by another user");
+            throw new ConflictException(ErrorMessages.ConcurrencyConflict);
 
         var now = timeProvider.GetUtcNow().DateTime;
 

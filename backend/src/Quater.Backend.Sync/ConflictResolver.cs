@@ -1,3 +1,5 @@
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
@@ -28,9 +30,8 @@ public class ConflictResolver : IConflictResolver
             ConflictResolutionStrategy.LastWriteWins => ResolveLastWriteWins(serverEntity, clientEntity),
             ConflictResolutionStrategy.ServerWins => ResolveServerWins(serverEntity, clientEntity),
             ConflictResolutionStrategy.ClientWins => ResolveClientWins(serverEntity, clientEntity),
-            ConflictResolutionStrategy.Manual => throw new InvalidOperationException(
-                "Manual conflict resolution requires user intervention"),
-            _ => throw new ArgumentException($"Unknown conflict resolution strategy: {strategy}")
+            ConflictResolutionStrategy.Manual => throw new SyncException(ErrorMessages.ManualResolutionRequired),
+            _ => throw new BadRequestException($"Unknown conflict resolution strategy: {strategy}")
         };
     }
 
