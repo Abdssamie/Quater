@@ -254,10 +254,14 @@ var app = builder.Build();
 // Add global exception handler (must be first in pipeline)
 app.UseGlobalExceptionHandler();
 
+// HTTPS redirection and HSTS (before rate limiting to prevent HTTP bypass)
+app.UseHttpsRedirection();
+app.UseHsts();
+
 // Add security headers middleware
 app.UseSecurityHeaders();
 
-// Add rate limiting middleware
+// Add rate limiting middleware (after HTTPS redirect)
 app.UseRateLimiting();
 
 // Configure CORS (must be before authentication/authorization)
@@ -269,10 +273,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-// HTTPS redirection and HSTS
-app.UseHttpsRedirection();
-app.UseHsts();
 
 app.UseAuthentication();
 app.UseAuthorization();
