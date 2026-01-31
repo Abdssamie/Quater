@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
@@ -35,23 +36,45 @@ public class AuditLogArchive : IEntity
     public Guid EntityId { get; set; }
 
     /// <summary>
-    /// Action performed: "create", "update", "delete"
+    /// Action performed on the entity
     /// </summary>
     [Required]
-    [MaxLength(20)]
-    public string Action { get; set; } = string.Empty;
+    public AuditAction Action { get; set; }
 
     /// <summary>
-    /// JSON serialized old value (for updates)
+    /// JSON serialized old value (for updates). If data exceeds 4000 chars, stores truncation marker.
     /// </summary>
     [MaxLength(4000)]
     public string? OldValue { get; set; }
 
     /// <summary>
-    /// JSON serialized new value
+    /// JSON serialized new value. If data exceeds 4000 chars, stores truncation marker.
     /// </summary>
     [MaxLength(4000)]
     public string? NewValue { get; set; }
+
+    /// <summary>
+    /// Comma-separated list of field names that were changed (for quick filtering)
+    /// </summary>
+    [MaxLength(500)]
+    public string? ChangedFields { get; set; }
+
+    /// <summary>
+    /// Flag indicating if OldValue/NewValue were truncated due to size limits
+    /// </summary>
+    [Required]
+    public bool IsTruncated { get; set; } = false;
+
+    /// <summary>
+    /// Full data storage path (e.g., blob storage URL) if values were too large for database
+    /// </summary>
+    [MaxLength(500)]
+    public string? OverflowStoragePath { get; set; }
+
+    /// <summary>
+    /// Foreign key to ConflictBackup (if this audit entry relates to a conflict resolution)
+    /// </summary>
+    public Guid? ConflictBackupId { get; set; }
 
     /// <summary>
     /// Notes when user resolves sync conflict
@@ -79,4 +102,5 @@ public class AuditLogArchive : IEntity
 
     // Navigation properties
     public User User { get; set; } = null!;
+    public ConflictBackup? ConflictBackup { get; set; }
 }

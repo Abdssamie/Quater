@@ -12,11 +12,6 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// both backend (PostgreSQL) and desktop (SQLite) applications to use the same
 /// domain models while storing enums as strings in the database.
 /// 
-/// Conversion examples:
-/// - SampleStatus.Pending <-> "Pending"
-/// - SampleStatus.InProgress <-> "InProgress"
-/// - SampleStatus.Completed <-> "Completed"
-/// 
 /// Usage in DbContext:
 /// <code>
 /// entity.Property(e => e.Status)
@@ -31,7 +26,7 @@ public class SampleStatusConverter : ValueConverter<SampleStatus, string>
     public SampleStatusConverter() 
         : base(
             v => v.ToString(),                                    // Convert enum to string
-            v => (SampleStatus)Enum.Parse(typeof(SampleStatus), v)) // Convert string to enum
+            v => Enum.Parse<SampleStatus>(v)) // Convert string to enum
     {
     }
 }

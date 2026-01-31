@@ -30,8 +30,8 @@ public class TestMethodConverter : ValueConverter<TestMethod, string>
     /// </summary>
     public TestMethodConverter() 
         : base(
-            v => v.ToString(),                                  // Convert enum to string
-            v => (TestMethod)Enum.Parse(typeof(TestMethod), v)) // Convert string to enum
+            v => v.ToString(),             // Convert enum to string
+            v => Enum.Parse<TestMethod>(v)) // Convert string to enum
     {
     }
 }

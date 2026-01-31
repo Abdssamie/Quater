@@ -30,8 +30,8 @@ public class UserRoleConverter : ValueConverter<UserRole, string>
     /// </summary>
     public UserRoleConverter() 
         : base(
-            v => v.ToString(),                              // Convert enum to string
-            v => (UserRole)Enum.Parse(typeof(UserRole), v)) // Convert string to enum
+            v => v.ToString(),           // Convert enum to string
+            v => Enum.Parse<UserRole>(v)) // Convert string to enum
     {
     }
 }

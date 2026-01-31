@@ -32,8 +32,8 @@ public class SyncStatusConverter : ValueConverter<SyncStatus, string>
     /// </summary>
     public SyncStatusConverter() 
         : base(
-            v => v.ToString(),                                    // Convert enum to string
-            v => (SyncStatus)Enum.Parse(typeof(SyncStatus), v)) // Convert string to enum
+            v => v.ToString(),             // Convert enum to string
+            v => Enum.Parse<SyncStatus>(v)) // Convert string to enum
     {
     }
 }

@@ -30,8 +30,8 @@ public class SampleTypeConverter : ValueConverter<SampleType, string>
     /// </summary>
     public SampleTypeConverter() 
         : base(
-            v => v.ToString(),                                  // Convert enum to string
-            v => (SampleType)Enum.Parse(typeof(SampleType), v)) // Convert string to enum
+            v => v.ToString(),             // Convert enum to string
+            v => Enum.Parse<SampleType>(v)) // Convert string to enum
     {
     }
 }

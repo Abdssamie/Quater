@@ -12,12 +12,6 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// both backend (PostgreSQL) and desktop (SQLite) applications to use the same
 /// domain models while storing enums as strings in the database.
 /// 
-/// Conversion examples:
-/// - ConflictResolutionStrategy.LastWriteWins <-> "LastWriteWins"
-/// - ConflictResolutionStrategy.ServerWins <-> "ServerWins"
-/// - ConflictResolutionStrategy.ClientWins <-> "ClientWins"
-/// - ConflictResolutionStrategy.Manual <-> "Manual"
-/// 
 /// Usage in DbContext:
 /// <code>
 /// entity.Property(e => e.ResolutionStrategy)
@@ -31,8 +25,8 @@ public class ConflictResolutionStrategyConverter : ValueConverter<ConflictResolu
     /// </summary>
     public ConflictResolutionStrategyConverter() 
         : base(
-            v => v.ToString(),                                    // Convert enum to string
-            v => (ConflictResolutionStrategy)Enum.Parse(typeof(ConflictResolutionStrategy), v)) // Convert string to enum
+            v => v.ToString(),                              // Convert enum to string
+            v => Enum.Parse<ConflictResolutionStrategy>(v)) // Convert string to enum
     {
     }
 }
