@@ -64,6 +64,10 @@ public class UnitOfWork : IUnitOfWork
             await _transaction.RollbackAsync(cancellationToken);
             await _transaction.DisposeAsync();
             _transaction = null;
+            
+            // Clear the ChangeTracker to remove cached entities after rollback
+            // This ensures subsequent queries go to the database instead of returning cached entities
+            _context.ChangeTracker.Clear();
         }
     }
 

@@ -44,7 +44,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         // IConcurrent properties
         entity.Property(e => e.RowVersion)
-            .IsRowVersion();
+            .IsRowVersion()
+            .ValueGeneratedOnAddOrUpdate()
+            .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
         // Indexes
         entity.HasIndex(e => e.Email)

@@ -73,7 +73,7 @@ public class SampleService(
 
     public async Task<SampleDto> CreateAsync(CreateSampleDto dto, string userId, CancellationToken ct = default)
     {
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
         
         var sample = new Sample
         {
@@ -116,7 +116,7 @@ public class SampleService(
         if (existing.Version != dto.Version)
             throw new ConflictException(ErrorMessages.ConcurrencyConflict);
 
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         // Update fields
         existing.Type = dto.Type;
@@ -149,7 +149,7 @@ public class SampleService(
 
         // Soft delete
         sample.IsDeleted = true;
-        sample.LastModified = timeProvider.GetUtcNow().DateTime;
+        sample.LastModified = timeProvider.GetUtcNow().UtcDateTime;
         sample.IsSynced = false;
 
         await context.SaveChangesAsync(ct);

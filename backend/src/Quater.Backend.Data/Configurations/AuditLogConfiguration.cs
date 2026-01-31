@@ -61,5 +61,11 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         entity.HasIndex(e => e.IsArchived)
             .HasDatabaseName("IX_AuditLogs_IsArchived");
+
+        // Configure relationship to User with FK constraint for data integrity
+        entity.HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

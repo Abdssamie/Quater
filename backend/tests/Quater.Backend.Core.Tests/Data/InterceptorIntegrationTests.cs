@@ -25,7 +25,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _fixture.Container.ResetDatabaseAsync();
-        _context = _fixture.Container.CreateDbContext();
+        _context = _fixture.Container.CreateSeededDbContext();
     }
 
     public async Task DisposeAsync()

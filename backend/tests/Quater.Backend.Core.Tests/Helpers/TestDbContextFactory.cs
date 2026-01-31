@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Data;
+using Quater.Backend.Data.Interceptors;
 
 namespace Quater.Backend.Core.Tests.Helpers;
 
@@ -16,6 +17,7 @@ public static class TestDbContextFactory
         var options = new DbContextOptionsBuilder<QuaterDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .EnableSensitiveDataLogging()
+            .AddInterceptors(new SoftDeleteInterceptor(), new AuditTrailInterceptor())
             .Options;
 
         return new QuaterDbContext(options);
@@ -29,6 +31,7 @@ public static class TestDbContextFactory
         var options = new DbContextOptionsBuilder<QuaterDbContext>()
             .UseInMemoryDatabase(databaseName: databaseName)
             .EnableSensitiveDataLogging()
+            .AddInterceptors(new SoftDeleteInterceptor(), new AuditTrailInterceptor())
             .Options;
 
         return new QuaterDbContext(options);

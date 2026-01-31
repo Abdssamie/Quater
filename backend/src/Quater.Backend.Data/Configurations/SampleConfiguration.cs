@@ -139,5 +139,8 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .WithOne(e => e.Sample)
             .HasForeignKey(e => e.SampleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Global query filter for soft delete
+        entity.HasQueryFilter(e => !e.IsDeleted);
     }
 }

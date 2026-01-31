@@ -68,7 +68,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
             LocationLatitude = 34.0,
             LocationLongitude = -5.0,
             LocationDescription = "New Test Location",
-            CollectionDate = _timeProvider.GetUtcNow().DateTime,
+            CollectionDate = _timeProvider.GetUtcNow().UtcDateTime,
             CollectorName = "Test Collector",
             LabId = lab.Id
         };
@@ -94,6 +94,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
     {
         // Arrange
         var sample = _context.Samples.First();
+        var originalVersion = sample.Version;
         var dto = new UpdateSampleDto
         {
             Type = SampleType.Wastewater,
@@ -114,7 +115,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         result!.CollectorName.Should().Be(dto.CollectorName);
         result.Type.Should().Be(dto.Type);
         result.Status.Should().Be(dto.Status);
-        result.Version.Should().Be(sample.Version + 1);
+        result.Version.Should().Be(originalVersion + 1);
         result.IsSynced.Should().BeFalse();
     }
 
