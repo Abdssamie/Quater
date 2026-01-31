@@ -242,14 +242,11 @@ public class AuthController : ControllerBase
 
         // TODO: Send email with reset token
         // In a real application, you would send an email here with a link containing the token
-        // For now, we'll just log it (DO NOT do this in production!)
-        _logger.LogInformation("Password reset token for {Email}: {Token}", request.Email, token);
+        _logger.LogInformation("Password reset requested for {Email}", request.Email);
 
         return Ok(new
         {
-            message = "If the email exists, a password reset link has been sent",
-            // TODO: Remove this in production - only for development/testing
-            resetToken = token
+            message = "If the email exists, a password reset link has been sent"
         });
     }
 

@@ -6,7 +6,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LabsController(ILabService labService) : ControllerBase
+public class LabsController(ILabService labService, ILogger<LabsController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all labs with pagination
@@ -67,10 +67,13 @@ public class LabsController(ILabService labService) : ControllerBase
             var userId = "system"; // Placeholder until auth is implemented
             
             var created = await labService.CreateAsync(dto, userId, ct);
+            logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}", 
+                created.Id, created.Name, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "Invalid operation when creating lab {LabName}", dto.Name);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -94,12 +97,17 @@ public class LabsController(ILabService labService) : ControllerBase
             
             var updated = await labService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
+            {
+                logger.LogWarning("Attempt to update non-existent lab {LabId}", id);
                 return NotFound(new { message = $"Lab with ID {id} not found" });
+            }
 
+            logger.LogInformation("Lab {LabId} updated successfully by user {UserId}", id, userId);
             return Ok(updated);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "Invalid operation when updating lab {LabId}", id);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -114,8 +122,12 @@ public class LabsController(ILabService labService) : ControllerBase
     {
         var deleted = await labService.DeleteAsync(id, ct);
         if (!deleted)
+        {
+            logger.LogWarning("Attempt to delete non-existent lab {LabId}", id);
             return NotFound(new { message = $"Lab with ID {id} not found" });
+        }
 
+        logger.LogInformation("Lab {LabId} deleted successfully", id);
         return NoContent();
     }
 }

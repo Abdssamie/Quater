@@ -6,16 +6,20 @@ namespace Quater.Backend.Api.Controllers;
 
 /// <summary>
 /// Controller for bidirectional synchronization between clients and server
+/// NOTE: This controller is disabled until ISyncService is implemented
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger until ISyncService is implemented
 public class SyncController : ControllerBase
 {
     private readonly ISyncService _syncService;
+    private readonly ILogger<SyncController> _logger;
 
-    public SyncController(ISyncService syncService)
+    public SyncController(ISyncService syncService, ILogger<SyncController> logger)
     {
         _syncService = syncService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -31,11 +35,18 @@ public class SyncController : ControllerBase
         if (string.IsNullOrEmpty(request.DeviceId) || string.IsNullOrEmpty(request.UserId))
             return BadRequest(new { message = "DeviceId and UserId are required" });
 
+        _logger.LogInformation("Sync push initiated by device {DeviceId} for user {UserId}", request.DeviceId, request.UserId);
         var response = await _syncService.PushAsync(request, ct);
         
         if (!response.Success)
+        {
+            _logger.LogWarning("Sync push failed for device {DeviceId}, user {UserId}", 
+                request.DeviceId, request.UserId);
             return BadRequest(response);
+        }
 
+        _logger.LogInformation("Sync push completed successfully for device {DeviceId}, user {UserId}", 
+            request.DeviceId, request.UserId);
         return Ok(response);
     }
 
@@ -52,11 +63,18 @@ public class SyncController : ControllerBase
         if (string.IsNullOrEmpty(request.DeviceId) || string.IsNullOrEmpty(request.UserId))
             return BadRequest(new { message = "DeviceId and UserId are required" });
 
+        _logger.LogInformation("Sync pull initiated by device {DeviceId} for user {UserId}", request.DeviceId, request.UserId);
         var response = await _syncService.PullAsync(request, ct);
         
         if (!response.Success)
+        {
+            _logger.LogWarning("Sync pull failed for device {DeviceId}, user {UserId}", 
+                request.DeviceId, request.UserId);
             return BadRequest(response);
+        }
 
+        _logger.LogInformation("Sync pull completed successfully for device {DeviceId}, user {UserId}", 
+            request.DeviceId, request.UserId);
         return Ok(response);
     }
 

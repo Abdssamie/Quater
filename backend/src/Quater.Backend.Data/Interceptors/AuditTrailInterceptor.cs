@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using System.Text.Json;
 
@@ -108,12 +109,12 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
                 continue; // Skip if Id is not a Guid
             }
 
-            string action = entry.State switch
+            AuditAction action = entry.State switch
             {
-                EntityState.Added => "INSERT",
-                EntityState.Modified => "UPDATE",
-                EntityState.Deleted => "DELETE",
-                _ => "UNKNOWN"
+                EntityState.Added => AuditAction.Create,
+                EntityState.Modified => AuditAction.Update,
+                EntityState.Deleted => AuditAction.Delete,
+                _ => AuditAction.Update
             };
 
             string? oldValue = null;

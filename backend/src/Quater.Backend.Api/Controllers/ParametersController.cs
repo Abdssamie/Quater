@@ -6,7 +6,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ParametersController(IParameterService parameterService) : ControllerBase
+public class ParametersController(IParameterService parameterService, ILogger<ParametersController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all parameters with pagination
@@ -64,10 +64,12 @@ public class ParametersController(IParameterService parameterService) : Controll
         try
         {
             var created = await parameterService.CreateAsync(dto, ct);
+            logger.LogInformation("Parameter created successfully with ID {ParameterId}, Name: {ParameterName}", created.Id, created.Name);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "Invalid operation when creating parameter {ParameterName}", dto.Name);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -88,12 +90,17 @@ public class ParametersController(IParameterService parameterService) : Controll
         {
             var updated = await parameterService.UpdateAsync(id, dto, ct);
             if (updated == null)
+            {
+                logger.LogWarning("Attempt to update non-existent parameter {ParameterId}", id);
                 return NotFound(new { message = $"Parameter with ID {id} not found" });
+            }
 
+            logger.LogInformation("Parameter {ParameterId} updated successfully", id);
             return Ok(updated);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "Invalid operation when updating parameter {ParameterId}", id);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -108,8 +115,12 @@ public class ParametersController(IParameterService parameterService) : Controll
     {
         var deleted = await parameterService.DeleteAsync(id, ct);
         if (!deleted)
+        {
+            logger.LogWarning("Attempt to delete non-existent parameter {ParameterId}", id);
             return NotFound(new { message = $"Parameter with ID {id} not found" });
+        }
 
+        logger.LogInformation("Parameter {ParameterId} deleted successfully", id);
         return NoContent();
     }
 }

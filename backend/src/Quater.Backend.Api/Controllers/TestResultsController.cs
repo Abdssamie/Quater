@@ -8,7 +8,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TestResultsController(ITestResultService testResultService) : ControllerBase
+public class TestResultsController(ITestResultService testResultService, ILogger<TestResultsController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all test results with pagination
@@ -76,14 +76,18 @@ public class TestResultsController(ITestResultService testResultService) : Contr
             var userId = "system";
             
             var created = await testResultService.CreateAsync(dto, userId, ct);
+            logger.LogInformation("Test result created successfully with ID {TestResultId} for sample {SampleId} by user {UserId}", 
+                created.Id, dto.SampleId, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ValidationException ex)
         {
+            logger.LogWarning(ex, "Validation failed when creating test result for sample {SampleId}", dto.SampleId);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning(ex, "Invalid operation when creating test result for sample {SampleId}", dto.SampleId);
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -108,16 +112,22 @@ public class TestResultsController(ITestResultService testResultService) : Contr
             
             var updated = await testResultService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
+            {
+                logger.LogWarning("Attempt to update non-existent test result {TestResultId}", id);
                 return NotFound(new { message = $"Test result with ID {id} not found" });
+            }
 
+            logger.LogInformation("Test result {TestResultId} updated successfully by user {UserId}", id, userId);
             return Ok(updated);
         }
         catch (ValidationException ex)
         {
+            logger.LogWarning(ex, "Validation failed when updating test result {TestResultId}", id);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            logger.LogWarning(ex, "Concurrency conflict when updating test result {TestResultId}", id);
             return Conflict(new { message = ex.Message });
         }
     }
@@ -132,8 +142,12 @@ public class TestResultsController(ITestResultService testResultService) : Contr
     {
         var deleted = await testResultService.DeleteAsync(id, ct);
         if (!deleted)
+        {
+            logger.LogWarning("Attempt to delete non-existent test result {TestResultId}", id);
             return NotFound(new { message = $"Test result with ID {id} not found" });
+        }
 
+        logger.LogInformation("Test result {TestResultId} deleted successfully", id);
         return NoContent();
     }
 }

@@ -8,7 +8,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SamplesController(ISampleService sampleService) : ControllerBase
+public class SamplesController(ISampleService sampleService, ILogger<SamplesController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all samples with pagination
@@ -77,10 +77,12 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
             var userId = "system"; // Placeholder until auth is implemented
             
             var created = await sampleService.CreateAsync(dto, userId, ct);
+            logger.LogInformation("Sample created successfully with ID {SampleId} by user {UserId}", created.Id, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (ValidationException ex)
         {
+            logger.LogWarning(ex, "Validation failed when creating sample for lab {LabId}", dto.LabId);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
         }
     }
@@ -105,16 +107,22 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
             
             var updated = await sampleService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
+            {
+                logger.LogWarning("Attempt to update non-existent sample {SampleId}", id);
                 return NotFound(new { message = $"Sample with ID {id} not found" });
+            }
 
+            logger.LogInformation("Sample {SampleId} updated successfully by user {UserId}", id, userId);
             return Ok(updated);
         }
         catch (ValidationException ex)
         {
+            logger.LogWarning(ex, "Validation failed when updating sample {SampleId}", id);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            logger.LogWarning(ex, "Concurrency conflict when updating sample {SampleId}", id);
             return Conflict(new { message = ex.Message });
         }
     }
@@ -129,8 +137,12 @@ public class SamplesController(ISampleService sampleService) : ControllerBase
     {
         var deleted = await sampleService.DeleteAsync(id, ct);
         if (!deleted)
+        {
+            logger.LogWarning("Attempt to delete non-existent sample {SampleId}", id);
             return NotFound(new { message = $"Sample with ID {id} not found" });
+        }
 
+        logger.LogInformation("Sample {SampleId} deleted successfully", id);
         return NoContent();
     }
 }
