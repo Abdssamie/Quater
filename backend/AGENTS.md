@@ -397,3 +397,284 @@ using FluentValidation;
 using Quater.Backend.Core.Models;
 using Quater.Backend.Core.Interfaces;
 ```
+
+---
+
+## 🎯 Quater Project-Specific Coding Standards
+
+These standards were established during the enterprise code quality refactoring and must be followed for all new code and refactoring work.
+
+### ✅ Exception Handling & Error Management
+
+**DO: Use Custom Exceptions for Business Logic**
+
+Never use generic exceptions like `InvalidOperationException` or `ArgumentException` for business logic errors. Always use our custom exceptions:
+
+```csharp
+// ✅ GOOD: Custom exceptions with proper HTTP status mapping
+public async Task<User> GetByIdAsync(Guid id, CancellationToken ct)
+{
+    var user = await _repository.GetByIdAsync(id, ct);
+    if (user is null)
+        throw new NotFoundException(ErrorMessages.UserNotFound);
+    
+    return user;
+}
+
+public async Task<Lab> CreateAsync(CreateLabDto dto, CancellationToken ct)
+{
+    var existing = await _repository.GetByCodeAsync(dto.Code, ct);
+    if (existing is not null)
+        throw new ConflictException(ErrorMessages.LabCodeAlreadyExists);
+    
+    // Create lab...
+}
+
+// ❌ BAD: Generic exceptions
+public async Task<User> GetByIdAsync(Guid id, CancellationToken ct)
+{
+    var user = await _repository.GetByIdAsync(id, ct);
+    if (user is null)
+        throw new InvalidOperationException("User not found"); // Wrong!
+    
+    return user;
+}
+```
+
+**Available Custom Exceptions** (in `Quater.Backend.Core.Exceptions/`):
+
+- `NotFoundException` → 404 Not Found
+- `BadRequestException` → 400 Bad Request
+- `ConflictException` → 409 Conflict (duplicates, concurrency issues)
+- `ForbiddenException` → 403 Forbidden
+- `SyncException` → 500 Internal Server Error (sync-specific errors)
+
+**Centralized Error Messages**
+
+Always use constants from `ErrorMessages.cs` instead of hardcoding strings:
+
+```csharp
+// ✅ GOOD: Centralized error messages
+throw new NotFoundException(ErrorMessages.SampleNotFound);
+throw new ConflictException(ErrorMessages.ParameterCodeAlreadyExists);
+
+// ❌ BAD: Hardcoded error messages
+throw new NotFoundException("Sample not found"); // Wrong!
+throw new ConflictException("Parameter code already exists"); // Wrong!
+```
+
+### ✅ Enums vs Magic Strings
+
+**DO: Use Enums for Fixed Value Sets**
+
+Never use magic strings for status values, types, or any fixed set of values. Always use enums:
+
+```csharp
+// ✅ GOOD: Enum for status
+public async Task LogSyncAsync(string entityType, SyncStatus status, CancellationToken ct)
+{
+    var log = new SyncLog
+    {
+        EntityType = entityType,
+        Status = status, // SyncStatus enum
+        Timestamp = DateTime.UtcNow
+    };
+    await _repository.AddAsync(log, ct);
+}
+
+// Usage
+await LogSyncAsync(nameof(Sample), SyncStatus.Synced, ct);
+await LogSyncAsync(nameof(TestResult), SyncStatus.Failed, ct);
+
+// ❌ BAD: Magic strings
+public async Task LogSyncAsync(string entityType, string status, CancellationToken ct)
+{
+    var log = new SyncLog
+    {
+        EntityType = entityType,
+        Status = status, // string - prone to typos!
+        Timestamp = DateTime.UtcNow
+    };
+    await _repository.AddAsync(log, ct);
+}
+
+// Usage - typos not caught at compile time!
+await LogSyncAsync("Sample", "success", ct); // Wrong!
+await LogSyncAsync("TestResult", "failed", ct); // Wrong!
+```
+
+**Available Enums** (in `shared/Enums/`):
+
+- `SyncStatus` → Synced, Failed, InProgress, Pending
+- `SampleType` → Drinking, Wastewater, Surface, Groundwater
+- `UserRole` → Admin, Technician, Viewer
+- `TestStatus` → Pending, InProgress, Completed, Failed
+
+### ✅ Type-Safe Entity References
+
+**DO: Use `nameof()` for Entity Type Serialization**
+
+When storing entity type names (e.g., in sync logs), always use `nameof()` for type safety and refactoring support:
+
+```csharp
+// ✅ GOOD: Type-safe with nameof()
+await _syncLogService.CreateAsync(new CreateSyncLogDto
+{
+    EntityType = nameof(Sample), // Refactoring-safe
+    EntityId = sample.Id,
+    Status = SyncStatus.Synced
+}, ct);
+
+// ❌ BAD: Magic string
+await _syncLogService.CreateAsync(new CreateSyncLogDto
+{
+    EntityType = "Sample", // Breaks if class is renamed!
+    EntityId = sample.Id,
+    Status = SyncStatus.Synced
+}, ct);
+```
+
+### ✅ Constants & Configuration
+
+**DO: Use Constants from `AppConstants.cs`**
+
+All application-wide constants are centralized in `Quater.Backend.Core.Constants/AppConstants.cs`:
+
+```csharp
+// ✅ GOOD: Use centralized constants
+public async Task<PagedResult<Sample>> GetPagedAsync(int page, int pageSize, CancellationToken ct)
+{
+    var validatedPageSize = Math.Min(pageSize, AppConstants.Pagination.MaxPageSize);
+    var skip = (page - 1) * validatedPageSize;
+    
+    // Query logic...
+}
+
+// ❌ BAD: Magic numbers
+public async Task<PagedResult<Sample>> GetPagedAsync(int page, int pageSize, CancellationToken ct)
+{
+    var validatedPageSize = Math.Min(pageSize, 100); // Magic number!
+    var skip = (page - 1) * validatedPageSize;
+    
+    // Query logic...
+}
+```
+
+**Available Constant Classes**:
+
+- `AppConstants` → Pagination, rate limiting, file upload, sync, validation, security
+- `ErrorMessages` → All error messages
+- `Roles` → Role name constants (Admin, Technician, Viewer)
+- `Policies` → Authorization policy names
+- `ClaimTypes` → Custom claim type constants
+
+### ✅ Clean Architecture Boundaries
+
+**DO: Respect Layer Dependencies**
+
+Follow the dependency flow: **Core → Services → Data → API**
+
+```
+┌─────────────────────────────────────────┐
+│  API Layer (Controllers, Middleware)    │
+│  - Depends on: Core, Services           │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│  Services Layer (Business Logic)        │
+│  - Depends on: Core, Data               │
+└─────────────────────────────────────────┘
+                  ↓
+┌───────────────────────────────┐
+│  Data Layer (Repositories, DbContext)   │
+│  - Depends on: Core                     │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│  Core Layer (Interfaces, DTOs, Models)  │
+│  - Depends on: Nothing (pure)           │
+└─────────────────────────────────────────┘
+```
+
+**Rules**:
+- Core layer has NO dependencies on other layers
+- Services implement interfaces defined in Core
+- Controllers only call Services, never Repositories directly
+- DTOs are defined in Core, not in API layer
+
+### ❌ Anti-Patterns to Avoid
+
+**DON'T: Create Verbose Constant Classes**
+
+```csharp
+// ❌ BAD: Overly nested constants
+public static class SyncConstants
+{
+    public static class Status
+    {
+        public const string Success = "success";
+        public const string Failed = "failed";
+        public const string InProgress = "in_progress";
+    }
+}
+
+// Usage is verbose and error-prone
+log.Status = SyncConstants.Status.Success;
+
+// ✅ GOOD: Use enum instead
+public enum SyncStatus
+{
+    Synced,
+    Failed,
+    InProgress,
+    Pending
+}
+
+// Usage is clean and type-safe
+log.Status = SyncStatus.Synced;
+```
+
+**DON'T: Modify Files Outside Task Scope**
+
+When working on a specific issue or task, only modify files directly related to that task. Avoid "drive-by refactoring" that makes code review difficult.
+
+**DON'T: Mix Business Logic in Controllers**
+
+```csharp
+// ❌ BAD: Business logic in controller
+[HttpPost]
+public async Task<IActionResult> CreateSample([FromBody] CreateSampleDto dto)
+{
+    var existing = await _repository.GetByCodeAsync(dto.Code);
+    if (existing is not null)
+        return Conflict("Sample code already exists");
+    
+    var sample = new Sample { /* ... */ };
+    await _repository.AddAsync(sample);
+    return Ok(sample);
+}
+
+// ✅ GOOD: Delegate to service
+[HttpPost]
+public async Task<IActionResult> CreateSample([FromBody] CreateSampleDto dto)
+{
+    var sample = await _sampleService.CreateAsync(dto, HttpContext.RequestAborted);
+    return CreatedAtAction(nameof(GetById), new { id = sample.Id }, sample);
+}
+```
+
+### 📋 Code Review Checklist
+
+Before submitting code, verify:
+
+- [ ] No generic exceptions (`InvalidOperationException`, `ArgumentException`) for business logic
+- [ ] No magic strings for status/type values (use enums)
+- [ ] No hardcoded error messages (use `ErrorMessages.cs`)
+- [ ] Entity type references use `nameof()` not string literals
+- [ ] Constants used from `AppConstants.cs` where applicable
+- [ ] Clean Architecture boundaries respected
+- [ ] All async methods accept `CancellationToken`
+- [ ] Nullable reference types properly annotated
+- [ ] Build succeeds with 0 errors, 0 warnings
+
+---
