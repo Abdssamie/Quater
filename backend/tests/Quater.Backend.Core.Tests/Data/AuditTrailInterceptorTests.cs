@@ -11,10 +11,12 @@ namespace Quater.Backend.Core.Tests.Data;
 public class AuditTrailInterceptorTests : IDisposable
 {
     private readonly QuaterDbContext _context;
+    private readonly string _databaseName;
 
     public AuditTrailInterceptorTests()
     {
-        _context = TestDbContextFactory.CreateInMemoryContext();
+        _databaseName = Guid.NewGuid().ToString();
+        _context = TestDbContextFactory.CreateInMemoryContext(_databaseName);
     }
 
     [Fact]
@@ -27,8 +29,9 @@ public class AuditTrailInterceptorTests : IDisposable
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
-        // Assert
-        var auditLogs = await _context.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
+        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
+        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         
         var auditLog = auditLogs.FirstOrDefault(a => a.EntityId == sample.Id);
@@ -55,8 +58,9 @@ public class AuditTrailInterceptorTests : IDisposable
         _context.Samples.Update(sample);
         await _context.SaveChangesAsync();
 
-        // Assert
-        var auditLogs = await _context.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
+        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
+        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
@@ -81,11 +85,14 @@ public class AuditTrailInterceptorTests : IDisposable
         _context.Samples.Remove(sample);
         await _context.SaveChangesAsync();
 
-        // Assert
-        var auditLogs = await _context.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
+        // Assert - Query in fresh context to ensure audit logs are visible
+        // Note: SoftDeleteInterceptor converts Delete to Update (sets IsDeleted=true)
+        // So we expect an Update audit log, not a Delete audit log
+        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         
-        var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Delete);
+        var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
         auditLog!.EntityType.Should().Be(nameof(Sample));
     }
@@ -101,8 +108,9 @@ public class AuditTrailInterceptorTests : IDisposable
         _context.Samples.AddRange(sample1, sample2);
         await _context.SaveChangesAsync();
 
-        // Assert
-        var auditLogs = await _context.AuditLogs.ToListAsync();
+        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
+        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        var auditLogs = await verifyContext.AuditLogs.ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(2);
         
         auditLogs.Should().Contain(a => a.EntityId == sample1.Id && a.Action == AuditAction.Create);

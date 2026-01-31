@@ -134,7 +134,8 @@ public static class MockDataFactory
             CreatedAt = BaseDate,
             Version = 1,
             IsDeleted = false,
-            IsSynced = true
+            IsSynced = true,
+            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
 

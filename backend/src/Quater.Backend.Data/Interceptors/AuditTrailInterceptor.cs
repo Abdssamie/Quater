@@ -30,8 +30,8 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUserService? _currentUserService;
     private readonly string? _ipAddress;
-    private readonly ThreadLocal<bool> _isSavingAuditLogs = new(() => false);
-    private readonly ThreadLocal<List<AuditLogData>> _pendingAuditLogs = new(() => new List<AuditLogData>());
+    private readonly AsyncLocal<bool> _isSavingAuditLogs = new();
+    private readonly AsyncLocal<List<AuditLogData>> _pendingAuditLogs = new();
 
     /// <summary>
     /// Initializes a new instance of the AuditTrailInterceptor.
@@ -45,7 +45,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     }
 
     /// <summary>
-    /// Intercepts SaveChanges operations to capture audit data before save.
+    /// Intercepts SaveChanges operations to capture audit data and add audit logs before save.
     /// </summary>
     public override InterceptionResult<int> SavingChanges(
         DbContextEventData eventData,
@@ -57,11 +57,15 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         }
 
         CaptureAuditData(eventData.Context);
+        
+        // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
+        AddAuditLogsToContext(eventData.Context);
+        
         return base.SavingChanges(eventData, result);
     }
 
     /// <summary>
-    /// Intercepts async SaveChanges operations to capture audit data before save.
+    /// Intercepts async SaveChanges operations to capture audit data and add audit logs before save.
     /// </summary>
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
@@ -74,7 +78,51 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         }
 
         CaptureAuditData(eventData.Context);
+        
+        // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
+        AddAuditLogsToContext(eventData.Context);
+        
         return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    /// <summary>
+    /// Adds captured audit logs to the context (to be saved in the same transaction).
+    /// </summary>
+    private void AddAuditLogsToContext(DbContext context)
+    {
+        var pendingLogs = _pendingAuditLogs.Value;
+        if (pendingLogs == null || !pendingLogs.Any())
+            return;
+
+        _isSavingAuditLogs.Value = true;
+        
+        try
+        {
+            foreach (var auditData in pendingLogs)
+            {
+                var auditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = auditData.UserId,
+                    EntityType = auditData.EntityType,
+                    EntityId = auditData.EntityId,
+                    Action = auditData.Action,
+                    OldValue = auditData.OldValue,
+                    NewValue = auditData.NewValue,
+                    Timestamp = auditData.Timestamp,
+                    IpAddress = auditData.IpAddress,
+                    IsArchived = false
+                };
+
+                context.Set<AuditLog>().Add(auditLog);
+            }
+            
+            pendingLogs.Clear();
+        }
+        finally
+        {
+            _isSavingAuditLogs.Value = false;
+        }
     }
 
     /// <summary>
@@ -82,10 +130,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// </summary>
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
-        if (eventData.Context is not null && !_isSavingAuditLogs.Value && _pendingAuditLogs.Value.Any())
-        {
-            SaveAuditLogs(eventData.Context);
-        }
+        // No longer needed - audit logs are added in SavingChanges
         return base.SavedChanges(eventData, result);
     }
 
@@ -97,10 +142,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         int result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context is not null && !_isSavingAuditLogs.Value && _pendingAuditLogs.Value.Any())
-        {
-            await SaveAuditLogsAsync(eventData.Context, cancellationToken);
-        }
+        // No longer needed - audit logs are added in SavingChangesAsync
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -122,8 +164,15 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             .Where(e => e.Entity is not AuditLog && e.Entity is not AuditLogArchive)
             .ToList();
 
-        // Clear previous pending audit logs for this save operation
-        _pendingAuditLogs.Value.Clear();
+        // Initialize or clear pending audit logs for this save operation
+        if (_pendingAuditLogs.Value == null)
+        {
+            _pendingAuditLogs.Value = new List<AuditLogData>();
+        }
+        else
+        {
+            _pendingAuditLogs.Value.Clear();
+        }
 
         foreach (var entry in auditableEntries)
         {
@@ -206,86 +255,6 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
                 Timestamp = timestamp,
                 IpAddress = _ipAddress
             });
-        }
-    }
-
-    /// <summary>
-    /// Saves captured audit logs to the database (synchronous).
-    /// </summary>
-    private void SaveAuditLogs(DbContext context)
-    {
-        if (!_pendingAuditLogs.Value.Any())
-            return;
-
-        try
-        {
-            _isSavingAuditLogs.Value = true;
-
-            foreach (var auditData in _pendingAuditLogs.Value)
-            {
-                var auditLog = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = auditData.UserId,
-                    EntityType = auditData.EntityType,
-                    EntityId = auditData.EntityId,
-                    Action = auditData.Action,
-                    OldValue = auditData.OldValue,
-                    NewValue = auditData.NewValue,
-                    Timestamp = auditData.Timestamp,
-                    IpAddress = auditData.IpAddress,
-                    IsArchived = false
-                };
-
-                context.Set<AuditLog>().Add(auditLog);
-            }
-
-            context.SaveChanges();
-            _pendingAuditLogs.Value.Clear();
-        }
-        finally
-        {
-            _isSavingAuditLogs.Value = false;
-        }
-    }
-
-    /// <summary>
-    /// Saves captured audit logs to the database (asynchronous).
-    /// </summary>
-    private async Task SaveAuditLogsAsync(DbContext context, CancellationToken cancellationToken)
-    {
-        if (!_pendingAuditLogs.Value.Any())
-            return;
-
-        try
-        {
-            _isSavingAuditLogs.Value = true;
-
-            foreach (var auditData in _pendingAuditLogs.Value)
-            {
-                var auditLog = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = auditData.UserId,
-                    EntityType = auditData.EntityType,
-                    EntityId = auditData.EntityId,
-                    Action = auditData.Action,
-                    OldValue = auditData.OldValue,
-                    NewValue = auditData.NewValue,
-                    Timestamp = auditData.Timestamp,
-                    IpAddress = auditData.IpAddress,
-                    IsArchived = false
-                };
-
-                context.Set<AuditLog>().Add(auditLog);
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-            _pendingAuditLogs.Value.Clear();
-        }
-        finally
-        {
-            _isSavingAuditLogs.Value = false;
         }
     }
 
