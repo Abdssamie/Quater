@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using FluentValidation;
+using Quater.Backend.Core.Exceptions;
 
 namespace Quater.Backend.Api.Middleware;
 
@@ -48,6 +49,31 @@ public class GlobalExceptionHandlerMiddleware
                 HttpStatusCode.BadRequest,
                 "Validation failed",
                 validationEx.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }).ToList()
+            ),
+            NotFoundException => (
+                HttpStatusCode.NotFound,
+                exception.Message,
+                null
+            ),
+            BadRequestException => (
+                HttpStatusCode.BadRequest,
+                exception.Message,
+                null
+            ),
+            ConflictException => (
+                HttpStatusCode.Conflict,
+                exception.Message,
+                null
+            ),
+            ForbiddenException => (
+                HttpStatusCode.Forbidden,
+                exception.Message,
+                null
+            ),
+            SyncException => (
+                HttpStatusCode.InternalServerError,
+                exception.Message,
+                null
             ),
             KeyNotFoundException => (
                 HttpStatusCode.NotFound,
