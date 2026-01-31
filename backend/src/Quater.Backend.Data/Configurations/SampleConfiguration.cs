@@ -103,7 +103,9 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
 
         // IConcurrent properties
         entity.Property(e => e.RowVersion)
-            .IsRowVersion();
+            .IsRowVersion()
+            .ValueGeneratedOnAddOrUpdate()
+            .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
         // Indexes
         entity.HasIndex(e => e.LastModified)

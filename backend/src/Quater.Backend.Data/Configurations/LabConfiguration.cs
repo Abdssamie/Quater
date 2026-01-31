@@ -57,7 +57,9 @@ public class LabConfiguration : IEntityTypeConfiguration<Lab>
 
         // IConcurrent properties
         entity.Property(e => e.RowVersion)
-            .IsRowVersion();
+            .IsRowVersion()
+            .ValueGeneratedOnAddOrUpdate()
+            .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
         // Indexes
         entity.HasIndex(e => e.Name)

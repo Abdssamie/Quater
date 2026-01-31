@@ -48,7 +48,7 @@ public class User : IdentityUser, IAuditable, IConcurrent
 
     // IConcurrent interface properties
     [Timestamp]
-    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;

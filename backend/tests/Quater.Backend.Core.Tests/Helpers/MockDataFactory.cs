@@ -191,7 +191,7 @@ public static class MockDataFactory
     }
 
     /// <summary>
-    /// Creates multiple test results
+    /// Generates a realistic test value for a parameter
     /// </summary>
     public static List<TestResult> CreateTestResults(List<Sample> samples, List<Parameter> parameters)
     {

@@ -128,7 +128,7 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
 
     // IConcurrent interface properties
     [Timestamp]
-    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
     public Sample Sample { get; set; } = null!;

@@ -58,7 +58,7 @@ public class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
 
     // IConcurrent interface properties
     [Timestamp]
-    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
     public ICollection<User> Users { get; set; } = new List<User>();
