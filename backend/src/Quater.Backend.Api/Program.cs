@@ -1,10 +1,10 @@
+using System.Security.Cryptography.X509Certificates;
 using Asp.Versioning;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OpenIddict.Validation.AspNetCore;
 using Quartz;
+using Quater.Backend.Api.Infrastructure;
 using Quater.Backend.Api.Jobs;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Core.Interfaces;
@@ -16,7 +16,6 @@ using Quater.Backend.Data.Repositories;
 using Quater.Backend.Data.Seeders;
 using Quater.Backend.Services;
 using Serilog;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -140,7 +139,7 @@ builder.Services.AddScoped<AuditTrailInterceptor>(sp =>
 {
     var currentUserService = sp.GetRequiredService<ICurrentUserService>();
     var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
-    var ipAddress = httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+    var ipAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
     return new AuditTrailInterceptor(currentUserService, ipAddress);
 });
 
@@ -228,23 +227,33 @@ builder.Services.AddOpenIddict()
         else
         {
             // In production, load certificates from configuration
-            // Certificates should be stored in Azure Key Vault or secure certificate store
-            var encryptionCertPath = builder.Configuration["OpenIddict:EncryptionCertificatePath"];
-            var signingCertPath = builder.Configuration["OpenIddict:SigningCertificatePath"];
-            var certPassword = builder.Configuration["OpenIddict:CertificatePassword"];
+            // Supports multiple loading strategies:
+            // 1. Base64 encoded (Docker/K8s secrets): OpenIddict:EncryptionCertificateBase64
+            // 2. File path: OpenIddict:EncryptionCertificatePath
+            // 3. Windows Certificate Store: OpenIddict:EncryptionCertificateThumbprint
             
-            if (string.IsNullOrEmpty(encryptionCertPath) || string.IsNullOrEmpty(signingCertPath))
+            // Create a simple console logger for certificate loading during startup
+            using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
             {
-                throw new InvalidOperationException(
-                    "Production environment requires OpenIddict:EncryptionCertificatePath and OpenIddict:SigningCertificatePath " +
-                    "to be configured. Certificates should be stored securely (e.g., Azure Key Vault).");
-            }
+                loggingBuilder.AddConsole();
+                loggingBuilder.SetMinimumLevel(LogLevel.Information);
+            });
+            var logger = loggerFactory.CreateLogger("CertificateLoader");
             
-            // Load certificates from file system (in production, use Azure Key Vault or similar)
-            options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(
-                encryptionCertPath, certPassword))
-                   .AddSigningCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(
-                signingCertPath, certPassword));
+            var encryptionCert = CertificateLoader.LoadCertificate(
+                builder.Configuration, 
+                "Encryption",
+                logger);
+            CertificateLoader.ValidateCertificate(encryptionCert, "Encryption", logger);
+            
+            var signingCert = CertificateLoader.LoadCertificate(
+                builder.Configuration, 
+                "Signing",
+                logger);
+            CertificateLoader.ValidateCertificate(signingCert, "Signing", logger);
+            
+            options.AddEncryptionCertificate(encryptionCert)
+                   .AddSigningCertificate(signingCert);
         }
 
         // Enable ASP.NET Core integration
