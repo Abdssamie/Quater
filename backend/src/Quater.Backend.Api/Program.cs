@@ -30,7 +30,53 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Quater Water Quality Management API",
+        Version = "v1",
+        Description = "REST API for managing water quality testing data, compliance calculations, and laboratory operations",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "Quater Development Team",
+            Email = "support@quater.app"
+        }
+    });
+
+    // Enable XML comments for better API documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    // Add security definition for Bearer token authentication
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // Configure API Versioning
 builder.Services.AddApiVersioning(options =>
@@ -208,17 +254,15 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<ISampleService, SampleService>();
 builder.Services.AddScoped<ITestResultService, TestResultService>();
 builder.Services.AddScoped<IParameterService, ParameterService>();
+builder.Services.AddScoped<ILabService, LabService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
 
 // TODO: Uncomment when Sync services are implemented by other agents
 // builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
 // builder.Services.AddScoped<ISyncLogService, Quater.Backend.Sync.SyncLogService>();
 // builder.Services.AddScoped<IBackupService, Quater.Backend.Sync.BackupService>();
 // builder.Services.AddScoped<IConflictResolver, Quater.Backend.Sync.ConflictResolver>();
-
-// TODO: Uncomment when services are implemented by other agents
-// builder.Services.AddScoped<ILabService, LabService>();
-// builder.Services.AddScoped<IUserService, UserService>();
-// builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
 
 // Configure Quartz.NET
 builder.Services.AddQuartz(q =>
