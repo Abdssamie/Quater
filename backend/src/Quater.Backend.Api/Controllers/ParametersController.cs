@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 
@@ -6,6 +8,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
 public class ParametersController(IParameterService parameterService, ILogger<ParametersController> logger) : ControllerBase
 {
     /// <summary>
@@ -55,6 +58,7 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
     /// Create a new parameter
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can create parameters
     [ProducesResponseType(typeof(ParameterDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ParameterDto>> Create(
@@ -78,6 +82,7 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
     /// Update an existing parameter
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can update parameters
     [ProducesResponseType(typeof(ParameterDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -109,6 +114,7 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
     /// Delete a parameter (soft delete - marks as inactive)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can delete parameters
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)

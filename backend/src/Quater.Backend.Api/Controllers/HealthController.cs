@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Data;
@@ -6,9 +7,11 @@ namespace Quater.Backend.Api.Controllers;
 
 /// <summary>
 /// Health check endpoints for monitoring and orchestration.
+/// These endpoints are publicly accessible for monitoring systems.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous] // Health checks should be accessible without authentication
 public class HealthController : ControllerBase
 {
     private readonly QuaterDbContext _context;
@@ -72,7 +75,8 @@ public class HealthController : ControllerBase
 
             // Optionally check if migrations are applied
             var pendingMigrations = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
-            if (pendingMigrations.Any())
+            var migrations = pendingMigrations as string[] ?? pendingMigrations.ToArray();
+            if (migrations.Length != 0)
             {
                 _logger.LogWarning("Readiness check warning: Pending migrations detected");
             }
@@ -84,7 +88,7 @@ public class HealthController : ControllerBase
                 checks = new
                 {
                     database = "Connected",
-                    pendingMigrations = pendingMigrations.Any() ? "Warning" : "None"
+                    pendingMigrations = migrations.Length != 0 ? "Warning" : "None"
                 }
             });
         }
@@ -141,19 +145,19 @@ public class HealthController : ControllerBase
 
             // Check pending migrations
             var pendingMigrations = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
+            var migrations = pendingMigrations as string[] ?? pendingMigrations.ToArray();
             checks["migrations"] = new
             {
-                status = pendingMigrations.Any() ? "Warning" : "Healthy",
-                pending = pendingMigrations.Count()
+                status = migrations.Length != 0 ? "Warning" : "Healthy",
+                pending = migrations.Length
             };
 
             // Overall status
-            var isHealthy = canConnect;
-            var statusCode = isHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
+            var statusCode = canConnect ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
 
             return StatusCode(statusCode, new
             {
-                status = isHealthy ? "Healthy" : "Unhealthy",
+                status = canConnect ? "Healthy" : "Unhealthy",
                 timestamp = DateTime.UtcNow,
                 version = "1.0.0", // Could read from assembly
                 checks

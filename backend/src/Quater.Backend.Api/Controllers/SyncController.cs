@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 
@@ -10,6 +12,7 @@ namespace Quater.Backend.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = Policies.ViewerOrAbove)] // All sync endpoints require authentication
 [ApiExplorerSettings(IgnoreApi = true)] // Hide from Swagger until ISyncService is implemented
 public class SyncController : ControllerBase
 {

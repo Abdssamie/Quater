@@ -1,6 +1,8 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 
@@ -8,6 +10,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
 public class SamplesController(ISampleService sampleService, ILogger<SamplesController> logger) : ControllerBase
 {
     /// <summary>
@@ -65,6 +68,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     /// Create a new sample
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = Policies.TechnicianOrAbove)] // Only Technician and Admin can create
     [ProducesResponseType(typeof(SampleDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<SampleDto>> Create(
@@ -91,6 +95,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     /// Update an existing sample
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = Policies.TechnicianOrAbove)] // Only Technician and Admin can update
     [ProducesResponseType(typeof(SampleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -131,6 +136,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     /// Delete a sample (soft delete)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can delete
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)

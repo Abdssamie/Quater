@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,12 +7,13 @@ using OpenIddict.Server.AspNetCore;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using System.Security.Claims;
-using static OpenIddict.Abstractions.OpenIddictConstants;
+using Microsoft.AspNetCore;
 
 namespace Quater.Backend.Api.Controllers;
 
 /// <summary>
-/// Authentication controller handling user registration, login, token management, and password operations
+/// Authentication controller handling user registration, token management, and password operations.
+/// Uses OAuth2/OpenIddict for authentication - clients should use the /token endpoint for login.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -72,99 +74,262 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Login with username and password to obtain access and refresh tokens
+    /// OAuth2 token endpoint - handles password and refresh_token grant types.
+    /// 
+    /// For login, use:
+    ///   POST /api/auth/token
+    ///   Content-Type: application/x-www-form-urlencoded
+    ///   
+    ///   grant_type=password&amp;username=user@example.com&amp;password=secret&amp;scope=openid email profile offline_access api
+    /// 
+    /// For refresh:
+    ///   POST /api/auth/token
+    ///   Content-Type: application/x-www-form-urlencoded
+    ///   
+    ///   grant_type=refresh_token&amp;refresh_token=YOUR_REFRESH_TOKEN
     /// </summary>
-    [HttpPost("login")]
+    [HttpPost("token")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [Produces("application/json")]
+    public async Task<IActionResult> Token()
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var request = HttpContext.GetOpenIddictServerRequest()
+                      ?? throw new InvalidOperationException("The OpenIddict request cannot be retrieved.");
 
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
+        // Handle password grant type (username/password authentication)
+        if (request.IsPasswordGrantType())
         {
-            _logger.LogWarning("Login attempt failed: User {Email} not found", request.Email);
-            return Unauthorized(new { error = "Invalid email or password" });
-        }
-
-        if (!user.IsActive)
-        {
-            _logger.LogWarning("Login attempt failed: User {Email} is inactive", request.Email);
-            return Unauthorized(new { error = "Account is inactive" });
-        }
-
-        // Check if account is locked out
-        if (await _userManager.IsLockedOutAsync(user))
-        {
-            var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-            _logger.LogWarning("Login attempt failed: User {Email} is locked out until {LockoutEnd}", request.Email, lockoutEnd);
-            return Unauthorized(new { error = $"Account is locked out until {lockoutEnd?.DateTime:yyyy-MM-dd HH:mm:ss} UTC" });
-        }
-
-        var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-
-        if (!result.Succeeded)
-        {
-            if (result.IsLockedOut)
+            if (request.Username == null)
             {
-                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-                _logger.LogWarning("User {Email} locked out after failed login attempts until {LockoutEnd}", request.Email, lockoutEnd);
-                return Unauthorized(new { error = $"Account locked out until {lockoutEnd?.DateTime:yyyy-MM-dd HH:mm:ss} UTC due to multiple failed login attempts" });
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidRequest,
+                        [".error_description"] = "The username is required."
+                    }));
             }
 
-            var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
-            _logger.LogWarning("Login attempt failed for user {Email}. Failed attempts: {FailedAttempts}", request.Email, failedAttempts);
-            return Unauthorized(new { error = "Invalid email or password" });
+            var user = await _userManager.FindByNameAsync(request.Username);
+            if (user == null)
+            {
+                _logger.LogWarning("Token request failed: User {Username} not found", request.Username);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The username or password is invalid."
+                    }));
+            }
+
+            // Check if user is active
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Token request failed: User {Username} is inactive", request.Username);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The account is inactive."
+                    }));
+            }
+
+            // Check if account is locked out
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
+                _logger.LogWarning("Token request failed: User {Username} is locked out until {LockoutEnd}",
+                    request.Username, lockoutEnd);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] =
+                            $"Account is locked out until {lockoutEnd?.DateTime:yyyy-MM-dd HH:mm:ss} UTC."
+                    }));
+            }
+
+            // Verify password
+            if (!await _userManager.CheckPasswordAsync(user, request.Password ?? string.Empty))
+            {
+                await _userManager.AccessFailedAsync(user);
+                var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
+                _logger.LogWarning(
+                    "Token request failed: Invalid password for user {Username}. Failed attempts: {FailedAttempts}",
+                    request.Username, failedAttempts);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The username or password is invalid."
+                    }));
+            }
+
+            // Reset failed login attempts on successful authentication
+            await _userManager.ResetAccessFailedCountAsync(user);
+
+            // Update last login
+            user.LastLogin = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            // Create claims principal
+            var claims = new List<Claim>
+            {
+                new (OpenIddictConstants.Claims.Subject, user.Id),
+                new (OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
+                new (OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new ("role", user.Role.ToString()),
+                new ("lab_id", user.LabId.ToString())
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+            // Set scopes
+            claimsPrincipal.SetScopes(OpenIddictConstants.Scopes.OpenId, OpenIddictConstants.Scopes.Email, OpenIddictConstants.Scopes.Profile, OpenIddictConstants.Scopes.OfflineAccess, "api");
+
+            // Set destinations for claims (which tokens they should be included in)
+            foreach (var claim in claimsPrincipal.Claims)
+            {
+                claim.SetDestinations(GetDestinations(claim));
+            }
+
+            _logger.LogInformation("User {Username} authenticated successfully via token endpoint", request.Username);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        // Update last login
-        user.LastLogin = DateTime.UtcNow;
-        await _userManager.UpdateAsync(user);
-
-        // Reset failed login attempts on successful login
-        await _userManager.ResetAccessFailedCountAsync(user);
-
-        // Create claims
-        var claims = new List<Claim>
+        // Handle refresh token grant type
+        if (request.IsRefreshTokenGrantType())
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim("role", user.Role.ToString()),
-            new Claim("lab_id", user.LabId.ToString())
-        };
+            // Retrieve the claims principal stored in the refresh token
+            var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+            if (result.Principal == null)
+            {
+                _logger.LogWarning("Token refresh failed: Invalid refresh token");
 
-        // Sign in and return tokens
-        claimsPrincipal.SetScopes(new[] { Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.OfflineAccess, "api" });
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The refresh token is invalid."
+                    }));
+            }
 
-        _logger.LogInformation("User {Email} logged in successfully", request.Email);
+            // Retrieve the user profile corresponding to the refresh token
+            var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
+            var user = await _userManager.FindByIdAsync(userId ?? string.Empty);
 
-        return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            if (user == null)
+            {
+                _logger.LogWarning("Token refresh failed: User {UserId} not found", userId);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The user no longer exists."
+                    }));
+            }
+
+            // Ensure the user is still active
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Token refresh failed: User {UserId} is inactive", userId);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The account is inactive."
+                    }));
+            }
+
+            // Check if account is locked out
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
+                _logger.LogWarning("Token refresh failed: User {UserId} is locked out until {LockoutEnd}", userId,
+                    lockoutEnd);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] =
+                            $"Account is locked out until {lockoutEnd?.DateTime:yyyy-MM-dd HH:mm:ss} UTC."
+                    }));
+            }
+
+            // Create a new claims principal with updated claims
+            var claims = new List<Claim>
+            {
+                new Claim(OpenIddictConstants.Claims.Subject, user.Id),
+                new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
+                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new Claim("role", user.Role.ToString()),
+                new Claim("lab_id", user.LabId.ToString())
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+            // Restore the scopes from the original refresh token
+            claimsPrincipal.SetScopes(result.Principal.GetScopes());
+
+            // Set destinations for claims
+            foreach (var claim in claimsPrincipal.Claims)
+            {
+                claim.SetDestinations(GetDestinations(claim));
+            }
+
+            _logger.LogInformation("User {UserId} refreshed token successfully", userId);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
+        // Unsupported grant type
+        _logger.LogWarning("Token request failed: Unsupported grant type {GrantType}", request.GrantType);
+
+        return Forbid(
+            authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            properties: new AuthenticationProperties(new Dictionary<string, string?>
+            {
+                [".error"] = OpenIddictConstants.Errors.UnsupportedGrantType,
+                [".error_description"] = "The specified grant type is not supported."
+            }));
     }
 
     /// <summary>
-    /// Refresh access token using refresh token (placeholder - use OAuth2 token endpoint)
+    /// Determines which tokens a claim should be included in (access token, identity token, etc.)
     /// </summary>
-    [HttpPost("refresh-token")]
-    [AllowAnonymous]
-    public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
+    private static IEnumerable<string> GetDestinations(Claim claim)
     {
-        if (string.IsNullOrEmpty(request.RefreshToken))
-        {
-            return BadRequest(new { error = "Refresh token is required" });
-        }
+        // Include the claim in access tokens
+        yield return OpenIddictConstants.Destinations.AccessToken;
 
-        // Note: OpenIddict handles refresh tokens through the OAuth2 token endpoint
-        // Clients should use POST /api/auth/token with grant_type=refresh_token
-        return BadRequest(new 
-        { 
-            error = "Use the OAuth2 token endpoint",
-            message = "POST /api/auth/token with grant_type=refresh_token and refresh_token parameter"
-        });
+        // Include specific claims in identity tokens
+        switch (claim.Type)
+        {
+            case OpenIddictConstants.Claims.Name:
+            case OpenIddictConstants.Claims.Email:
+            case OpenIddictConstants.Claims.Subject:
+                yield return OpenIddictConstants.Destinations.IdentityToken;
+                break;
+        }
     }
 
     /// <summary>
@@ -292,23 +457,6 @@ public class RegisterRequest
     public string Password { get; set; } = string.Empty;
     public UserRole Role { get; set; }
     public Guid LabId { get; set; }
-}
-
-/// <summary>
-/// Request model for user login
-/// </summary>
-public class LoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Request model for refresh token
-/// </summary>
-public class RefreshTokenRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
 }
 
 /// <summary>

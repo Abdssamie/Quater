@@ -104,14 +104,23 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("QuaterCorsPolicy", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5000",  // Desktop app
-                "http://localhost:5001",  // Desktop app (alternate)
-                "capacitor://localhost",  // Mobile app (Capacitor)
-                "ionic://localhost",      // Mobile app (Ionic)
-                "http://localhost",       // Mobile app (local dev)
-                "http://localhost:8100"   // Mobile app (Ionic dev server)
-            )
+        // Get allowed origins from configuration
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+            ?? new[] { "http://localhost:5000" }; // Fallback for development
+        
+        // In production, validate that all origins use HTTPS
+        if (!builder.Environment.IsDevelopment())
+        {
+            var httpOrigins = allowedOrigins.Where(o => o.StartsWith("http://", StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (httpOrigins.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Production environment does not allow HTTP origins. Found: {string.Join(", ", httpOrigins)}. " +
+                    "All origins must use HTTPS for security.");
+            }
+        }
+        
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials()
@@ -155,24 +164,29 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
 // Configure ASP.NET Core Identity with lockout settings
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
-    // Password settings
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredLength = 8;
+    // Bind password settings from configuration
+    var passwordConfig = builder.Configuration.GetSection("Identity:Password");
+    options.Password.RequireDigit = passwordConfig.GetValue("RequireDigit", true);
+    options.Password.RequireLowercase = passwordConfig.GetValue("RequireLowercase", true);
+    options.Password.RequireUppercase = passwordConfig.GetValue("RequireUppercase", true);
+    options.Password.RequireNonAlphanumeric = passwordConfig.GetValue("RequireNonAlphanumeric", true);
+    options.Password.RequiredLength = passwordConfig.GetValue("RequiredLength", 8);
     
-    // Lockout settings - 5 failed attempts, 15 minute lockout
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.Lockout.AllowedForNewUsers = true;
+    // Bind lockout settings from configuration
+    var lockoutConfig = builder.Configuration.GetSection("Identity:Lockout");
+    var lockoutTimeSpan = lockoutConfig.GetValue("DefaultLockoutTimeSpan", "00:15:00");
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.Parse(lockoutTimeSpan);
+    options.Lockout.MaxFailedAccessAttempts = lockoutConfig.GetValue("MaxFailedAccessAttempts", 5);
+    options.Lockout.AllowedForNewUsers = lockoutConfig.GetValue("AllowedForNewUsers", true);
     
-    // User settings
-    options.User.RequireUniqueEmail = true;
+    // Bind user settings from configuration
+    var userConfig = builder.Configuration.GetSection("Identity:User");
+    options.User.RequireUniqueEmail = userConfig.GetValue("RequireUniqueEmail", true);
     
-    // Sign-in settings
-    options.SignIn.RequireConfirmedEmail = false;
-    options.SignIn.RequireConfirmedAccount = false;
+    // Bind sign-in settings from configuration
+    var signInConfig = builder.Configuration.GetSection("Identity:SignIn");
+    options.SignIn.RequireConfirmedEmail = signInConfig.GetValue("RequireConfirmedEmail", false);
+    options.SignIn.RequireConfirmedAccount = signInConfig.GetValue("RequireConfirmedAccount", false);
 })
     .AddEntityFrameworkStores<QuaterDbContext>()
     .AddDefaultTokenProviders();
@@ -204,15 +218,46 @@ builder.Services.AddOpenIddict()
         // Register scopes
         options.RegisterScopes("api", "offline_access");
 
-        // Use development certificates (replace with real certificates in production)
-        options.AddDevelopmentEncryptionCertificate()
-               .AddDevelopmentSigningCertificate();
+        // Configure certificates based on environment
+        if (builder.Environment.IsDevelopment())
+        {
+            // Use development certificates in development only
+            options.AddDevelopmentEncryptionCertificate()
+                   .AddDevelopmentSigningCertificate();
+        }
+        else
+        {
+            // In production, load certificates from configuration
+            // Certificates should be stored in Azure Key Vault or secure certificate store
+            var encryptionCertPath = builder.Configuration["OpenIddict:EncryptionCertificatePath"];
+            var signingCertPath = builder.Configuration["OpenIddict:SigningCertificatePath"];
+            var certPassword = builder.Configuration["OpenIddict:CertificatePassword"];
+            
+            if (string.IsNullOrEmpty(encryptionCertPath) || string.IsNullOrEmpty(signingCertPath))
+            {
+                throw new InvalidOperationException(
+                    "Production environment requires OpenIddict:EncryptionCertificatePath and OpenIddict:SigningCertificatePath " +
+                    "to be configured. Certificates should be stored securely (e.g., Azure Key Vault).");
+            }
+            
+            // Load certificates from file system (in production, use Azure Key Vault or similar)
+            options.AddEncryptionCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                encryptionCertPath, certPassword))
+                   .AddSigningCertificate(new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                signingCertPath, certPassword));
+        }
 
         // Enable ASP.NET Core integration
-        options.UseAspNetCore()
+        var aspNetCoreBuilder = options.UseAspNetCore()
                .EnableTokenEndpointPassthrough()
-               .EnableUserinfoEndpointPassthrough()
-               .DisableTransportSecurityRequirement(); // Only for development
+               .EnableUserinfoEndpointPassthrough();
+        
+        // Only disable transport security in development (allows HTTP)
+        // In production, HTTPS is required for OAuth2 security
+        if (builder.Environment.IsDevelopment())
+        {
+            aspNetCoreBuilder.DisableTransportSecurityRequirement();
+        }
     })
     .AddValidation(options =>
     {

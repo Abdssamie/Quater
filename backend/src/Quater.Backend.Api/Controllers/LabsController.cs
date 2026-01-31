@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 
@@ -6,6 +9,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
 public class LabsController(ILabService labService, ILogger<LabsController> logger) : ControllerBase
 {
     /// <summary>
@@ -55,6 +59,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     /// Create a new lab
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can create labs
     [ProducesResponseType(typeof(LabDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<LabDto>> Create(
@@ -82,6 +87,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     /// Update an existing lab
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can update labs
     [ProducesResponseType(typeof(LabDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -116,6 +122,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     /// Delete a lab (soft delete - marks as inactive)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can delete labs
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)

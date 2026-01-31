@@ -1,6 +1,8 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
 
@@ -8,6 +10,7 @@ namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
 public class TestResultsController(ITestResultService testResultService, ILogger<TestResultsController> logger) : ControllerBase
 {
     /// <summary>
@@ -64,6 +67,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     /// Create a new test result
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = Policies.TechnicianOrAbove)] // Only Technician and Admin can create
     [ProducesResponseType(typeof(TestResultDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TestResultDto>> Create(
@@ -96,6 +100,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     /// Update an existing test result
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = Policies.TechnicianOrAbove)] // Only Technician and Admin can update
     [ProducesResponseType(typeof(TestResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -136,6 +141,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     /// Delete a test result (soft delete)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = Policies.AdminOnly)] // Only Admin can delete
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
