@@ -7,7 +7,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Tracks synchronization between clients and server.
 /// </summary>
-public class SyncLog : IEntity, ISyncable
+public sealed class SyncLog : IEntity, ISyncable
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -64,12 +64,6 @@ public class SyncLog : IEntity, ISyncable
     /// </summary>
     [Required]
     public int ConflictsResolved { get; set; }
-
-    /// <summary>
-    /// UTC timestamp of sync attempt
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; set; }
 
     // ISyncable interface properties
     public DateTime LastSyncedAt { get; init; }
