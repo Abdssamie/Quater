@@ -7,8 +7,10 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Stores backup copies of conflicting records during synchronization.
 /// Allows recovery and manual conflict resolution.
+/// Default conflict resolution strategy: "Server wins" - server data takes precedence,
+/// client changes are preserved here for manual review and recovery.
 /// </summary>
-public class ConflictBackup : IEntity, IAuditable
+public sealed class ConflictBackup : IEntity, IAuditable
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -23,11 +25,10 @@ public class ConflictBackup : IEntity, IAuditable
     public Guid EntityId { get; set; }
 
     /// <summary>
-    /// Type of entity (e.g., "Sample", "TestResult", "Parameter")
+    /// Type of entity
     /// </summary>
     [Required]
-    [MaxLength(100)]
-    public string EntityType { get; set; } = string.Empty;
+    public EntityType EntityType { get; set; }
 
     /// <summary>
     /// JSON serialized backup of the server version
@@ -83,17 +84,11 @@ public class ConflictBackup : IEntity, IAuditable
     [Required]
     public Guid LabId { get; set; }
 
-    /// <summary>
-    /// UTC timestamp of creation
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; set; }
-
     // IAuditable interface properties
     public DateTime CreatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedAt { get; set; }
-    public string UpdatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;
