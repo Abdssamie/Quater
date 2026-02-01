@@ -6,7 +6,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Represents a water quality lab organization.
 /// </summary>
-public class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
+public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -32,12 +32,6 @@ public class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
     /// </summary>
     [MaxLength(500)]
     public string? ContactInfo { get; set; }
-
-    /// <summary>
-    /// UTC timestamp of lab creation
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; set; }
 
     /// <summary>
     /// Whether lab is active

@@ -24,12 +24,6 @@ public class User : IdentityUser, IAuditable, IConcurrent
     public Guid LabId { get; set; }
 
     /// <summary>
-    /// UTC timestamp of account creation
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; init; }
-
-    /// <summary>
     /// UTC timestamp of last login
     /// </summary>
     public DateTime? LastLogin { get; set; }
