@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Quater.Backend.Core.Constants;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using System.Security.Claims;
@@ -17,20 +18,23 @@ namespace Quater.Backend.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public sealed class AuthController : ControllerBase
 {
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ILogger<AuthController> _logger;
+    private readonly IOpenIddictTokenManager _tokenManager;
 
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IOpenIddictTokenManager tokenManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
+        _tokenManager = tokenManager;
     }
 
     /// <summary>
@@ -186,8 +190,8 @@ public class AuthController : ControllerBase
                 new (OpenIddictConstants.Claims.Subject, user.Id),
                 new (OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
                 new (OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new ("role", user.Role.ToString()),
-                new ("lab_id", user.LabId.ToString())
+                new (QuaterClaimTypes.Role, user.Role.ToString()),
+                new (QuaterClaimTypes.LabId, user.LabId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -280,8 +284,8 @@ public class AuthController : ControllerBase
                 new Claim(OpenIddictConstants.Claims.Subject, user.Id),
                 new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
                 new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new Claim("role", user.Role.ToString()),
-                new Claim("lab_id", user.LabId.ToString())
+                new Claim(QuaterClaimTypes.Role, user.Role.ToString()),
+                new Claim(QuaterClaimTypes.LabId, user.LabId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -333,24 +337,46 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Logout and revoke tokens
+    /// Logout and revoke all tokens for the user
     /// </summary>
+    /// <remarks>
+    /// This endpoint revokes ALL tokens for the user, effectively logging them out from all devices.
+    /// For per-device logout, use the /revoke endpoint with the specific refresh token.
+    /// </remarks>
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+        if (string.IsNullOrEmpty(userId))
+        {
+            // Fall back to ClaimTypes.NameIdentifier if Subject claim not present
+            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
 
+        // Revoke all tokens for this user
+        var tokensRevoked = 0;
+        await foreach (var token in _tokenManager.FindBySubjectAsync(userId))
+        {
+            await _tokenManager.TryRevokeAsync(token);
+            tokensRevoked++;
+        }
+
         await _signInManager.SignOutAsync();
 
-        _logger.LogInformation("User {UserId} logged out successfully", userId);
+        _logger.LogInformation("User {UserId} logged out successfully. Revoked {TokenCount} tokens",
+            userId, tokensRevoked);
 
-        return Ok(new { message = "Logged out successfully" });
+        return Ok(new { message = "Logged out successfully", tokensRevoked });
     }
+
+    // Note: Token revocation endpoint (/api/auth/revoke) is handled automatically by OpenIddict
+    // via SetRevocationEndpointUris configuration. No custom controller action needed.
 
     /// <summary>
     /// Change password for authenticated user

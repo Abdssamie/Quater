@@ -70,4 +70,11 @@ public static class ErrorMessages
     // Report errors
     public const string ReportGenerationFailed = "Report generation failed. Please try again.";
     public const string NoDataForReport = "No data available for the selected criteria.";
+
+    // Email errors
+    public const string EmailSendFailed = "Failed to send email. Please try again later.";
+    public const string EmailTemplateNotFound = "Email template not found.";
+    public const string InvalidEmailAddress = "The email address is invalid.";
+    public const string EmailQueueFull = "Email queue is full. Please try again later.";
 }
+

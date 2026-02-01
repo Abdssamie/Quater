@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using Quartz;
 using Quater.Backend.Api.Jobs;
 using Quater.Backend.Api.Middleware;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
@@ -91,7 +92,7 @@ builder.Services.AddApiVersioning(options =>
 builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString") 
+    var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString")
         ?? "localhost:6379,abortConnect=false";
     return StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString);
 });
@@ -102,9 +103,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("QuaterCorsPolicy", policy =>
     {
         // Get allowed origins from configuration
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
             ?? ["http://localhost:5000"]; // Fallback for development
-        
+
         // In production, validate that all origins use HTTPS
         if (!builder.Environment.IsDevelopment())
         {
@@ -116,7 +117,7 @@ builder.Services.AddCors(options =>
                     "All origins must use HTTPS for security.");
             }
         }
-        
+
         policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -146,14 +147,14 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
 {
     var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
     var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
-    
+
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+        builder.Configuration.GetConnectionString("DefaultConnection") ??
         "Host=localhost;Database=quater;Username=postgres;Password=postgres");
-    
+
     // Register the entity sets needed by OpenIddict.
     options.UseOpenIddict();
-    
+
     // Add interceptors
     options.AddInterceptors(softDeleteInterceptor, auditTrailInterceptor);
 });
@@ -168,18 +169,18 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireUppercase = passwordConfig.GetValue("RequireUppercase", true);
     options.Password.RequireNonAlphanumeric = passwordConfig.GetValue("RequireNonAlphanumeric", true);
     options.Password.RequiredLength = passwordConfig.GetValue("RequiredLength", 8);
-    
+
     // Bind lockout settings from configuration
     var lockoutConfig = builder.Configuration.GetSection("Identity:Lockout");
     var lockoutTimeSpan = lockoutConfig.GetValue("DefaultLockoutTimeSpan", "00:15:00");
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.Parse(lockoutTimeSpan);
     options.Lockout.MaxFailedAccessAttempts = lockoutConfig.GetValue("MaxFailedAccessAttempts", 5);
     options.Lockout.AllowedForNewUsers = lockoutConfig.GetValue("AllowedForNewUsers", true);
-    
+
     // Bind user settings from configuration
     var userConfig = builder.Configuration.GetSection("Identity:User");
     options.User.RequireUniqueEmail = userConfig.GetValue("RequireUniqueEmail", true);
-    
+
     // Bind sign-in settings from configuration
     var signInConfig = builder.Configuration.GetSection("Identity:SignIn");
     options.SignIn.RequireConfirmedEmail = signInConfig.GetValue("RequireConfirmedEmail", false);
@@ -199,20 +200,27 @@ builder.Services.AddOpenIddict()
     {
         // Configure token endpoints
         options.SetTokenEndpointUris("/api/auth/token")
-               .SetUserinfoEndpointUris("/api/auth/userinfo");
+               .SetUserinfoEndpointUris("/api/auth/userinfo")
+               .SetRevocationEndpointUris("/api/auth/revoke");
 
         // Enable OAuth2/OIDC flows
         options.AllowPasswordFlow();
         options.AllowRefreshTokenFlow();
-        
-        var tokenConfig = builder.Configuration.GetSection("Identity:AccessTokenLifetime");
-        
-        var refreshTokenLifetime = tokenConfig.GetValue<int>("RefreshTokenLifetimeDays");
-        var accessTokenLifetime = tokenConfig.GetValue<int>("AccessTokenLifetimeHours");
+
+        // Read token configuration from OpenIddict section
+        var openIddictConfig = builder.Configuration.GetSection("OpenIddict");
+        var accessTokenLifetimeSeconds = openIddictConfig.GetValue("AccessTokenLifetime", 3600);
+        var refreshTokenLifetimeSeconds = openIddictConfig.GetValue("RefreshTokenLifetime", 604800);
+        var refreshTokenLeewaySeconds = openIddictConfig.GetValue("RefreshTokenReuseLeewaySeconds", 30);
 
         // Configure token lifetimes
-        options.SetAccessTokenLifetime(TimeSpan.FromHours(accessTokenLifetime));
-        options.SetRefreshTokenLifetime(TimeSpan.FromDays(refreshTokenLifetime));
+        options.SetAccessTokenLifetime(TimeSpan.FromSeconds(accessTokenLifetimeSeconds));
+        options.SetRefreshTokenLifetime(TimeSpan.FromSeconds(refreshTokenLifetimeSeconds));
+
+        // Enable refresh token rotation (security best practice - RFC 6819)
+        // When a refresh token is used, a new one is issued and the old one is invalidated
+        // The leeway allows for concurrent requests during token refresh
+        options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(refreshTokenLeewaySeconds));
         // Register scopes
         options.RegisterScopes("api", "offline_access");
 
@@ -230,21 +238,21 @@ builder.Services.AddOpenIddict()
             var encryptionCertPath = builder.Configuration["OpenIddict:EncryptionCertificatePath"]
                 ?? throw new InvalidOperationException("OpenIddict:EncryptionCertificatePath is required in production");
             var encryptionCertPassword = builder.Configuration["OpenIddict:EncryptionCertificatePassword"];
-            
+
             var signingCertPath = builder.Configuration["OpenIddict:SigningCertificatePath"]
                 ?? throw new InvalidOperationException("OpenIddict:SigningCertificatePath is required in production");
             var signingCertPassword = builder.Configuration["OpenIddict:SigningCertificatePassword"];
-            
+
             var encryptionCert = X509CertificateLoader.LoadPkcs12FromFile(
                 encryptionCertPath,
                 encryptionCertPassword,
                 X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
-            
+
             var signingCert = X509CertificateLoader.LoadPkcs12FromFile(
                 signingCertPath,
                 signingCertPassword,
                 X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet);
-            
+
             options.AddEncryptionCertificate(encryptionCert)
                    .AddSigningCertificate(signingCert);
         }
@@ -253,7 +261,10 @@ builder.Services.AddOpenIddict()
         var aspNetCoreBuilder = options.UseAspNetCore()
                .EnableTokenEndpointPassthrough()
                .EnableUserinfoEndpointPassthrough();
-        
+
+        // Note: Revocation endpoint is handled automatically by OpenIddict when
+        // SetRevocationEndpointUris is configured - no passthrough needed
+
         // Only disable transport security in development (allows HTTP)
         // In production, HTTPS is required for OAuth2 security
         if (builder.Environment.IsDevelopment())
@@ -280,19 +291,21 @@ builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validat
 builder.Services.AddAuthorization(options =>
 {
     // AdminOnly policy - requires Admin role
-    options.AddPolicy("AdminOnly", policy =>
+    options.AddPolicy(Policies.AdminOnly, policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" })));
-    
+            context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role && c.Value == Roles.Admin)));
+
     // TechnicianOrAbove policy - requires Technician or Admin role
-    options.AddPolicy("TechnicianOrAbove", policy =>
+    options.AddPolicy(Policies.TechnicianOrAbove, policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" or "Technician" })));
-    
+            context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role &&
+                (c.Value == Roles.Admin || c.Value == Roles.Technician))));
+
     // ViewerOrAbove policy - requires any authenticated user (Viewer, Technician, or Admin)
-    options.AddPolicy("ViewerOrAbove", policy =>
+    options.AddPolicy(Policies.ViewerOrAbove, policy =>
         policy.RequireAssertion(context =>
-            context.User.HasClaim(c => c is { Type: "role", Value: "Admin" or "Technician" or "Viewer" })));
+            context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role &&
+                (c.Value == Roles.Admin || c.Value == Roles.Technician || c.Value == Roles.Viewer))));
 });
 
 // Register Services
@@ -302,6 +315,12 @@ builder.Services.AddScoped<IParameterService, ParameterService>();
 builder.Services.AddScoped<ILabService, LabService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
+
+// Register Email Services
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+builder.Services.AddSingleton<IEmailTemplateService, ScribanEmailTemplateService>();
+builder.Services.AddTransient<IEmailSender, SmtpEmailService>();
+builder.Services.AddHostedService<EmailBackgroundService>();
 
 // TODO: Uncomment when Sync services are implemented by other agents
 // builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
@@ -314,9 +333,9 @@ builder.Services.AddQuartz(q =>
 {
     // Create a job key for the audit log archival job
     var jobKey = new JobKey("AuditLogArchivalJob");
-    
+
     q.AddJob<AuditLogArchivalJob>(opts => opts.WithIdentity(jobKey));
-    
+
     // Schedule the job to run nightly at 2 AM
     q.AddTrigger(opts => opts
         .ForJob(jobKey)
@@ -366,10 +385,10 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<QuaterDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
-        
+
         // Apply migrations
         context.Database.Migrate();
-        
+
         // Seed database
         await DatabaseSeeder.SeedAsync(context, userManager);
     }
