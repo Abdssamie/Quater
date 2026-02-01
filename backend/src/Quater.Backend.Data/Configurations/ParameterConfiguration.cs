@@ -30,12 +30,6 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
             .IsRequired()
             .HasDefaultValue(true);
 
-        entity.Property(e => e.CreatedDate)
-            .IsRequired();
-
-        entity.Property(e => e.LastModified)
-            .IsRequired();
-
         // IAuditable properties
         entity.Property(e => e.CreatedAt)
             .IsRequired();

@@ -41,8 +41,6 @@ public class ComplianceCalculatorTests : IDisposable
                 MinValue = 6.5,
                 MaxValue = 9.5,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = "test"
             },
@@ -56,8 +54,6 @@ public class ComplianceCalculatorTests : IDisposable
                 MinValue = 0,
                 MaxValue = null,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = "test"
             },
@@ -71,8 +67,6 @@ public class ComplianceCalculatorTests : IDisposable
                 MinValue = 0.2,
                 MaxValue = 5.0,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = "test"
             },
@@ -86,8 +80,6 @@ public class ComplianceCalculatorTests : IDisposable
                 MinValue = null,
                 MaxValue = null,
                 IsActive = false,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = "test"
             }

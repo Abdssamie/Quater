@@ -46,14 +46,13 @@ public class BackupService : IBackupService
         {
             Id = Guid.NewGuid(),
             EntityId = entityId,
-            EntityType = entityType,
+            EntityType = Enum.Parse<EntityType>(entityType),
             ServerVersion = serverVersion,
             ClientVersion = clientVersion,
             ResolutionStrategy = strategy,
             DeviceId = deviceId,
             LabId = labId,
             ConflictDetectedAt = now,
-            CreatedDate = now,
             CreatedAt = now,
             CreatedBy = currentUser
         };
@@ -101,8 +100,9 @@ public class BackupService : IBackupService
         string entityType,
         CancellationToken ct = default)
     {
+        var parsedEntityType = Enum.Parse<EntityType>(entityType);
         return await _context.ConflictBackups
-            .Where(b => b.EntityId == entityId && b.EntityType == entityType)
+            .Where(b => b.EntityId == entityId && b.EntityType == parsedEntityType)
             .OrderByDescending(b => b.ConflictDetectedAt)
             .FirstOrDefaultAsync(ct);
     }

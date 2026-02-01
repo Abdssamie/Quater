@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Quater.Backend.Services\Quater.Backend.Services.csproj" />
     <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
     <ProjectReference Include="..\Quater.Backend.Sync\Quater.Backend.Sync.csproj" />
+    <ProjectReference Include="..\Quater.Backend.Infrastructure.Email\Quater.Backend.Infrastructure.Email.csproj" />
   </ItemGroup>
 
 </Project>

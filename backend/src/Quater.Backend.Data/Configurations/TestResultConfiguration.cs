@@ -18,16 +18,22 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         entity.Property(e => e.SampleId)
             .IsRequired();
 
-        entity.Property(e => e.ParameterName)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        entity.Property(e => e.Value)
-            .IsRequired();
-
-        entity.Property(e => e.Unit)
-            .IsRequired()
-            .HasMaxLength(20);
+        // Measurement ValueObject configuration
+        entity.OwnsOne(e => e.Measurement, measurement =>
+        {
+            measurement.Property(m => m.ParameterId)
+                .HasColumnName("Measurement_ParameterId")
+                .IsRequired();
+            
+            measurement.Property(m => m.Value)
+                .HasColumnName("Measurement_Value")
+                .IsRequired();
+            
+            measurement.Property(m => m.Unit)
+                .HasColumnName("Measurement_Unit")
+                .IsRequired()
+                .HasMaxLength(20);
+        });
 
         entity.Property(e => e.TestDate)
             .IsRequired();
@@ -48,18 +54,6 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
             .IsRequired()
             .HasConversion<string>();
 
-        entity.Property(e => e.Version)
-            .IsRequired()
-            .IsConcurrencyToken();
-
-        entity.Property(e => e.LastModified)
-            .IsRequired()
-            .IsConcurrencyToken();
-
-        entity.Property(e => e.LastModifiedBy)
-            .IsRequired()
-            .HasMaxLength(100);
-
         entity.Property(e => e.IsDeleted)
             .IsRequired()
             .HasDefaultValue(false);
@@ -71,9 +65,6 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         entity.Property(e => e.CreatedBy)
             .IsRequired()
             .HasMaxLength(100);
-
-        entity.Property(e => e.CreatedDate)
-            .IsRequired();
 
         // IAuditable properties
         entity.Property(e => e.CreatedAt)
@@ -107,8 +98,8 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         entity.HasIndex(e => e.SampleId)
             .HasDatabaseName("IX_TestResults_SampleId");
 
-        entity.HasIndex(e => e.LastModified)
-            .HasDatabaseName("IX_TestResults_LastModified");
+        entity.HasIndex(e => e.UpdatedAt)
+            .HasDatabaseName("IX_TestResults_UpdatedAt");
 
         entity.HasIndex(e => e.IsSynced)
             .HasDatabaseName("IX_TestResults_IsSynced");
@@ -123,11 +114,14 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
             .HasDatabaseName("IX_TestResults_IsDeleted");
 
         // Composite index for sync queries
-        entity.HasIndex(e => new { e.IsSynced, e.LastModified })
-            .HasDatabaseName("IX_TestResults_IsSynced_LastModified");
+        entity.HasIndex(e => new { e.IsSynced, e.UpdatedAt })
+            .HasDatabaseName("IX_TestResults_IsSynced_UpdatedAt");
 
-        // Composite index for sample-parameter queries
-        entity.HasIndex(e => new { e.SampleId, e.ParameterName })
-            .HasDatabaseName("IX_TestResults_SampleId_ParameterName");
+        // Note: Composite index with owned entity property (SampleId + ParameterId) 
+        // is handled by the individual indexes above for query optimization
+
+        // Global query filter to match Sample's soft delete filter
+        // This prevents TestResults from appearing when their Sample is soft-deleted
+        entity.HasQueryFilter(e => !e.IsDeleted && !e.Sample.IsDeleted);
     }
 }

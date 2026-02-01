@@ -9,6 +9,7 @@ using Quater.Backend.Api.Jobs;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;
@@ -316,11 +317,8 @@ builder.Services.AddScoped<ILabService, LabService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
 
-// Register Email Services
-builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
-builder.Services.AddSingleton<IEmailTemplateService, ScribanEmailTemplateService>();
-builder.Services.AddTransient<IEmailSender, SmtpEmailService>();
-builder.Services.AddHostedService<EmailBackgroundService>();
+// Register Email Infrastructure (from Infrastructure.Email project)
+builder.Services.AddEmailInfrastructure(builder.Configuration);
 
 // TODO: Uncomment when Sync services are implemented by other agents
 // builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
@@ -376,6 +374,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Email queue health check endpoint
+app.MapGet("/health/email", (IEmailQueue queue) => 
+{
+    var bgQueue = (BackgroundEmailQueue)queue;
+    return Results.Ok(new 
+    { 
+        queueSize = bgQueue.ApproximateCount,
+        status = bgQueue.ApproximateCount < 90 ? "healthy" : "warning",
+        timestamp = DateTime.UtcNow
+    });
+}).RequireAuthorization();
 
 // Apply migrations and seed database on startup
 using (var scope = app.Services.CreateScope())

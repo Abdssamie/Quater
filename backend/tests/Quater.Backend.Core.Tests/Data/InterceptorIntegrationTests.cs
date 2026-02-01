@@ -93,7 +93,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Create);
         auditLog.Should().NotBeNull();
-        auditLog!.EntityType.Should().Be(nameof(Sample));
+        auditLog!.EntityType.Should().Be(EntityType.Sample);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using Quater.Backend.Core.DTOs;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
+using Quater.Shared.ValueObjects;
 
 namespace Quater.Backend.Core.Extensions;
 
@@ -18,22 +19,22 @@ public static class SampleMappingExtensions
         {
             Id = sample.Id,
             Type = sample.Type,
-            LocationLatitude = sample.LocationLatitude,
-            LocationLongitude = sample.LocationLongitude,
-            LocationDescription = sample.LocationDescription,
-            LocationHierarchy = sample.LocationHierarchy,
+            LocationLatitude = sample.Location.Latitude,
+            LocationLongitude = sample.Location.Longitude,
+            LocationDescription = sample.Location.Description,
+            LocationHierarchy = sample.Location.Hierarchy,
             CollectionDate = sample.CollectionDate,
             CollectorName = sample.CollectorName,
             Notes = sample.Notes,
             Status = sample.Status,
-            Version = sample.Version,
-            LastModified = sample.LastModified,
-            LastModifiedBy = sample.LastModifiedBy,
+            Version = 1, // Version removed from model, using constant for backward compatibility
+            LastModified = sample.UpdatedAt ?? sample.CreatedAt,
+            LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
             IsDeleted = sample.IsDeleted,
             IsSynced = sample.IsSynced,
             LabId = sample.LabId,
             CreatedBy = sample.CreatedBy,
-            CreatedDate = sample.CreatedDate
+            CreatedDate = sample.CreatedAt
         };
     }
 
@@ -47,22 +48,15 @@ public static class SampleMappingExtensions
         {
             Id = Guid.NewGuid(),
             Type = dto.Type,
-            LocationLatitude = dto.LocationLatitude,
-            LocationLongitude = dto.LocationLongitude,
-            LocationDescription = dto.LocationDescription,
-            LocationHierarchy = dto.LocationHierarchy,
+            Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy),
             CollectionDate = dto.CollectionDate,
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            Version = 1,
-            LastModified = now,
-            LastModifiedBy = createdBy,
             IsDeleted = false,
             IsSynced = false,
             LabId = dto.LabId,
             CreatedBy = createdBy,
-            CreatedDate = now,
             CreatedAt = now,
             LastSyncedAt = DateTime.MinValue
         };
@@ -74,17 +68,11 @@ public static class SampleMappingExtensions
     public static void UpdateFromDto(this Sample sample, UpdateSampleDto dto, string updatedBy)
     {
         sample.Type = dto.Type;
-        sample.LocationLatitude = dto.LocationLatitude;
-        sample.LocationLongitude = dto.LocationLongitude;
-        sample.LocationDescription = dto.LocationDescription;
-        sample.LocationHierarchy = dto.LocationHierarchy;
+        sample.Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy);
         sample.CollectionDate = dto.CollectionDate;
         sample.CollectorName = dto.CollectorName;
         sample.Notes = dto.Notes;
         sample.Status = dto.Status;
-        sample.Version = dto.Version;
-        sample.LastModified = DateTime.UtcNow;
-        sample.LastModifiedBy = updatedBy;
         sample.UpdatedAt = DateTime.UtcNow;
         sample.UpdatedBy = updatedBy;
         sample.IsSynced = false;

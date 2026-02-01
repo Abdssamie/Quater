@@ -21,6 +21,15 @@ public class ParameterService(
         return parameter == null ? null : MapToDto(parameter);
     }
 
+    public async Task<ParameterDto?> GetByNameAsync(string name, CancellationToken ct = default)
+    {
+        var parameter = await context.Parameters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Name == name, ct);
+
+        return parameter == null ? null : MapToDto(parameter);
+    }
+
     public async Task<PagedResult<ParameterDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
     {
         var query = context.Parameters
@@ -74,8 +83,10 @@ public class ParameterService(
             MaxValue = dto.MaxValue,
             Description = dto.Description,
             IsActive = true,
-            CreatedDate = now,
-            LastModified = now
+            CreatedAt = now,
+            CreatedBy = "system", // TODO: Get from current user context
+            IsDeleted = false,
+            LastSyncedAt = DateTime.MinValue
         };
 
         context.Parameters.Add(parameter);
@@ -106,7 +117,8 @@ public class ParameterService(
         existing.MaxValue = dto.MaxValue;
         existing.Description = dto.Description;
         existing.IsActive = dto.IsActive;
-        existing.LastModified = now;
+        existing.UpdatedAt = now;
+        existing.UpdatedBy = "system"; // TODO: Get from current user context
 
         await context.SaveChangesAsync(ct);
 
@@ -121,7 +133,8 @@ public class ParameterService(
 
         // Soft delete by marking as inactive
         parameter.IsActive = false;
-        parameter.LastModified = timeProvider.GetUtcNow().DateTime;
+        parameter.UpdatedAt = timeProvider.GetUtcNow().DateTime;
+        parameter.UpdatedBy = "system"; // TODO: Get from current user context
 
         await context.SaveChangesAsync(ct);
         return true;
@@ -138,7 +151,7 @@ public class ParameterService(
         MaxValue = parameter.MaxValue,
         Description = parameter.Description,
         IsActive = parameter.IsActive,
-        CreatedDate = parameter.CreatedDate,
-        LastModified = parameter.LastModified
+        CreatedDate = parameter.CreatedAt,
+        LastModified = parameter.UpdatedAt ?? parameter.CreatedAt
     };
 }

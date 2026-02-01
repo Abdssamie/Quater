@@ -22,9 +22,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(e => e.LabId)
             .IsRequired();
 
-        entity.Property(e => e.CreatedDate)
-            .IsRequired();
-
         entity.Property(e => e.IsActive)
             .IsRequired()
             .HasDefaultValue(true);

@@ -368,10 +368,16 @@ namespace Quater.Backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
+                    b.Property<int>("Action")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ChangedFields")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("ConflictBackupId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConflictResolutionNotes")
                         .HasMaxLength(1000)
@@ -380,10 +386,9 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EntityType")
-                        .IsRequired()
+                    b.Property<int>("EntityType")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("integer");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
@@ -394,6 +399,9 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("IsTruncated")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("NewValue")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
@@ -401,6 +409,10 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<string>("OldValue")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("OverflowStoragePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -411,6 +423,8 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConflictBackupId");
 
                     b.HasIndex("IsArchived")
                         .HasDatabaseName("IX_AuditLogs_IsArchived");
@@ -433,13 +447,19 @@ namespace Quater.Backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
+                    b.Property<int>("Action")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("ArchivedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ChangedFields")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("ConflictBackupId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConflictResolutionNotes")
                         .HasMaxLength(1000)
@@ -448,14 +468,16 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EntityType")
-                        .IsRequired()
+                    b.Property<int>("EntityType")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("integer");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
                         .HasColumnType("character varying(45)");
+
+                    b.Property<bool>("IsTruncated")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("NewValue")
                         .HasMaxLength(4000)
@@ -464,6 +486,10 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<string>("OldValue")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("OverflowStoragePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -477,6 +503,8 @@ namespace Quater.Backend.Data.Migrations
 
                     b.HasIndex("ArchivedDate")
                         .HasDatabaseName("IX_AuditLogArchive_ArchivedDate");
+
+                    b.HasIndex("ConflictBackupId");
 
                     b.HasIndex("Timestamp")
                         .HasDatabaseName("IX_AuditLogArchive_Timestamp");
@@ -508,10 +536,8 @@ namespace Quater.Backend.Data.Migrations
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
@@ -521,10 +547,9 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EntityType")
-                        .IsRequired()
+                    b.Property<int>("EntityType")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("LabId")
                         .HasColumnType("uuid");
@@ -552,7 +577,8 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -592,9 +618,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -625,7 +648,8 @@ namespace Quater.Backend.Data.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -659,9 +683,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -682,9 +703,6 @@ namespace Quater.Backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
-
-                    b.Property<DateTime>("LastModified")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("LastSyncedAt")
                         .HasColumnType("timestamp with time zone");
@@ -707,7 +725,8 @@ namespace Quater.Backend.Data.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
                     b.Property<string>("SyncVersion")
                         .HasMaxLength(50)
@@ -765,9 +784,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -788,31 +804,8 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<Guid>("LabId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("LastModified")
-                        .IsConcurrencyToken()
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTime>("LastSyncedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LocationDescription")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("LocationHierarchy")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<double>("LocationLatitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("LocationLongitude")
-                        .HasColumnType("double precision");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -822,7 +815,8 @@ namespace Quater.Backend.Data.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -843,10 +837,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CollectionDate")
@@ -861,14 +851,14 @@ namespace Quater.Backend.Data.Migrations
                     b.HasIndex("LabId")
                         .HasDatabaseName("IX_Samples_LabId");
 
-                    b.HasIndex("LastModified")
-                        .HasDatabaseName("IX_Samples_LastModified");
-
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_Samples_Status");
 
-                    b.HasIndex("IsSynced", "LastModified")
-                        .HasDatabaseName("IX_Samples_IsSynced_LastModified");
+                    b.HasIndex("UpdatedAt")
+                        .HasDatabaseName("IX_Samples_UpdatedAt");
+
+                    b.HasIndex("IsSynced", "UpdatedAt")
+                        .HasDatabaseName("IX_Samples_IsSynced_UpdatedAt");
 
                     b.HasIndex("LabId", "CollectionDate", "Status")
                         .HasDatabaseName("IX_Samples_LabId_CollectionDate_Status");
@@ -892,9 +882,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -915,13 +902,13 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<int>("Status")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("integer");
 
                     b.Property<string>("SyncVersion")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -963,9 +950,6 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -983,31 +967,27 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
-                    b.Property<DateTime>("LastModified")
-                        .IsConcurrencyToken()
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<bool>("IsVoided")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LastSyncedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ParameterName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<Guid?>("ReplacedByTestResultId")
+                        .HasColumnType("uuid");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
                     b.Property<Guid>("SampleId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SyncVersion")
                         .HasMaxLength(50)
@@ -1025,11 +1005,6 @@ namespace Quater.Backend.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Unit")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1037,12 +1012,12 @@ namespace Quater.Backend.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<double>("Value")
-                        .HasColumnType("double precision");
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("VoidedTestResultId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -1055,20 +1030,17 @@ namespace Quater.Backend.Data.Migrations
                     b.HasIndex("IsSynced")
                         .HasDatabaseName("IX_TestResults_IsSynced");
 
-                    b.HasIndex("LastModified")
-                        .HasDatabaseName("IX_TestResults_LastModified");
-
                     b.HasIndex("SampleId")
                         .HasDatabaseName("IX_TestResults_SampleId");
 
                     b.HasIndex("TestDate")
                         .HasDatabaseName("IX_TestResults_TestDate");
 
-                    b.HasIndex("IsSynced", "LastModified")
-                        .HasDatabaseName("IX_TestResults_IsSynced_LastModified");
+                    b.HasIndex("UpdatedAt")
+                        .HasDatabaseName("IX_TestResults_UpdatedAt");
 
-                    b.HasIndex("SampleId", "ParameterName")
-                        .HasDatabaseName("IX_TestResults_SampleId_ParameterName");
+                    b.HasIndex("IsSynced", "UpdatedAt")
+                        .HasDatabaseName("IX_TestResults_IsSynced_UpdatedAt");
 
                     b.ToTable("TestResults", (string)null);
                 });
@@ -1092,9 +1064,6 @@ namespace Quater.Backend.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -1145,7 +1114,8 @@ namespace Quater.Backend.Data.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
@@ -1263,22 +1233,34 @@ namespace Quater.Backend.Data.Migrations
 
             modelBuilder.Entity("Quater.Shared.Models.AuditLog", b =>
                 {
+                    b.HasOne("Quater.Shared.Models.ConflictBackup", "ConflictBackup")
+                        .WithMany()
+                        .HasForeignKey("ConflictBackupId");
+
                     b.HasOne("Quater.Shared.Models.User", "User")
                         .WithMany("AuditLogs")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("ConflictBackup");
+
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("Quater.Shared.Models.AuditLogArchive", b =>
                 {
+                    b.HasOne("Quater.Shared.Models.ConflictBackup", "ConflictBackup")
+                        .WithMany()
+                        .HasForeignKey("ConflictBackupId");
+
                     b.HasOne("Quater.Shared.Models.User", "User")
                         .WithMany("AuditLogArchives")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ConflictBackup");
 
                     b.Navigation("User");
                 });
@@ -1302,7 +1284,41 @@ namespace Quater.Backend.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.OwnsOne("Quater.Shared.ValueObjects.Location", "Location", b1 =>
+                        {
+                            b1.Property<Guid>("SampleId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Description")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Location_Description");
+
+                            b1.Property<string>("Hierarchy")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("Location_Hierarchy");
+
+                            b1.Property<double>("Latitude")
+                                .HasColumnType("double precision")
+                                .HasColumnName("Location_Latitude");
+
+                            b1.Property<double>("Longitude")
+                                .HasColumnType("double precision")
+                                .HasColumnName("Location_Longitude");
+
+                            b1.HasKey("SampleId");
+
+                            b1.ToTable("Samples");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SampleId");
+                        });
+
                     b.Navigation("Lab");
+
+                    b.Navigation("Location")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Quater.Shared.Models.SyncLog", b =>
@@ -1322,6 +1338,36 @@ namespace Quater.Backend.Data.Migrations
                         .WithMany("TestResults")
                         .HasForeignKey("SampleId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("Quater.Shared.ValueObjects.Measurement", "Measurement", b1 =>
+                        {
+                            b1.Property<Guid>("TestResultId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<Guid>("ParameterId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("Measurement_ParameterId");
+
+                            b1.Property<string>("Unit")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("Measurement_Unit");
+
+                            b1.Property<double>("Value")
+                                .HasColumnType("double precision")
+                                .HasColumnName("Measurement_Value");
+
+                            b1.HasKey("TestResultId");
+
+                            b1.ToTable("TestResults");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TestResultId");
+                        });
+
+                    b.Navigation("Measurement")
                         .IsRequired();
 
                     b.Navigation("Sample");

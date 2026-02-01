@@ -211,7 +211,7 @@ public sealed class ScribanEmailTemplateService : IEmailTemplateService
                     <strong>⚠️ Security Notice</strong>
                     <p style="margin: 5px 0 0 0;">{{ alertmessage }}</p>
                 </div>
-                <p>This activity was detected at: <code>{{ timestamp | date.to_string '%Y-%m-%d %H:%M:%S' }} UTC</code></p>
+                <p>This activity was detected at: <code>{{ timestampformatted }} UTC</code></p>
                 <p>If this was you, no action is needed.</p>
                 <p><strong>If this wasn't you:</strong></p>
                 <ul>

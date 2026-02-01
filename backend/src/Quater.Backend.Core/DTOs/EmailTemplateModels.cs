@@ -51,4 +51,5 @@ public sealed record SecurityAlertEmailModel : EmailTemplateModel
     public required string AlertType { get; init; }
     public required string AlertMessage { get; init; }
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+    public string TimestampFormatted => Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
 }

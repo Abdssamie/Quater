@@ -5,9 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Web;
 using Microsoft.AspNetCore;
 
 namespace Quater.Backend.Api.Controllers;
@@ -24,17 +28,26 @@ public sealed class AuthController : ControllerBase
     private readonly SignInManager<User> _signInManager;
     private readonly ILogger<AuthController> _logger;
     private readonly IOpenIddictTokenManager _tokenManager;
+    private readonly IEmailQueue _emailQueue;
+    private readonly IEmailTemplateService _emailTemplateService;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         ILogger<AuthController> logger,
-        IOpenIddictTokenManager tokenManager)
+        IOpenIddictTokenManager tokenManager,
+        IEmailQueue emailQueue,
+        IEmailTemplateService emailTemplateService,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _logger = logger;
         _tokenManager = tokenManager;
+        _emailQueue = emailQueue;
+        _emailTemplateService = emailTemplateService;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -53,7 +66,6 @@ public sealed class AuthController : ControllerBase
             Email = request.Email,
             Role = request.Role,
             LabId = request.LabId,
-            CreatedDate = DateTime.UtcNow,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "System"
@@ -68,9 +80,20 @@ public sealed class AuthController : ControllerBase
 
         _logger.LogInformation("User {Email} registered successfully with role {Role}", request.Email, request.Role);
 
+        // Send verification email
+        try
+        {
+            await SendVerificationEmailAsync(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
+            // Don't fail registration if email fails
+        }
+
         return Ok(new
         {
-            message = "User registered successfully",
+            message = "User registered successfully. Please check your email to verify your account.",
             userId = user.Id,
             email = user.Email,
             role = user.Role.ToString()
@@ -423,22 +446,25 @@ public sealed class AuthController : ControllerBase
             return BadRequest(ModelState);
 
         var user = await _userManager.FindByEmailAsync(request.Email);
+        
+        // Always return success to prevent email enumeration
         if (user == null || !user.IsActive)
         {
-            // Don't reveal that the user doesn't exist or is inactive
             return Ok(new { message = "If the email exists, a password reset link has been sent" });
         }
 
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-        // TODO: Send email with reset token
-        // In a real application, you would send an email here with a link containing the token
-        _logger.LogInformation("Password reset requested for {Email}", request.Email);
-
-        return Ok(new
+        try
         {
-            message = "If the email exists, a password reset link has been sent"
-        });
+            await SendPasswordResetEmailAsync(user);
+            _logger.LogInformation("Password reset email sent to {Email}", request.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", request.Email);
+            // Don't reveal the error to prevent information disclosure
+        }
+
+        return Ok(new { message = "If the email exists, a password reset link has been sent" });
     }
 
     /// <summary>
@@ -468,9 +494,242 @@ public sealed class AuthController : ControllerBase
             role = user.Role.ToString(),
             labId = user.LabId,
             isActive = user.IsActive,
-            createdDate = user.CreatedDate,
+            createdDate = user.CreatedAt,
             lastLogin = user.LastLogin
         });
+    }
+
+    /// <summary>
+    /// Verify user email address using a token
+    /// </summary>
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByIdAsync(request.UserId);
+        if (user == null)
+        {
+            return NotFound(new { error = "User not found" });
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return Ok(new { message = "Email already verified" });
+        }
+
+        var result = await _userManager.ConfirmEmailAsync(user, request.Code);
+        if (!result.Succeeded)
+        {
+            _logger.LogWarning("Email verification failed for user {UserId}: {Errors}", 
+                request.UserId, string.Join(", ", result.Errors.Select(e => e.Description)));
+            return BadRequest(new { error = "Invalid or expired verification code" });
+        }
+
+        _logger.LogInformation("Email verified successfully for user {UserId}", user.Id);
+
+        // Send welcome email
+        try
+        {
+            await SendWelcomeEmailAsync(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send welcome email to {Email}", user.Email);
+            // Don't fail verification if welcome email fails
+        }
+
+        return Ok(new { message = "Email verified successfully" });
+    }
+
+    /// <summary>
+    /// Resend the email verification link
+    /// </summary>
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        
+        // Always return success to prevent email enumeration
+        if (user == null || user.EmailConfirmed)
+        {
+            return Ok(new { message = "If the email exists and is not verified, a verification link has been sent" });
+        }
+
+        try
+        {
+            await SendVerificationEmailAsync(user);
+            _logger.LogInformation("Verification email resent to {Email}", request.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resend verification email to {Email}", request.Email);
+        }
+
+        return Ok(new { message = "If the email exists and is not verified, a verification link has been sent" });
+    }
+
+    /// <summary>
+    /// Reset password using a valid token
+    /// </summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+        {
+            return BadRequest(new { error = "Invalid request" });
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, request.Code, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            _logger.LogWarning("Password reset failed for user {Email}: {Errors}", 
+                request.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
+            return BadRequest(new { error = "Invalid or expired reset token" });
+        }
+
+        _logger.LogInformation("Password reset successfully for user {Email}", user.Email);
+
+        // Send security alert email
+        try
+        {
+            await SendSecurityAlertEmailAsync(user, "Password Reset", "Your password was successfully reset.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send security alert email to {Email}", user.Email);
+            // Don't fail password reset if alert email fails
+        }
+
+        return Ok(new { message = "Password reset successfully" });
+    }
+
+    /// <summary>
+    /// Helper method to send verification email
+    /// </summary>
+    private async Task SendVerificationEmailAsync(User user)
+    {
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        
+        // URL encode the token and userId
+        var encodedToken = HttpUtility.UrlEncode(token);
+        var verificationUrl = $"{frontendUrl}/verify-email?userId={user.Id}&code={encodedToken}";
+
+        var model = new VerificationEmailModel
+        {
+            UserName = user.UserName ?? user.Email ?? "User",
+            VerificationUrl = verificationUrl,
+            ExpirationHours = 24
+        };
+
+        var htmlBody = await _emailTemplateService.RenderAsync("verification", model);
+
+        var emailDto = new SendEmailDto
+        {
+            To = user.Email!,
+            Subject = "Verify Your Email Address - Quater Water Quality",
+            Body = htmlBody,
+            IsHtml = true
+        };
+
+        await _emailQueue.QueueAsync(new EmailQueueItem(emailDto));
+    }
+
+    /// <summary>
+    /// Helper method to send welcome email
+    /// </summary>
+    private async Task SendWelcomeEmailAsync(User user)
+    {
+        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        
+        var model = new WelcomeEmailModel
+        {
+            UserName = user.UserName ?? user.Email ?? "User",
+            LoginUrl = $"{frontendUrl}/login"
+        };
+
+        var htmlBody = await _emailTemplateService.RenderAsync("welcome", model);
+
+        var emailDto = new SendEmailDto
+        {
+            To = user.Email!,
+            Subject = "Welcome to Quater Water Quality",
+            Body = htmlBody,
+            IsHtml = true
+        };
+
+        await _emailQueue.QueueAsync(new EmailQueueItem(emailDto));
+    }
+
+    /// <summary>
+    /// Helper method to send password reset email
+    /// </summary>
+    private async Task SendPasswordResetEmailAsync(User user)
+    {
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        
+        // URL encode the token and email
+        var encodedToken = HttpUtility.UrlEncode(token);
+        var encodedEmail = HttpUtility.UrlEncode(user.Email);
+        var resetUrl = $"{frontendUrl}/reset-password?email={encodedEmail}&code={encodedToken}";
+
+        var model = new PasswordResetEmailModel
+        {
+            UserName = user.UserName ?? user.Email ?? "User",
+            ResetUrl = resetUrl,
+            ExpirationMinutes = 60
+        };
+
+        var htmlBody = await _emailTemplateService.RenderAsync("password-reset", model);
+
+        var emailDto = new SendEmailDto
+        {
+            To = user.Email!,
+            Subject = "Reset Your Password - Quater Water Quality",
+            Body = htmlBody,
+            IsHtml = true
+        };
+
+        await _emailQueue.QueueAsync(new EmailQueueItem(emailDto));
+    }
+
+    /// <summary>
+    /// Helper method to send security alert email
+    /// </summary>
+    private async Task SendSecurityAlertEmailAsync(User user, string alertType, string alertMessage)
+    {
+        var model = new SecurityAlertEmailModel
+        {
+            UserName = user.UserName ?? user.Email ?? "User",
+            AlertType = alertType,
+            AlertMessage = alertMessage,
+            Timestamp = DateTimeOffset.UtcNow
+        };
+
+        var htmlBody = await _emailTemplateService.RenderAsync("security-alert", model);
+
+        var emailDto = new SendEmailDto
+        {
+            To = user.Email!,
+            Subject = $"Security Alert: {alertType} - Quater Water Quality",
+            Body = htmlBody,
+            IsHtml = true
+        };
+
+        await _emailQueue.QueueAsync(new EmailQueueItem(emailDto));
     }
 }
 
@@ -479,9 +738,18 @@ public sealed class AuthController : ControllerBase
 /// </summary>
 public class RegisterRequest
 {
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address")]
     public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
     public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Role is required")]
     public UserRole Role { get; set; }
+
+    [Required(ErrorMessage = "Lab ID is required")]
     public Guid LabId { get; set; }
 }
 
@@ -490,7 +758,11 @@ public class RegisterRequest
 /// </summary>
 public class ChangePasswordRequest
 {
+    [Required(ErrorMessage = "Current password is required")]
     public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "New password is required")]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
     public string NewPassword { get; set; } = string.Empty;
 }
 
@@ -499,5 +771,46 @@ public class ChangePasswordRequest
 /// </summary>
 public class ForgotPasswordRequest
 {
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address")]
+    public string Email { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for resetting password with token
+/// </summary>
+public class ResetPasswordRequest
+{
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Reset code is required")]
+    public string Code { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "New password is required")]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for email verification
+/// </summary>
+public class VerifyEmailRequest
+{
+    [Required(ErrorMessage = "User ID is required")]
+    public string UserId { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Verification code is required")]
+    public string Code { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for resending verification email
+/// </summary>
+public class ResendVerificationRequest
+{
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address")]
     public string Email { get; set; } = string.Empty;
 }

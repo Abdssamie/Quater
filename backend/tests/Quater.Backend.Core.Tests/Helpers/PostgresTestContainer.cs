@@ -121,7 +121,8 @@ public class PostgresTestContainer : IAsyncLifetime
             Location = "System",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
+            CreatedBy = "System",
+            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
         context.Labs.Add(systemLab);
         context.SaveChanges();
@@ -135,7 +136,6 @@ public class PostgresTestContainer : IAsyncLifetime
             Role = UserRole.Admin,
             LabId = systemLab.Id,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "System"
         };

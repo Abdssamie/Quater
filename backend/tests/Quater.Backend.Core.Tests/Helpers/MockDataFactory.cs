@@ -41,10 +41,10 @@ public static class MockDataFactory
             Location = location ?? "Test Location",
             ContactInfo = $"{name.Replace(" ", "").ToLower()}@test.com, +212-123-456-789",
             IsActive = true,
-            CreatedDate = BaseDate,
-            CreatedBy = "test",
             CreatedAt = BaseDate,
-            IsDeleted = false
+            CreatedBy = "test",
+            IsDeleted = false,
+            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
 
@@ -82,11 +82,10 @@ public static class MockDataFactory
             MinValue = minValue,
             MaxValue = maxValue,
             IsActive = true,
-            CreatedDate = BaseDate,
-            LastModified = BaseDate,
-            CreatedBy = "test",
             CreatedAt = BaseDate,
-            IsDeleted = false
+            CreatedBy = "test",
+            IsDeleted = false,
+            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
 
@@ -118,21 +117,15 @@ public static class MockDataFactory
         {
             Id = Guid.NewGuid(),
             Type = type,
-            LocationLatitude = 34.0,
-            LocationLongitude = -5.0,
-            LocationDescription = "Test Location",
-            LocationHierarchy = "Country/Region/City",
+            Location = new Quater.Shared.ValueObjects.Location(34.0, -5.0, "Test Location", "Country/Region/City"),
             CollectionDate = BaseDate,
             CollectorName = collectorName,
             Notes = "Test sample notes",
             Status = status,
             LabId = labId ?? Guid.NewGuid(),
-            CreatedDate = BaseDate,
-            LastModified = BaseDate,
-            CreatedBy = "test",
-            LastModifiedBy = "test",
             CreatedAt = BaseDate,
-            Version = 1,
+            CreatedBy = "test",
+            UpdatedBy = "test",
             IsDeleted = false,
             IsSynced = true,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
@@ -164,7 +157,7 @@ public static class MockDataFactory
     /// </summary>
     public static TestResult CreateTestResult(
         Guid sampleId,
-        string parameterName,
+        Parameter parameter,
         double value,
         ComplianceStatus complianceStatus = ComplianceStatus.Pass,
         TestMethod method = TestMethod.Spectrophotometry)
@@ -173,19 +166,14 @@ public static class MockDataFactory
         {
             Id = Guid.NewGuid(),
             SampleId = sampleId,
-            ParameterName = "Test Parameter",
-            Value = value,
-            Unit = "mg/L",
+            Measurement = new Quater.Shared.ValueObjects.Measurement(parameter, value, parameter.Unit),
             ComplianceStatus = complianceStatus,
             TestMethod = method,
             TechnicianName = "Test Technician",
             TestDate = BaseDate,
-            CreatedDate = BaseDate,
-            LastModified = BaseDate,
-            CreatedBy = "test",
-            LastModifiedBy = "test",
             CreatedAt = BaseDate,
-            Version = 1,
+            CreatedBy = "test",
+            UpdatedBy = "test",
             IsDeleted = false,
             IsSynced = true
         };
@@ -210,7 +198,7 @@ public static class MockDataFactory
                 
                 testResults.Add(CreateTestResult(
                     sample.Id,
-                    parameter.Name,
+                    parameter,
                     value,
                     compliance,
                     TestMethod.Spectrophotometry));

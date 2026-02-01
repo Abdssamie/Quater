@@ -1,6 +1,7 @@
 using Quater.Backend.Core.DTOs;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
+using Quater.Shared.ValueObjects;
 
 namespace Quater.Backend.Core.Extensions;
 
@@ -12,53 +13,54 @@ public static class TestResultMappingExtensions
     /// <summary>
     /// Converts TestResult entity to TestResultDto
     /// </summary>
-    public static TestResultDto ToDto(this TestResult testResult)
+    /// <param name="testResult">The TestResult entity</param>
+    /// <param name="parameterName">The parameter name (must be provided since model uses ParameterId)</param>
+    public static TestResultDto ToDto(this TestResult testResult, string parameterName)
     {
         return new TestResultDto
         {
             Id = testResult.Id,
             SampleId = testResult.SampleId,
-            ParameterName = testResult.ParameterName,
-            Value = testResult.Value,
-            Unit = testResult.Unit,
+            ParameterName = parameterName,
+            Value = testResult.Measurement.Value,
+            Unit = testResult.Measurement.Unit,
             TestDate = testResult.TestDate,
             TechnicianName = testResult.TechnicianName,
             TestMethod = testResult.TestMethod,
             ComplianceStatus = testResult.ComplianceStatus,
-            Version = testResult.Version,
-            LastModified = testResult.LastModified,
-            LastModifiedBy = testResult.LastModifiedBy,
+            Version = 1, // Version removed from model, using constant for backward compatibility
+            LastModified = testResult.UpdatedAt ?? testResult.CreatedAt,
+            LastModifiedBy = testResult.UpdatedBy ?? testResult.CreatedBy,
             IsDeleted = testResult.IsDeleted,
             IsSynced = testResult.IsSynced,
             CreatedBy = testResult.CreatedBy,
-            CreatedDate = testResult.CreatedDate
+            CreatedDate = testResult.CreatedAt
         };
     }
 
     /// <summary>
     /// Converts CreateTestResultDto to TestResult entity
     /// </summary>
-    public static TestResult ToEntity(this CreateTestResultDto dto, string createdBy, ComplianceStatus complianceStatus = ComplianceStatus.Pass)
+    /// <param name="dto">The DTO containing test result data</param>
+    /// <param name="parameter">The Parameter entity (required for Measurement ValueObject creation)</param>
+    /// <param name="createdBy">Username of the creator</param>
+    /// <param name="complianceStatus">Compliance status (defaults to Pass)</param>
+    public static TestResult ToEntity(this CreateTestResultDto dto, Parameter parameter, string createdBy, ComplianceStatus complianceStatus = ComplianceStatus.Pass)
     {
         var now = DateTime.UtcNow;
         return new TestResult
         {
             Id = Guid.NewGuid(),
             SampleId = dto.SampleId,
-            ParameterName = dto.ParameterName,
-            Value = dto.Value,
-            Unit = dto.Unit,
+            Measurement = new Measurement(parameter, dto.Value, dto.Unit),
             TestDate = dto.TestDate,
             TechnicianName = dto.TechnicianName,
             TestMethod = dto.TestMethod,
             ComplianceStatus = complianceStatus,
-            Version = 1,
-            LastModified = now,
-            LastModifiedBy = createdBy,
+            Status = TestResultStatus.Draft,
             IsDeleted = false,
             IsSynced = false,
             CreatedBy = createdBy,
-            CreatedDate = now,
             CreatedAt = now,
             LastSyncedAt = DateTime.MinValue
         };
@@ -67,18 +69,17 @@ public static class TestResultMappingExtensions
     /// <summary>
     /// Updates TestResult entity from UpdateTestResultDto
     /// </summary>
-    public static void UpdateFromDto(this TestResult testResult, UpdateTestResultDto dto, string updatedBy)
+    /// <param name="testResult">The TestResult entity to update</param>
+    /// <param name="dto">The DTO containing updated data</param>
+    /// <param name="parameter">The Parameter entity (required for Measurement ValueObject creation)</param>
+    /// <param name="updatedBy">Username of the updater</param>
+    public static void UpdateFromDto(this TestResult testResult, UpdateTestResultDto dto, Parameter parameter, string updatedBy)
     {
-        testResult.ParameterName = dto.ParameterName;
-        testResult.Value = dto.Value;
-        testResult.Unit = dto.Unit;
+        testResult.Measurement = new Measurement(parameter, dto.Value, dto.Unit);
         testResult.TestDate = dto.TestDate;
         testResult.TechnicianName = dto.TechnicianName;
         testResult.TestMethod = dto.TestMethod;
         testResult.ComplianceStatus = dto.ComplianceStatus;
-        testResult.Version = dto.Version;
-        testResult.LastModified = DateTime.UtcNow;
-        testResult.LastModifiedBy = updatedBy;
         testResult.UpdatedAt = DateTime.UtcNow;
         testResult.UpdatedBy = updatedBy;
         testResult.IsSynced = false;
@@ -87,8 +88,16 @@ public static class TestResultMappingExtensions
     /// <summary>
     /// Converts collection of TestResult entities to DTOs
     /// </summary>
-    public static IEnumerable<TestResultDto> ToDtos(this IEnumerable<TestResult> testResults)
+    /// <param name="testResults">Collection of TestResult entities</param>
+    /// <param name="parameterLookup">Dictionary mapping ParameterId to ParameterName</param>
+    public static IEnumerable<TestResultDto> ToDtos(this IEnumerable<TestResult> testResults, Dictionary<Guid, string> parameterLookup)
     {
-        return testResults.Select(testResult => testResult.ToDto());
+        return testResults.Select(testResult => 
+        {
+            var parameterName = parameterLookup.TryGetValue(testResult.Measurement.ParameterId, out var name) 
+                ? name 
+                : "Unknown";
+            return testResult.ToDto(parameterName);
+        });
     }
 }

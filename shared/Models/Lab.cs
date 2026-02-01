@@ -55,6 +55,6 @@ public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
     public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
-    public ICollection<User> Users { get; set; } = new List<User>();
-    public ICollection<Sample> Samples { get; set; } = new List<Sample>();
+    public ICollection<User> Users { get; set; } = [];
+    public ICollection<Sample> Samples { get; set; } = [];
 }

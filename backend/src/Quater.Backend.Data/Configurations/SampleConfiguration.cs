@@ -21,17 +21,25 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .IsRequired()
             .HasConversion<string>();
 
-        entity.Property(e => e.LocationLatitude)
-            .IsRequired();
-
-        entity.Property(e => e.LocationLongitude)
-            .IsRequired();
-
-        entity.Property(e => e.LocationDescription)
-            .HasMaxLength(200);
-
-        entity.Property(e => e.LocationHierarchy)
-            .HasMaxLength(500);
+        // Location ValueObject configuration
+        entity.OwnsOne(e => e.Location, location =>
+        {
+            location.Property(l => l.Latitude)
+                .HasColumnName("Location_Latitude")
+                .IsRequired();
+            
+            location.Property(l => l.Longitude)
+                .HasColumnName("Location_Longitude")
+                .IsRequired();
+            
+            location.Property(l => l.Description)
+                .HasColumnName("Location_Description")
+                .HasMaxLength(200);
+            
+            location.Property(l => l.Hierarchy)
+                .HasColumnName("Location_Hierarchy")
+                .HasMaxLength(500);
+        });
 
         entity.Property(e => e.CollectionDate)
             .IsRequired();
@@ -49,18 +57,6 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .IsRequired()
             .HasConversion<string>();
 
-        entity.Property(e => e.Version)
-            .IsRequired()
-            .IsConcurrencyToken();
-
-        entity.Property(e => e.LastModified)
-            .IsRequired()
-            .IsConcurrencyToken();
-
-        entity.Property(e => e.LastModifiedBy)
-            .IsRequired()
-            .HasMaxLength(100);
-
         entity.Property(e => e.IsDeleted)
             .IsRequired()
             .HasDefaultValue(false);
@@ -75,9 +71,6 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
         entity.Property(e => e.CreatedBy)
             .IsRequired()
             .HasMaxLength(100);
-
-        entity.Property(e => e.CreatedDate)
-            .IsRequired();
 
         // IAuditable properties
         entity.Property(e => e.CreatedAt)
@@ -108,8 +101,8 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .HasDefaultValueSql("'\\x0000000000000001'::bytea");
 
         // Indexes
-        entity.HasIndex(e => e.LastModified)
-            .HasDatabaseName("IX_Samples_LastModified");
+        entity.HasIndex(e => e.UpdatedAt)
+            .HasDatabaseName("IX_Samples_UpdatedAt");
 
         entity.HasIndex(e => e.IsSynced)
             .HasDatabaseName("IX_Samples_IsSynced");
@@ -127,8 +120,8 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .HasDatabaseName("IX_Samples_IsDeleted");
 
         // Composite index for sync queries
-        entity.HasIndex(e => new { e.IsSynced, e.LastModified })
-            .HasDatabaseName("IX_Samples_IsSynced_LastModified");
+        entity.HasIndex(e => new { e.IsSynced, e.UpdatedAt })
+            .HasDatabaseName("IX_Samples_IsSynced_UpdatedAt");
 
         // Composite index for lab queries (LabId, CollectionDate, Status)
         entity.HasIndex(e => new { e.LabId, e.CollectionDate, e.Status })

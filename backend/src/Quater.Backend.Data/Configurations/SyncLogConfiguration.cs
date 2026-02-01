@@ -45,8 +45,12 @@ public class SyncLogConfiguration : IEntityTypeConfiguration<SyncLog>
             .IsRequired()
             .HasDefaultValue(0);
 
-        entity.Property(e => e.CreatedDate)
+        // ISyncable properties
+        entity.Property(e => e.LastSyncedAt)
             .IsRequired();
+
+        entity.Property(e => e.SyncVersion)
+            .HasMaxLength(50);
 
         // Indexes
         entity.HasIndex(e => e.DeviceId)

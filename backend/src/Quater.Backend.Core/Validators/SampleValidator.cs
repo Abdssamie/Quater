@@ -11,14 +11,20 @@ public class SampleValidator : AbstractValidator<Sample>
             .NotEmpty().WithMessage("Collector name is required")
             .MaximumLength(100).WithMessage("Collector name must not exceed 100 characters");
 
-        RuleFor(x => x.LocationLatitude)
-            .InclusiveBetween(-90, 90).WithMessage("Latitude must be between -90 and 90");
+        RuleFor(x => x.Location)
+            .NotNull().WithMessage("Location is required");
 
-        RuleFor(x => x.LocationLongitude)
-            .InclusiveBetween(-180, 180).WithMessage("Longitude must be between -180 and 180");
+        RuleFor(x => x.Location.Latitude)
+            .InclusiveBetween(-90, 90).WithMessage("Latitude must be between -90 and 90")
+            .When(x => x.Location != null);
 
-        RuleFor(x => x.LocationDescription)
-            .MaximumLength(200).WithMessage("Location description must not exceed 200 characters");
+        RuleFor(x => x.Location.Longitude)
+            .InclusiveBetween(-180, 180).WithMessage("Longitude must be between -180 and 180")
+            .When(x => x.Location != null);
+
+        RuleFor(x => x.Location.Description)
+            .MaximumLength(200).WithMessage("Location description must not exceed 200 characters")
+            .When(x => x.Location != null);
 
         RuleFor(x => x.Notes)
             .MaximumLength(1000).WithMessage("Notes must not exceed 1000 characters");

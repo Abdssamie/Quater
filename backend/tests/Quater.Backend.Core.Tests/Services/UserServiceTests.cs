@@ -40,7 +40,7 @@ public class UserServiceTests : IDisposable
             Role = UserRole.Technician,
             LabId = lab.Id,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow,
+
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "system"
         };
@@ -79,10 +79,10 @@ public class UserServiceTests : IDisposable
         {
             new() { Id = Guid.NewGuid().ToString(), UserName = "user1", Email = "user1@test.com", 
                     Role = UserRole.Technician, LabId = lab.Id, IsActive = true, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
             new() { Id = Guid.NewGuid().ToString(), UserName = "user2", Email = "user2@test.com", 
                     Role = UserRole.Viewer, LabId = lab.Id, IsActive = true, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
         };
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();
@@ -107,10 +107,10 @@ public class UserServiceTests : IDisposable
         {
             new() { Id = Guid.NewGuid().ToString(), UserName = "lab1user", Email = "lab1@test.com", 
                     Role = UserRole.Technician, LabId = lab1.Id, IsActive = true, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
             new() { Id = Guid.NewGuid().ToString(), UserName = "lab2user", Email = "lab2@test.com", 
                     Role = UserRole.Technician, LabId = lab2.Id, IsActive = true, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
         };
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();
@@ -132,10 +132,10 @@ public class UserServiceTests : IDisposable
         {
             new() { Id = Guid.NewGuid().ToString(), UserName = "active", Email = "active@test.com", 
                     Role = UserRole.Technician, LabId = lab.Id, IsActive = true, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" },
             new() { Id = Guid.NewGuid().ToString(), UserName = "inactive", Email = "inactive@test.com", 
                     Role = UserRole.Technician, LabId = lab.Id, IsActive = false, 
-                    CreatedDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
+         CreatedAt = DateTime.UtcNow, CreatedBy = "system" }
         };
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();
@@ -234,7 +234,7 @@ public class UserServiceTests : IDisposable
             Role = UserRole.Viewer,
             LabId = lab.Id,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow,
+
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "system"
         };
@@ -287,7 +287,7 @@ public class UserServiceTests : IDisposable
             Role = UserRole.Technician,
             LabId = _context.Labs.First().Id,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow,
+
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "system"
         };

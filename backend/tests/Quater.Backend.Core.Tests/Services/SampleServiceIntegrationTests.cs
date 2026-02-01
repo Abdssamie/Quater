@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Tests.Helpers;
@@ -81,7 +82,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         result.Id.Should().NotBeEmpty();
         result.CollectorName.Should().Be(dto.CollectorName);
         result.Status.Should().Be(SampleStatus.Pending);
-        result.Version.Should().Be(1);
         result.IsSynced.Should().BeFalse();
 
         // Verify it was persisted
@@ -94,7 +94,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
     {
         // Arrange
         var sample = _context.Samples.First();
-        var originalVersion = sample.Version;
         var dto = new UpdateSampleDto
         {
             Type = SampleType.Wastewater,
@@ -103,8 +102,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
             LocationDescription = "Updated Location",
             CollectionDate = sample.CollectionDate,
             CollectorName = "Updated Collector",
-            Status = SampleStatus.Completed,
-            Version = sample.Version
+            Status = SampleStatus.Completed
         };
 
         // Act
@@ -115,7 +113,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         result!.CollectorName.Should().Be(dto.CollectorName);
         result.Type.Should().Be(dto.Type);
         result.Status.Should().Be(dto.Status);
-        result.Version.Should().Be(originalVersion + 1);
         result.IsSynced.Should().BeFalse();
     }
 
@@ -127,16 +124,19 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         var dto = new UpdateSampleDto
         {
             Type = sample.Type,
-            LocationLatitude = sample.LocationLatitude,
-            LocationLongitude = sample.LocationLongitude,
+            LocationLatitude = sample.Location.Latitude,
+            LocationLongitude = sample.Location.Longitude,
             CollectionDate = sample.CollectionDate,
             CollectorName = sample.CollectorName,
-            Status = sample.Status,
-            Version = sample.Version + 1 // Wrong version
+            Status = sample.Status
         };
 
+        // Modify the sample's RowVersion to simulate a concurrent update
+        sample.RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 99 };
+        await _context.SaveChangesAsync();
+
         // Act & Assert
-        await Assert.ThrowsAsync<ConflictException>(() => 
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => 
             _service.UpdateAsync(sample.Id, dto, "test-user"));
     }
 

@@ -99,7 +99,6 @@ public class UserService(
             Role = dto.Role,
             LabId = dto.LabId,
             IsActive = true,
-            CreatedDate = now,
             CreatedAt = now,
             CreatedBy = createdBy
         };
@@ -200,7 +199,6 @@ public class UserService(
         Role = user.Role,
         LabId = user.LabId,
         LabName = user.Lab?.Name,
-        CreatedDate = user.CreatedDate,
         LastLogin = user.LastLogin,
         IsActive = user.IsActive,
         CreatedAt = user.CreatedAt,

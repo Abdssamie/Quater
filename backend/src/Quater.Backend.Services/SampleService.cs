@@ -7,6 +7,7 @@ using Quater.Shared.Enums;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
+using Quater.Shared.ValueObjects;
 
 namespace Quater.Backend.Services;
 
@@ -79,22 +80,16 @@ public class SampleService(
         {
             Id = Guid.NewGuid(),
             Type = dto.Type,
-            LocationLatitude = dto.LocationLatitude,
-            LocationLongitude = dto.LocationLongitude,
-            LocationDescription = dto.LocationDescription,
-            LocationHierarchy = dto.LocationHierarchy,
+            Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy),
             CollectionDate = dto.CollectionDate,
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            Version = 1,
-            LastModified = now,
-            LastModifiedBy = userId,
             IsDeleted = false,
             IsSynced = false,
             LabId = dto.LabId,
             CreatedBy = userId,
-            CreatedDate = now
+            CreatedAt = now
         };
 
         // Validate
@@ -112,25 +107,20 @@ public class SampleService(
         if (existing == null || existing.IsDeleted) 
             return null;
 
-        // Check version for optimistic concurrency
-        if (existing.Version != dto.Version)
-            throw new ConflictException(ErrorMessages.ConcurrencyConflict);
+        // Note: Optimistic concurrency is now handled by RowVersion (byte[]) in the database
+        // The Version field in DTO is kept for backward compatibility but not used for concurrency
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         // Update fields
         existing.Type = dto.Type;
-        existing.LocationLatitude = dto.LocationLatitude;
-        existing.LocationLongitude = dto.LocationLongitude;
-        existing.LocationDescription = dto.LocationDescription;
-        existing.LocationHierarchy = dto.LocationHierarchy;
+        existing.Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy);
         existing.CollectionDate = dto.CollectionDate;
         existing.CollectorName = dto.CollectorName;
         existing.Notes = dto.Notes;
         existing.Status = dto.Status;
-        existing.Version += 1;
-        existing.LastModified = now;
-        existing.LastModifiedBy = userId;
+        existing.UpdatedAt = now;
+        existing.UpdatedBy = userId;
         existing.IsSynced = false;
 
         // Validate
@@ -149,7 +139,7 @@ public class SampleService(
 
         // Soft delete
         sample.IsDeleted = true;
-        sample.LastModified = timeProvider.GetUtcNow().UtcDateTime;
+        sample.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
         sample.IsSynced = false;
 
         await context.SaveChangesAsync(ct);
@@ -160,21 +150,21 @@ public class SampleService(
     {
         Id = sample.Id,
         Type = sample.Type,
-        LocationLatitude = sample.LocationLatitude,
-        LocationLongitude = sample.LocationLongitude,
-        LocationDescription = sample.LocationDescription,
-        LocationHierarchy = sample.LocationHierarchy,
+        LocationLatitude = sample.Location.Latitude,
+        LocationLongitude = sample.Location.Longitude,
+        LocationDescription = sample.Location.Description,
+        LocationHierarchy = sample.Location.Hierarchy,
         CollectionDate = sample.CollectionDate,
         CollectorName = sample.CollectorName,
         Notes = sample.Notes,
         Status = sample.Status,
-        Version = sample.Version,
-        LastModified = sample.LastModified,
-        LastModifiedBy = sample.LastModifiedBy,
+        Version = 1, // Placeholder for backward compatibility - actual concurrency uses RowVersion
+        LastModified = sample.UpdatedAt ?? sample.CreatedAt,
+        LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
         IsDeleted = sample.IsDeleted,
         IsSynced = sample.IsSynced,
         LabId = sample.LabId,
         CreatedBy = sample.CreatedBy,
-        CreatedDate = sample.CreatedDate
+        CreatedDate = sample.CreatedAt
     };
 }

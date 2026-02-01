@@ -37,7 +37,7 @@ public class AuditTrailInterceptorTests : IDisposable
         var auditLog = auditLogs.FirstOrDefault(a => a.EntityId == sample.Id);
         auditLog.Should().NotBeNull();
         auditLog!.Action.Should().Be(AuditAction.Create);
-        auditLog.EntityType.Should().Be(nameof(Sample));
+        auditLog.EntityType.Should().Be(EntityType.Sample);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class AuditTrailInterceptorTests : IDisposable
         
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
-        auditLog!.EntityType.Should().Be(nameof(Sample));
+        auditLog!.EntityType.Should().Be(EntityType.Sample);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class AuditTrailInterceptorTests : IDisposable
         
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
-        auditLog!.EntityType.Should().Be(nameof(Sample));
+        auditLog!.EntityType.Should().Be(EntityType.Sample);
     }
 
     [Fact]

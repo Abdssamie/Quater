@@ -24,8 +24,8 @@ public static class ParameterMappingExtensions
             MaxValue = parameter.MaxValue,
             Description = parameter.Description,
             IsActive = parameter.IsActive,
-            CreatedDate = parameter.CreatedDate,
-            LastModified = parameter.LastModified
+            CreatedDate = parameter.CreatedAt,
+            LastModified = parameter.UpdatedAt ?? parameter.CreatedAt
         };
     }
 
@@ -46,8 +46,6 @@ public static class ParameterMappingExtensions
             MaxValue = dto.MaxValue,
             Description = dto.Description,
             IsActive = true,
-            CreatedDate = now,
-            LastModified = now,
             CreatedAt = now,
             CreatedBy = createdBy,
             IsDeleted = false,
@@ -68,7 +66,6 @@ public static class ParameterMappingExtensions
         parameter.MaxValue = dto.MaxValue;
         parameter.Description = dto.Description;
         parameter.IsActive = dto.IsActive;
-        parameter.LastModified = DateTime.UtcNow;
         parameter.UpdatedAt = DateTime.UtcNow;
         parameter.UpdatedBy = updatedBy;
     }

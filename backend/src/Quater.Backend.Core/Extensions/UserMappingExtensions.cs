@@ -21,7 +21,7 @@ public static class UserMappingExtensions
             Role = user.Role,
             LabId = user.LabId,
             LabName = user.Lab?.Name,
-            CreatedDate = user.CreatedDate,
+            CreatedDate = user.CreatedAt,
             LastLogin = user.LastLogin,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
@@ -44,7 +44,6 @@ public static class UserMappingExtensions
             Email = dto.Email,
             Role = dto.Role,
             LabId = dto.LabId,
-            CreatedDate = now,
             IsActive = true,
             CreatedAt = now,
             CreatedBy = createdBy

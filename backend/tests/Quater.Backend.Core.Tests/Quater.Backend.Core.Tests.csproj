@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Quater.Backend.Core\Quater.Backend.Core.csproj" />
     <ProjectReference Include="..\..\src\Quater.Backend.Data\Quater.Backend.Data.csproj" />
+    <ProjectReference Include="..\..\src\Quater.Backend.Infrastructure.Email\Quater.Backend.Infrastructure.Email.csproj" />
     <ProjectReference Include="..\..\src\Quater.Backend.Services\Quater.Backend.Services.csproj" />
     <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
   </ItemGroup>

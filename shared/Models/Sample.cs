@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 using Quater.Shared.ValueObjects;
@@ -58,13 +57,13 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, ISyncable, IConcu
     /// Soft delete flag for sync
     /// </summary>
     [Required]
-    public bool IsDeleted { get; set; } = false;
+    public bool IsDeleted { get; set; }
 
     /// <summary>
     /// Sync status flag
     /// </summary>
     [Required]
-    public bool IsSynced { get; set; } = false;
+    public bool IsSynced { get; set; }
 
     /// <summary>
     /// Foreign key to Lab

@@ -176,7 +176,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
 
         foreach (var entry in auditableEntries)
         {
-            var entityType = entry.Entity.GetType().Name;
+            var entityTypeName = entry.Entity.GetType().Name;
             var entityIdProperty = entry.Entity.GetType().GetProperty("Id");
             
             if (entityIdProperty == null)
@@ -243,11 +243,17 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
                 oldValue = JsonSerializer.Serialize(values);
             }
 
+            // Convert entity type name to EntityType enum
+            if (!Enum.TryParse<EntityType>(entityTypeName, out var entityTypeEnum))
+            {
+                continue; // Skip entities that don't have a corresponding EntityType enum value
+            }
+
             // Store audit data for later persistence
             _pendingAuditLogs.Value.Add(new AuditLogData
             {
                 UserId = userId,
-                EntityType = entityType,
+                EntityType = entityTypeEnum,
                 EntityId = entityId.Value,
                 Action = action,
                 OldValue = oldValue?.Length > 4000 ? oldValue.Substring(0, 4000) : oldValue,
@@ -264,7 +270,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     private class AuditLogData
     {
         public required string UserId { get; init; }
-        public required string EntityType { get; init; }
+        public required EntityType EntityType { get; init; }
         public required Guid EntityId { get; init; }
         public required AuditAction Action { get; init; }
         public string? OldValue { get; init; }

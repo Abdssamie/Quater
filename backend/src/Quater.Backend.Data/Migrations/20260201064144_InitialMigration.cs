@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Quater.Backend.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -34,12 +34,64 @@ namespace Quater.Backend.Data.Migrations
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Location = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ContactInfo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Labs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OpenIddictApplications",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    ApplicationType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    ClientId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ClientSecret = table.Column<string>(type: "text", nullable: true),
+                    ClientType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    ConsentType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    DisplayName = table.Column<string>(type: "text", nullable: true),
+                    DisplayNames = table.Column<string>(type: "text", nullable: true),
+                    JsonWebKeySet = table.Column<string>(type: "text", nullable: true),
+                    Permissions = table.Column<string>(type: "text", nullable: true),
+                    PostLogoutRedirectUris = table.Column<string>(type: "text", nullable: true),
+                    Properties = table.Column<string>(type: "text", nullable: true),
+                    RedirectUris = table.Column<string>(type: "text", nullable: true),
+                    Requirements = table.Column<string>(type: "text", nullable: true),
+                    Settings = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OpenIddictApplications", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OpenIddictScopes",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Descriptions = table.Column<string>(type: "text", nullable: true),
+                    DisplayName = table.Column<string>(type: "text", nullable: true),
+                    DisplayNames = table.Column<string>(type: "text", nullable: true),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Properties = table.Column<string>(type: "text", nullable: true),
+                    Resources = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OpenIddictScopes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -55,8 +107,16 @@ namespace Quater.Backend.Data.Migrations
                     MaxValue = table.Column<double>(type: "double precision", nullable: true),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
                 {
@@ -85,27 +145,63 @@ namespace Quater.Backend.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ConflictBackups",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityType = table.Column<int>(type: "integer", maxLength: 100, nullable: false),
+                    ServerVersion = table.Column<string>(type: "text", nullable: false),
+                    ClientVersion = table.Column<string>(type: "text", nullable: false),
+                    ResolutionStrategy = table.Column<string>(type: "text", nullable: false),
+                    ConflictDetectedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ResolvedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    ResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    DeviceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LabId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConflictBackups", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConflictBackups_Labs_LabId",
+                        column: x => x.LabId,
+                        principalTable: "Labs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Samples",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Type = table.Column<string>(type: "text", nullable: false),
-                    LocationLatitude = table.Column<double>(type: "double precision", nullable: false),
-                    LocationLongitude = table.Column<double>(type: "double precision", nullable: false),
-                    LocationDescription = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    LocationHierarchy = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Location_Latitude = table.Column<double>(type: "double precision", nullable: false),
+                    Location_Longitude = table.Column<double>(type: "double precision", nullable: false),
+                    Location_Description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Location_Hierarchy = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CollectionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CollectorName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
-                    Version = table.Column<int>(type: "integer", nullable: false),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     IsSynced = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     LabId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
                 {
@@ -125,9 +221,13 @@ namespace Quater.Backend.Data.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<string>(type: "text", nullable: false),
                     LabId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastLogin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea"),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -155,25 +255,58 @@ namespace Quater.Backend.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "OpenIddictAuthorizations",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    ApplicationId = table.Column<string>(type: "text", nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Properties = table.Column<string>(type: "text", nullable: true),
+                    Scopes = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Subject = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OpenIddictAuthorizations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OpenIddictAuthorizations_OpenIddictApplications_Application~",
+                        column: x => x.ApplicationId,
+                        principalTable: "OpenIddictApplications",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TestResults",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SampleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParameterName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Value = table.Column<double>(type: "double precision", nullable: false),
-                    Unit = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Measurement_ParameterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Measurement_Value = table.Column<double>(type: "double precision", nullable: false),
+                    Measurement_Unit = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     TestDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     TechnicianName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     TestMethod = table.Column<string>(type: "text", nullable: false),
                     ComplianceStatus = table.Column<string>(type: "text", nullable: false),
-                    Version = table.Column<int>(type: "integer", nullable: false),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    VoidedTestResultId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ReplacedByTestResultId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsVoided = table.Column<bool>(type: "boolean", nullable: false),
+                    VoidReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     IsSynced = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
                 {
@@ -277,11 +410,15 @@ namespace Quater.Backend.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    EntityType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    EntityType = table.Column<int>(type: "integer", maxLength: 50, nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Action = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Action = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
                     OldValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
                     NewValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
+                    ChangedFields = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IsTruncated = table.Column<bool>(type: "boolean", nullable: false),
+                    OverflowStoragePath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ConflictBackupId = table.Column<Guid>(type: "uuid", nullable: true),
                     ConflictResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IpAddress = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
@@ -290,6 +427,11 @@ namespace Quater.Backend.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditLogArchive", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditLogArchive_ConflictBackups_ConflictBackupId",
+                        column: x => x.ConflictBackupId,
+                        principalTable: "ConflictBackups",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AuditLogArchive_Users_UserId",
                         column: x => x.UserId,
@@ -304,11 +446,15 @@ namespace Quater.Backend.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    EntityType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    EntityType = table.Column<int>(type: "integer", maxLength: 50, nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Action = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Action = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
                     OldValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
                     NewValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
+                    ChangedFields = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IsTruncated = table.Column<bool>(type: "boolean", nullable: false),
+                    OverflowStoragePath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ConflictBackupId = table.Column<Guid>(type: "uuid", nullable: true),
                     ConflictResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IpAddress = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
@@ -317,6 +463,11 @@ namespace Quater.Backend.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditLogs_ConflictBackups_ConflictBackupId",
+                        column: x => x.ConflictBackupId,
+                        principalTable: "ConflictBackups",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AuditLogs_Users_UserId",
                         column: x => x.UserId,
@@ -333,12 +484,13 @@ namespace Quater.Backend.Data.Migrations
                     DeviceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     LastSyncTimestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Status = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
                     ErrorMessage = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     RecordsSynced = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     ConflictsDetected = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     ConflictsResolved = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    CreatedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -349,6 +501,39 @@ namespace Quater.Backend.Data.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OpenIddictTokens",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    ApplicationId = table.Column<string>(type: "text", nullable: true),
+                    AuthorizationId = table.Column<string>(type: "text", nullable: true),
+                    ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ExpirationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Payload = table.Column<string>(type: "text", nullable: true),
+                    Properties = table.Column<string>(type: "text", nullable: true),
+                    RedemptionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ReferenceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Subject = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OpenIddictTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OpenIddictTokens_OpenIddictApplications_ApplicationId",
+                        column: x => x.ApplicationId,
+                        principalTable: "OpenIddictApplications",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OpenIddictTokens_OpenIddictAuthorizations_AuthorizationId",
+                        column: x => x.AuthorizationId,
+                        principalTable: "OpenIddictAuthorizations",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -383,6 +568,11 @@ namespace Quater.Backend.Data.Migrations
                 column: "ArchivedDate");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditLogArchive_ConflictBackupId",
+                table: "AuditLogArchive",
+                column: "ConflictBackupId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AuditLogArchive_EntityType_EntityId",
                 table: "AuditLogArchive",
                 columns: new[] { "EntityType", "EntityId" });
@@ -396,6 +586,11 @@ namespace Quater.Backend.Data.Migrations
                 name: "IX_AuditLogArchive_UserId",
                 table: "AuditLogArchive",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_ConflictBackupId",
+                table: "AuditLogs",
+                column: "ConflictBackupId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_EntityType_EntityId",
@@ -418,14 +613,82 @@ namespace Quater.Backend.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ConflictBackups_ConflictDetectedAt",
+                table: "ConflictBackups",
+                column: "ConflictDetectedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConflictBackups_DeviceId",
+                table: "ConflictBackups",
+                column: "DeviceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConflictBackups_EntityType_EntityId",
+                table: "ConflictBackups",
+                columns: new[] { "EntityType", "EntityId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConflictBackups_LabId",
+                table: "ConflictBackups",
+                column: "LabId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConflictBackups_ResolvedAt",
+                table: "ConflictBackups",
+                column: "ResolvedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Labs_IsDeleted",
+                table: "Labs",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Labs_Name",
                 table: "Labs",
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictApplications_ClientId",
+                table: "OpenIddictApplications",
+                column: "ClientId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictAuthorizations_ApplicationId_Status_Subject_Type",
+                table: "OpenIddictAuthorizations",
+                columns: new[] { "ApplicationId", "Status", "Subject", "Type" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictScopes_Name",
+                table: "OpenIddictScopes",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictTokens_ApplicationId_Status_Subject_Type",
+                table: "OpenIddictTokens",
+                columns: new[] { "ApplicationId", "Status", "Subject", "Type" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictTokens_AuthorizationId",
+                table: "OpenIddictTokens",
+                column: "AuthorizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OpenIddictTokens_ReferenceId",
+                table: "OpenIddictTokens",
+                column: "ReferenceId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Parameters_IsActive",
                 table: "Parameters",
                 column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Parameters_IsDeleted",
+                table: "Parameters",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Parameters_Name",
@@ -439,14 +702,19 @@ namespace Quater.Backend.Data.Migrations
                 column: "CollectionDate");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Samples_IsDeleted",
+                table: "Samples",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Samples_IsSynced",
                 table: "Samples",
                 column: "IsSynced");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Samples_IsSynced_LastModified",
+                name: "IX_Samples_IsSynced_UpdatedAt",
                 table: "Samples",
-                columns: new[] { "IsSynced", "LastModified" });
+                columns: new[] { "IsSynced", "UpdatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Samples_LabId",
@@ -454,9 +722,9 @@ namespace Quater.Backend.Data.Migrations
                 column: "LabId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Samples_LastModified",
+                name: "IX_Samples_LabId_CollectionDate_Status",
                 table: "Samples",
-                column: "LastModified");
+                columns: new[] { "LabId", "CollectionDate", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Samples_Status",
@@ -464,9 +732,19 @@ namespace Quater.Backend.Data.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Samples_UpdatedAt",
+                table: "Samples",
+                column: "UpdatedAt");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SyncLogs_DeviceId",
                 table: "SyncLogs",
                 column: "DeviceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SyncLogs_DeviceId_LastSyncTimestamp",
+                table: "SyncLogs",
+                columns: new[] { "DeviceId", "LastSyncTimestamp" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SyncLogs_LastSyncTimestamp",
@@ -484,19 +762,19 @@ namespace Quater.Backend.Data.Migrations
                 column: "ComplianceStatus");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TestResults_IsDeleted",
+                table: "TestResults",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TestResults_IsSynced",
                 table: "TestResults",
                 column: "IsSynced");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TestResults_IsSynced_LastModified",
+                name: "IX_TestResults_IsSynced_UpdatedAt",
                 table: "TestResults",
-                columns: new[] { "IsSynced", "LastModified" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TestResults_LastModified",
-                table: "TestResults",
-                column: "LastModified");
+                columns: new[] { "IsSynced", "UpdatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TestResults_SampleId",
@@ -507,6 +785,11 @@ namespace Quater.Backend.Data.Migrations
                 name: "IX_TestResults_TestDate",
                 table: "TestResults",
                 column: "TestDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TestResults_UpdatedAt",
+                table: "TestResults",
+                column: "UpdatedAt");
 
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
@@ -561,6 +844,12 @@ namespace Quater.Backend.Data.Migrations
                 name: "AuditLogs");
 
             migrationBuilder.DropTable(
+                name: "OpenIddictScopes");
+
+            migrationBuilder.DropTable(
+                name: "OpenIddictTokens");
+
+            migrationBuilder.DropTable(
                 name: "Parameters");
 
             migrationBuilder.DropTable(
@@ -573,10 +862,19 @@ namespace Quater.Backend.Data.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "ConflictBackups");
+
+            migrationBuilder.DropTable(
+                name: "OpenIddictAuthorizations");
+
+            migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Samples");
+
+            migrationBuilder.DropTable(
+                name: "OpenIddictApplications");
 
             migrationBuilder.DropTable(
                 name: "Labs");

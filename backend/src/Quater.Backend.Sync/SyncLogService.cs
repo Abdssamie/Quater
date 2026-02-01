@@ -38,7 +38,6 @@ public class SyncLogService : ISyncLogService
             UserId = userId,
             Status = status,
             LastSyncTimestamp = now,
-            CreatedDate = now,
             RecordsSynced = 0,
             ConflictsDetected = 0,
             ConflictsResolved = 0,
@@ -96,7 +95,7 @@ public class SyncLogService : ISyncLogService
     {
         return await _context.SyncLogs
             .Where(s => s.DeviceId == deviceId && s.UserId == userId)
-            .OrderByDescending(s => s.CreatedDate)
+            .OrderByDescending(s => s.LastSyncTimestamp)
             .Take(limit)
             .ToListAsync(ct);
     }

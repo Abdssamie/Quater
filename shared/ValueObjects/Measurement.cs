@@ -33,8 +33,8 @@ public sealed record Measurement
     /// <exception cref="ArgumentException">If unit doesn't match parameter or value out of range</exception>
     public Measurement(Parameter parameter, double value, string unit)
     {
-        ArgumentNullException.ThrowIfNull(parameter, nameof(parameter));
-        ArgumentException.ThrowIfNullOrWhiteSpace(unit, nameof(unit));
+        ArgumentNullException.ThrowIfNull(parameter);
+        ArgumentException.ThrowIfNullOrWhiteSpace(unit);
         
         // Validate unit matches parameter
         if (!string.Equals(parameter.Unit, unit, StringComparison.OrdinalIgnoreCase))

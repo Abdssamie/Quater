@@ -52,8 +52,18 @@ public class ConflictBackupConfiguration : IEntityTypeConfiguration<ConflictBack
         entity.Property(e => e.LabId)
             .IsRequired();
 
-        entity.Property(e => e.CreatedDate)
+        // IAuditable properties
+        entity.Property(e => e.CreatedAt)
             .IsRequired();
+
+        entity.Property(e => e.CreatedBy)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        entity.Property(e => e.UpdatedAt);
+
+        entity.Property(e => e.UpdatedBy)
+            .HasMaxLength(100);
 
         // Indexes
         entity.HasIndex(e => new { e.EntityType, e.EntityId })

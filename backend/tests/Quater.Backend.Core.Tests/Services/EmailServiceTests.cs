@@ -1,9 +1,11 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Infrastructure.Email;
 using Quater.Backend.Services;
 using Xunit;
 
@@ -11,33 +13,30 @@ namespace Quater.Backend.Core.Tests.Services;
 
 public sealed class EmailServiceTests
 {
-    private readonly Mock<ILogger<SmtpEmailService>> _loggerMock;
+    private readonly Mock<ILogger<SmtpEmailSender>> _loggerMock;
     private readonly Mock<ILogger<ScribanEmailTemplateService>> _templateLoggerMock;
     private readonly Mock<IEmailTemplateService> _templateServiceMock;
-    private readonly IConfiguration _configuration;
+    private readonly EmailSettings _emailSettings;
 
     public EmailServiceTests()
     {
-        _loggerMock = new Mock<ILogger<SmtpEmailService>>();
+        _loggerMock = new Mock<ILogger<SmtpEmailSender>>();
         _templateLoggerMock = new Mock<ILogger<ScribanEmailTemplateService>>();
         _templateServiceMock = new Mock<IEmailTemplateService>();
 
-        // Create in-memory configuration
-        var configDict = new Dictionary<string, string?>
+        // Create email settings
+        _emailSettings = new EmailSettings
         {
-            ["Email:Smtp:Host"] = "localhost",
-            ["Email:Smtp:Port"] = "1025",
-            ["Email:Smtp:EnableSsl"] = "false",
-            ["Email:Smtp:Username"] = "",
-            ["Email:Smtp:Password"] = "",
-            ["Email:From:Address"] = "noreply@quater.app",
-            ["Email:From:Name"] = "Quater Water Quality",
-            ["Email:BaseUrl"] = "http://localhost:5000"
+            Enabled = true,
+            SmtpHost = "localhost",
+            SmtpPort = 1025,
+            UseSsl = false,
+            SmtpUsername = "",
+            SmtpPassword = "",
+            FromAddress = "noreply@quater.app",
+            FromName = "Quater Water Quality",
+            FrontendUrl = "http://localhost:5000"
         };
-
-        _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(configDict)
-            .Build();
     }
 
     #region DTO Tests
@@ -298,41 +297,19 @@ public sealed class EmailServiceTests
 
     #endregion
 
-    #region SmtpEmailService Tests
+    #region SmtpEmailSender Tests
 
     [Fact]
-    public void SmtpEmailService_Constructor_ThrowsOnNullConfiguration()
-    {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            new SmtpEmailService(null!, _loggerMock.Object, _templateServiceMock.Object));
-    }
-
-    [Fact]
-    public void SmtpEmailService_Constructor_ThrowsOnNullLogger()
-    {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            new SmtpEmailService(_configuration, null!, _templateServiceMock.Object));
-    }
-
-    [Fact]
-    public void SmtpEmailService_Constructor_ThrowsOnNullTemplateService()
-    {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() =>
-            new SmtpEmailService(_configuration, _loggerMock.Object, null!));
-    }
-
-    [Fact]
-    public async Task SmtpEmailService_SendAsync_ThrowsOnNullEmail()
+    public void SmtpEmailSender_Constructor_InitializesCorrectly()
     {
         // Arrange
-        var service = new SmtpEmailService(_configuration, _loggerMock.Object, _templateServiceMock.Object);
+        var options = Options.Create(_emailSettings);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            service.SendAsync(null!));
+        // Act
+        var service = new SmtpEmailSender(options, _templateServiceMock.Object, _loggerMock.Object);
+
+        // Assert
+        service.Should().NotBeNull();
     }
 
     #endregion

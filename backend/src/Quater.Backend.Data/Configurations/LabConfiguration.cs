@@ -25,9 +25,6 @@ public class LabConfiguration : IEntityTypeConfiguration<Lab>
         entity.Property(e => e.ContactInfo)
             .HasMaxLength(500);
 
-        entity.Property(e => e.CreatedDate)
-            .IsRequired();
-
         entity.Property(e => e.IsActive)
             .IsRequired()
             .HasDefaultValue(true);

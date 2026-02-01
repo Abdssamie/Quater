@@ -101,5 +101,5 @@ public sealed class AuditLogArchive : IEntity
 
     // Navigation properties
     public User User { get; set; } = null!;
-    public ConflictBackup? ConflictBackup { get; set; }
+    public ConflictBackup? ConflictBackup{ get; set; }
 }

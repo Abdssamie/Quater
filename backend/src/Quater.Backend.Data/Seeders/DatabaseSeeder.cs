@@ -49,8 +49,10 @@ public static class DatabaseSeeder
                 MinValue = 6.5,
                 MaxValue = 8.5,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -61,8 +63,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 5,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -73,8 +77,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 500,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -85,8 +91,10 @@ public static class DatabaseSeeder
                 MinValue = 0.2,
                 MaxValue = 5.0,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -97,8 +105,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 1.5,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -109,8 +119,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 50,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -120,9 +132,11 @@ public static class DatabaseSeeder
                 Description = "Arsenic concentration in water",
                 MinValue = 0,
                 MaxValue = 10,
-          IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -133,8 +147,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 10,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -145,8 +161,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 0,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             },
             new Parameter
             {
@@ -157,8 +175,10 @@ public static class DatabaseSeeder
                 MinValue = 0,
                 MaxValue = 0,
                 IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                LastModified = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = "system",
+                UpdatedBy = "system"
             }
         };
 
@@ -186,7 +206,10 @@ public static class DatabaseSeeder
             Location = "Main Office",
             ContactInfo = "admin@quater.local",
             IsActive = true,
-            CreatedDate = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            CreatedBy = "system",
+            UpdatedBy = "system"
         };
 
         await context.Labs.AddAsync(defaultLab);
@@ -202,7 +225,10 @@ public static class DatabaseSeeder
             Role = UserRole.Admin,
             LabId = defaultLab.Id,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            CreatedBy = "system",
+            UpdatedBy = "system"
         };
 
         // Get admin password from environment variable or generate a secure random one

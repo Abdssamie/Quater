@@ -72,7 +72,6 @@ public class LabService(
             Location = dto.Location,
             ContactInfo = dto.ContactInfo,
             IsActive = true,
-            CreatedDate = now,
             CreatedAt = now,
             CreatedBy = userId,
             IsDeleted = false
@@ -130,7 +129,6 @@ public class LabService(
         Name = lab.Name,
         Location = lab.Location,
         ContactInfo = lab.ContactInfo,
-        CreatedDate = lab.CreatedDate,
         IsActive = lab.IsActive,
         CreatedAt = lab.CreatedAt,
         CreatedBy = lab.CreatedBy,
