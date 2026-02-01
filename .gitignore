@@ -54,3 +54,4 @@ bld/
 
 ## Certificates (staging/production)
 certs/
+.env.staging

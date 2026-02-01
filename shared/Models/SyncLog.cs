@@ -20,14 +20,14 @@ public class SyncLog : IEntity, ISyncable
     /// </summary>
     [Required]
     [MaxLength(100)]
-    public string DeviceId { get; set; } = string.Empty;
+    public string DeviceId { get; init; } = string.Empty;
 
     /// <summary>
     /// Foreign key to User
     /// </summary>
     [Required]
     [MaxLength(100)]
-    public string UserId { get; set; } = string.Empty;
+    public required string UserId { get; init; }
 
     /// <summary>
     /// UTC timestamp of last successful sync
@@ -51,19 +51,19 @@ public class SyncLog : IEntity, ISyncable
     /// Number of records synced
     /// </summary>
     [Required]
-    public int RecordsSynced { get; set; } = 0;
+    public int RecordsSynced { get; set; }
 
     /// <summary>
     /// Number of conflicts detected
     /// </summary>
     [Required]
-    public int ConflictsDetected { get; set; } = 0;
+    public int ConflictsDetected { get; set; }
 
     /// <summary>
     /// Number of conflicts resolved
     /// </summary>
     [Required]
-    public int ConflictsResolved { get; set; } = 0;
+    public int ConflictsResolved { get; set; }
 
     /// <summary>
     /// UTC timestamp of sync attempt
@@ -72,9 +72,9 @@ public class SyncLog : IEntity, ISyncable
     public DateTime CreatedDate { get; set; }
 
     // ISyncable interface properties
-    public DateTime LastSyncedAt { get; set; }
+    public DateTime LastSyncedAt { get; init; }
     public string? SyncVersion { get; set; }
 
     // Navigation properties
-    public User User { get; set; } = null!;
+    public User User { get; init; } = null!;
 }

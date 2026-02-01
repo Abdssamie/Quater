@@ -33,13 +33,13 @@ public class ConflictBackup : IEntity, IAuditable
     /// JSON serialized backup of the server version
     /// </summary>
     [Required]
-    public string ServerVersion { get; set; } = string.Empty;
+    public string ServerVersion { get; init; } = string.Empty;
 
     /// <summary>
     /// JSON serialized backup of the client version
     /// </summary>
     [Required]
-    public string ClientVersion { get; set; } = string.Empty;
+    public string ClientVersion { get; init; } = string.Empty;
 
     /// <summary>
     /// Strategy used to resolve the conflict
@@ -93,7 +93,7 @@ public class ConflictBackup : IEntity, IAuditable
     public DateTime CreatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+    public string UpdatedBy { get; set; }
 
     // Navigation properties
     public Lab Lab { get; set; } = null!;

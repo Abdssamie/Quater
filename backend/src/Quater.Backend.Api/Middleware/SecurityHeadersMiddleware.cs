@@ -20,47 +20,48 @@ public class SecurityHeadersMiddleware
         // This prevents "Headers are read-only, response has already started" errors
         context.Response.OnStarting(() =>
         {
-            if (!context.Response.HasStarted)
-            {
-                // Content Security Policy - restricts resource loading
-                // Development: Relaxed policy for Swagger UI compatibility
-                // Production: Stricter policy without unsafe-inline/unsafe-eval
-                var cspPolicy = _environment.IsDevelopment()
-                    ? "default-src 'self'; " +
-                      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-                      "style-src 'self' 'unsafe-inline'; " +
-                      "img-src 'self' data: https:; " +
-                      "font-src 'self' data:; " +
-                      "connect-src 'self'; " +
-                      "frame-ancestors 'none'"
-                    : "default-src 'self'; " +
-                      "script-src 'self'; " +
-                      "style-src 'self'; " +
-                      "img-src 'self' data: https:; " +
-                      "font-src 'self' data:; " +
-                      "connect-src 'self'; " +
-                      "frame-ancestors 'none'; " +
-                      "base-uri 'self'; " +
-                      "form-action 'self'";
+            if (context.Response.HasStarted) return Task.CompletedTask;
+            // Content Security Policy - restricts resource loading
+            // Development: Relaxed policy for Swagger UI compatibility
+            // Production: Stricter policy without unsafe-inline/unsafe-eval
+            var cspPolicy = _environment.IsDevelopment()
+                // Development Policy
+                ? "default-src 'self'; " +
+                  "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                  "style-src 'self' 'unsafe-inline'; " +
+                  "img-src 'self' data: https:; " +
+                  "font-src 'self' data:; " +
+                  "connect-src 'self'; " +
+                  "frame-ancestors 'none'"
+                // Production Policy
+                : "default-src 'self'; " +
+                  "script-src 'self'; " +
+                  "style-src 'self'; " +
+                  "img-src 'self' data: https:; " +
+                  "font-src 'self' data:; " +
+                  "connect-src 'self'; " +
+                  "frame-ancestors 'none'; " +
+                  "base-uri 'self'; " +
+                  "form-action 'self'";
                 
-                context.Response.Headers.Append("Content-Security-Policy", cspPolicy);
+            context.Response.Headers.Append("Content-Security-Policy", cspPolicy);
 
-                // Prevent clickjacking attacks
-                context.Response.Headers.Append("X-Frame-Options", "DENY");
+            // Prevent clickjacking attacks
+            context.Response.Headers.Append("X-Frame-Options", "DENY");
 
-                // Prevent MIME type sniffing
-                context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            // Prevent MIME type sniffing
+            context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
 
-                // Control referrer information
-                context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+            // Control referrer information
+            context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
 
-                // Enable XSS protection (legacy browsers)
-                context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+            // Enable XSS protection (legacy browsers)
+            context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
 
-                // Disable feature policy for sensitive features
-                context.Response.Headers.Append("Permissions-Policy", 
-                    "geolocation=(), microphone=(), camera=()");
-            }
+            // Disable feature policy for sensitive features
+            context.Response.Headers.Append("Permissions-Policy", 
+                "geolocation=(), microphone=(), camera=()");
+
             return Task.CompletedTask;
         });
 

@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 
@@ -20,7 +19,7 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     /// Foreign key to Sample
     /// </summary>
     [Required]
-    public Guid SampleId { get; set; }
+    public Guid SampleId { get; init; }
 
     /// <summary>
     /// Water quality parameter (e.g., "pH", "turbidity")
@@ -92,13 +91,13 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     /// Soft delete flag for sync
     /// </summary>
     [Required]
-    public bool IsDeleted { get; set; } = false;
+    public bool IsDeleted { get; set; }
 
     /// <summary>
     /// Sync status flag
     /// </summary>
     [Required]
-    public bool IsSynced { get; set; } = false;
+    public bool IsSynced { get; set; }
 
     /// <summary>
     /// User ID who created result
@@ -111,7 +110,7 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     /// UTC timestamp of creation
     /// </summary>
     [Required]
-    public DateTime CreatedDate { get; set; }
+    public DateTime CreatedDate { get; init; }
 
     // IAuditable interface properties
     public DateTime CreatedAt { get; set; }
@@ -123,7 +122,7 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     public string? DeletedBy { get; set; }
 
     // ISyncable interface properties
-    public DateTime LastSyncedAt { get; set; }
+    public DateTime LastSyncedAt { get; init; }
     public string? SyncVersion { get; set; }
 
     // IConcurrent interface properties
@@ -131,5 +130,5 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
-    public Sample Sample { get; set; } = null!;
+    public Sample Sample { get; init; } = null!;
 }

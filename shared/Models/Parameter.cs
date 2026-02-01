@@ -84,7 +84,7 @@ public class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurren
     public string? DeletedBy { get; set; }
 
     // ISyncable interface properties
-    public DateTime LastSyncedAt { get; set; }
+    public DateTime LastSyncedAt { get; init; }
     public string? SyncVersion { get; set; }
 
     // IConcurrent interface properties

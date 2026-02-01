@@ -27,7 +27,7 @@ public class User : IdentityUser, IAuditable, IConcurrent
     /// UTC timestamp of account creation
     /// </summary>
     [Required]
-    public DateTime CreatedDate { get; set; }
+    public DateTime CreatedDate { get; init; }
 
     /// <summary>
     /// UTC timestamp of last login
@@ -51,8 +51,8 @@ public class User : IdentityUser, IAuditable, IConcurrent
     public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
-    public Lab Lab { get; set; } = null!;
-    public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
-    public ICollection<AuditLogArchive> AuditLogArchives { get; set; } = new List<AuditLogArchive>();
-    public ICollection<SyncLog> SyncLogs { get; set; } = new List<SyncLog>();
+    public Lab Lab { get; init; } = null!;
+    public ICollection<AuditLog> AuditLogs { get; init; } = new List<AuditLog>();
+    public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = new List<AuditLogArchive>();
+    public ICollection<SyncLog> SyncLogs { get; init; } = new List<SyncLog>();
 }

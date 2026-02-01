@@ -61,7 +61,7 @@ public class SyncLogService : ISyncLogService
         string? errorMessage = null,
         CancellationToken ct = default)
     {
-        var syncLog = await _context.SyncLogs.FindAsync(new object[] { syncLogId }, ct);
+        var syncLog = await _context.SyncLogs.FindAsync([syncLogId], ct);
         if (syncLog == null)
             throw new NotFoundException(ErrorMessages.SyncLogNotFound);
 

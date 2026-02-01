@@ -133,7 +133,7 @@ public class Sample : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
     public string? DeletedBy { get; set; }
 
     // ISyncable interface properties
-    public DateTime LastSyncedAt { get; set; }
+    public DateTime LastSyncedAt { get; init; }
     public string? SyncVersion { get; set; }
 
     // IConcurrent interface properties

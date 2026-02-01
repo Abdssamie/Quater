@@ -9,7 +9,7 @@ public interface ISyncable
     /// <summary>
     /// Gets or sets the date and time when the entity was last synchronized.
     /// </summary>
-    DateTime LastSyncedAt { get; set; }
+    DateTime LastSyncedAt { get; init; }
 
     /// <summary>
     /// Gets or sets the synchronization version identifier.
