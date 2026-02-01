@@ -7,7 +7,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Archived audit logs older than 90 days (cold storage).
 /// </summary>
-public class AuditLogArchive : IEntity
+public sealed class AuditLogArchive : IEntity
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -23,11 +23,10 @@ public class AuditLogArchive : IEntity
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Type of entity modified (e.g., "Sample", "TestResult")
+    /// Type of entity modified
     /// </summary>
     [Required]
-    [MaxLength(50)]
-    public string EntityType { get; set; } = string.Empty;
+    public EntityType EntityType { get; set; }
 
     /// <summary>
     /// ID of modified entity
