@@ -7,7 +7,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Tracks all data modifications for compliance and conflict resolution.
 /// </summary>
-public class AuditLog : IEntity
+public sealed class AuditLog : IEntity
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -23,11 +23,10 @@ public class AuditLog : IEntity
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Type of entity modified (e.g., "Sample", "TestResult")
+    /// Type of entity modified
     /// </summary>
     [Required]
-    [MaxLength(50)]
-    public string EntityType { get; set; } = string.Empty;
+    public EntityType EntityType { get; set; }
 
     /// <summary>
     /// ID of modified entity
@@ -99,6 +98,16 @@ public class AuditLog : IEntity
     /// </summary>
     [Required]
     public bool IsArchived { get; set; } = false;
+
+    /// <summary>
+    /// UTC timestamp when this record becomes eligible for archival (Timestamp + 90 days)
+    /// </summary>
+    public DateTime ArchiveEligibleAt => Timestamp.AddDays(90);
+
+    /// <summary>
+    /// Whether this record is eligible for archival (older than 90 days and not yet archived)
+    /// </summary>
+    public bool IsEligibleForArchival => !IsArchived && DateTime.UtcNow >= ArchiveEligibleAt;
 
     // Navigation properties
     public User User { get; set; } = null!;
