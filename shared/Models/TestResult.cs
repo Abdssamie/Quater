@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
+using Quater.Shared.ValueObjects;
 
 namespace Quater.Shared.Models;
 
 /// <summary>
 /// Represents a single water quality test performed on a sample.
 /// </summary>
-public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
+public sealed class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -22,24 +23,16 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     public Guid SampleId { get; init; }
 
     /// <summary>
-    /// Water quality parameter (e.g., "pH", "turbidity")
+    /// Measurement data (parameter, value, unit)
     /// </summary>
     [Required]
-    [MaxLength(100)]
-    public string ParameterName { get; set; } = string.Empty;
+    public Measurement Measurement { get; set; } = null!;
 
     /// <summary>
-    /// Measured value
+    /// Status of the test result (Draft, Submitted, Voided)
     /// </summary>
     [Required]
-    public double Value { get; set; }
-
-    /// <summary>
-    /// Unit of measurement (e.g., "mg/L", "NTU")
-    /// </summary>
-    [Required]
-    [MaxLength(20)]
-    public string Unit { get; set; } = string.Empty;
+    public TestResultStatus Status { get; set; } = TestResultStatus.Draft;
 
     /// <summary>
     /// UTC timestamp of test
@@ -67,25 +60,25 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     public ComplianceStatus ComplianceStatus { get; set; }
 
     /// <summary>
-    /// Optimistic locking version number
+    /// If voided, reference to the TestResult that voided this one
     /// </summary>
-    [Required]
-    [ConcurrencyCheck]
-    public int Version { get; set; }
+    public Guid? VoidedTestResultId { get; set; }
 
     /// <summary>
-    /// UTC timestamp of last modification
+    /// If voided, reference to the replacement TestResult
     /// </summary>
-    [Required]
-    [ConcurrencyCheck]
-    public DateTime LastModified { get; set; }
+    public Guid? ReplacedByTestResultId { get; set; }
 
     /// <summary>
-    /// User ID who last modified
+    /// Whether this result has been voided
     /// </summary>
-    [Required]
-    [MaxLength(100)]
-    public string LastModifiedBy { get; set; } = string.Empty;
+    public bool IsVoided { get; set; } = false;
+
+    /// <summary>
+    /// Reason for voiding this result
+    /// </summary>
+    [MaxLength(500)]
+    public string? VoidReason { get; set; }
 
     /// <summary>
     /// Soft delete flag for sync
@@ -99,21 +92,9 @@ public class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurre
     [Required]
     public bool IsSynced { get; set; }
 
-    /// <summary>
-    /// User ID who created result
-    /// </summary>
-    [Required]
-    [MaxLength(100)]
-    public string CreatedBy { get; set; } = string.Empty;
-
-    /// <summary>
-    /// UTC timestamp of creation
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; init; }
-
     // IAuditable interface properties
     public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
 
