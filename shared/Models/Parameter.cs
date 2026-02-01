@@ -6,7 +6,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Represents a water quality parameter with compliance thresholds.
 /// </summary>
-public class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
+public sealed class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -59,18 +59,6 @@ public class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurren
     /// </summary>
     [Required]
     public bool IsActive { get; set; } = true;
-
-    /// <summary>
-    /// UTC timestamp of creation
-    /// </summary>
-    [Required]
-    public DateTime CreatedDate { get; set; }
-
-    /// <summary>
-    /// UTC timestamp of last modification
-    /// </summary>
-    [Required]
-    public DateTime LastModified { get; set; }
 
     // IAuditable interface properties
     public DateTime CreatedAt { get; set; }
