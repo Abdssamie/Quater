@@ -70,16 +70,9 @@ public sealed class AuditLog : IEntity
     [MaxLength(500)]
     public string? OverflowStoragePath { get; set; }
 
-    /// <summary>
-    /// Foreign key to ConflictBackup (if this audit entry relates to a conflict resolution)
-    /// </summary>
-    public Guid? ConflictBackupId { get; set; }
 
-    /// <summary>
-    /// Notes when user resolves sync conflict
-    /// </summary>
-    [MaxLength(1000)]
-    public string? ConflictResolutionNotes { get; set; }
+
+
 
     /// <summary>
     /// UTC timestamp of modification
@@ -111,5 +104,5 @@ public sealed class AuditLog : IEntity
 
     // Navigation properties
     public User User { get; set; } = null!;
-    public ConflictBackup? ConflictBackup { get; set; }
+
 }

@@ -47,10 +47,7 @@ public interface IUnitOfWork : IDisposable
     /// </summary>
     IRepository<Parameter> Parameters { get; }
 
-    /// <summary>
-    /// Repository for SyncLog entities.
-    /// </summary>
-    IRepository<SyncLog> SyncLogs { get; }
+
 
     /// <summary>
     /// Repository for AuditLog entities.
@@ -62,10 +59,7 @@ public interface IUnitOfWork : IDisposable
     /// </summary>
     IRepository<AuditLogArchive> AuditLogArchives { get; }
 
-    /// <summary>
-    /// Repository for ConflictBackup entities.
-    /// </summary>
-    IRepository<ConflictBackup> ConflictBackups { get; }
+
 
     /// <summary>
     /// Saves all pending changes to the database.

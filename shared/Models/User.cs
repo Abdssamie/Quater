@@ -48,5 +48,5 @@ public class User : IdentityUser, IAuditable, IConcurrent
     public Lab Lab { get; init; } = null!;
     public ICollection<AuditLog> AuditLogs { get; init; } = new List<AuditLog>();
     public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = new List<AuditLogArchive>();
-    public ICollection<SyncLog> SyncLogs { get; init; } = new List<SyncLog>();
+
 }

@@ -36,8 +36,7 @@ public class AuditLogArchiveConfiguration : IEntityTypeConfiguration<AuditLogArc
         entity.Property(e => e.NewValue)
             .HasMaxLength(4000);
 
-        entity.Property(e => e.ConflictResolutionNotes)
-            .HasMaxLength(1000);
+
 
         entity.Property(e => e.Timestamp)
             .IsRequired();

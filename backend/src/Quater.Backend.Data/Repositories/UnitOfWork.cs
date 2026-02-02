@@ -18,10 +18,10 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Sample>? _samples;
     private IRepository<TestResult>? _testResults;
     private IRepository<Parameter>? _parameters;
-    private IRepository<SyncLog>? _syncLogs;
+
     private IRepository<AuditLog>? _auditLogs;
     private IRepository<AuditLogArchive>? _auditLogArchives;
-    private IRepository<ConflictBackup>? _conflictBackups;
+
 
     public UnitOfWork(QuaterDbContext context)
     {
@@ -32,10 +32,10 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Sample> Samples => _samples ??= new Repository<Sample>(_context);
     public IRepository<TestResult> TestResults => _testResults ??= new Repository<TestResult>(_context);
     public IRepository<Parameter> Parameters => _parameters ??= new Repository<Parameter>(_context);
-    public IRepository<SyncLog> SyncLogs => _syncLogs ??= new Repository<SyncLog>(_context);
+
     public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
     public IRepository<AuditLogArchive> AuditLogArchives => _auditLogArchives ??= new Repository<AuditLogArchive>(_context);
-    public IRepository<ConflictBackup> ConflictBackups => _conflictBackups ??= new Repository<ConflictBackup>(_context);
+
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -64,7 +64,7 @@ public class UnitOfWork : IUnitOfWork
             await _transaction.RollbackAsync(cancellationToken);
             await _transaction.DisposeAsync();
             _transaction = null;
-            
+
             // Clear the ChangeTracker to remove cached entities after rollback
             // This ensures subsequent queries go to the database instead of returning cached entities
             _context.ChangeTracker.Clear();

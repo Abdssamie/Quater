@@ -11,21 +11,21 @@ namespace Quater.Backend.Core.Tests.Data;
 /// <summary>
 /// Integration tests for interceptors using PostgreSQL test container
 /// </summary>
-[Collection("PostgreSQL")]
+[Collection("TestDatabase")]
 public class InterceptorIntegrationTests : IAsyncLifetime
 {
-    private readonly PostgresTestContainerFixture _fixture;
+    private readonly TestDbContextFactoryFixture _fixture;
     private QuaterDbContext _context = null!;
 
-    public InterceptorIntegrationTests(PostgresTestContainerFixture fixture)
+    public InterceptorIntegrationTests(TestDbContextFactoryFixture fixture)
     {
         _fixture = fixture;
     }
 
     public async Task InitializeAsync()
     {
-        await _fixture.Container.ResetDatabaseAsync();
-        _context = _fixture.Container.CreateSeededDbContext();
+        await _fixture.Factory.ResetDatabaseAsync();
+        _context = _fixture.Factory.CreateSeededContext();
     }
 
     public async Task DisposeAsync()
@@ -49,7 +49,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         var deletedSample = await _context.Samples
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(s => s.Id == sample.Id);
-        
+
         deletedSample.Should().NotBeNull();
         deletedSample!.IsDeleted.Should().BeTrue();
     }
@@ -62,7 +62,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         var sample1 = MockDataFactory.CreateSample(lab.Id);
         var sample2 = MockDataFactory.CreateSample(lab.Id);
         sample2.IsDeleted = true;
-        
+
         _context.Samples.AddRange(sample1, sample2);
         await _context.SaveChangesAsync();
 
@@ -85,11 +85,11 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Assert - Query in fresh context to ensure audit logs are visible
-        using var verifyContext = _fixture.Container.CreateDbContext();
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs
             .Where(a => a.EntityId == sample.Id)
             .ToListAsync();
-        
+
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Create);
         auditLog.Should().NotBeNull();
@@ -115,11 +115,11 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Assert - Query in fresh context to ensure audit logs are visible
-        using var verifyContext = _fixture.Container.CreateDbContext();
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs
             .Where(a => a.EntityId == sample.Id)
             .ToListAsync();
-        
+
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
@@ -144,13 +144,13 @@ public class InterceptorIntegrationTests : IAsyncLifetime
 
         // Assert - Query in fresh context to ensure audit logs are visible
         // Note: SoftDeleteInterceptor converts Delete to Update (sets IsDeleted=true)
-        using var verifyContext = _fixture.Container.CreateDbContext();
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs
             .Where(a => a.EntityId == sample.Id)
             .ToListAsync();
-        
+
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
-        
+
         // The audit log should be an Update (soft delete) or Delete (hard delete)
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update || a.Action == AuditAction.Delete);
         auditLog.Should().NotBeNull();

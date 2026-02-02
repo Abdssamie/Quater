@@ -20,10 +20,10 @@ public class QuaterDbContext : IdentityDbContext<User>
     public DbSet<Sample> Samples { get; set; } = null!;
     public DbSet<TestResult> TestResults { get; set; } = null!;
     public DbSet<Parameter> Parameters { get; set; } = null!;
-    public DbSet<SyncLog> SyncLogs { get; set; } = null!;
+
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
-    public DbSet<ConflictBackup> ConflictBackups { get; set; } = null!;
+
 
     /// <summary>
     /// Configures the entity models and their relationships for the database.

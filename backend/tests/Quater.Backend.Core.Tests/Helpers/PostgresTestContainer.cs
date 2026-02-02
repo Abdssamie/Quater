@@ -9,36 +9,28 @@ using Testcontainers.PostgreSql;
 namespace Quater.Backend.Core.Tests.Helpers;
 
 /// <summary>
-/// Provides PostgreSQL test containers for integration testing
+/// [DEPRECATED] Use TestDbContextFactory instead.
+/// This class is kept for backward compatibility but delegates to TestDbContextFactory.
 /// </summary>
 public class PostgresTestContainer : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container;
-    private string? _connectionString;
+    private readonly TestDbContextFactory _factory;
 
     public PostgresTestContainer()
     {
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:18-alpine")
-            .WithDatabase("quater_test")
-            .WithUsername("test")
-            .WithPassword("test123")
-            .WithCleanUp(true)
-            .Build();
+        _factory = new TestDbContextFactory();
     }
 
-    public string ConnectionString => _connectionString 
-        ?? throw new InvalidOperationException("Container not initialized. Call InitializeAsync first.");
+    public string ConnectionString => _factory.ConnectionString;
 
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-        _connectionString = _container.GetConnectionString();
+        await _factory.InitializeAsync();
     }
 
     public async Task DisposeAsync()
     {
-        await _container.DisposeAsync();
+        await _factory.DisposeAsync();
     }
 
     /// <summary>
@@ -46,23 +38,7 @@ public class PostgresTestContainer : IAsyncLifetime
     /// </summary>
     public QuaterDbContext CreateDbContext()
     {
-        // Append Timezone=UTC to connection string to handle DateTime properly
-        var connectionString = $"{ConnectionString};Timezone=UTC";
-        
-        var options = new DbContextOptionsBuilder<QuaterDbContext>()
-            .UseNpgsql(connectionString)
-            .EnableSensitiveDataLogging()
-            .AddInterceptors(
-                new AuditTrailInterceptor(),
-                new SoftDeleteInterceptor())
-            .Options;
-
-        var context = new QuaterDbContext(options);
-        
-        // Ensure database is created and migrations are applied
-        context.Database.EnsureCreated();
-        
-        return context;
+        return _factory.CreateContext();
     }
 
     /// <summary>
@@ -70,20 +46,7 @@ public class PostgresTestContainer : IAsyncLifetime
     /// </summary>
     private QuaterDbContext CreateDbContextWithoutInterceptors()
     {
-        // Append Timezone=UTC to connection string to handle DateTime properly
-        var connectionString = $"{ConnectionString};Timezone=UTC";
-        
-        var options = new DbContextOptionsBuilder<QuaterDbContext>()
-            .UseNpgsql(connectionString)
-            .EnableSensitiveDataLogging()
-            .Options;
-
-        var context = new QuaterDbContext(options);
-        
-        // Ensure database is created and migrations are applied
-        context.Database.EnsureCreated();
-        
-        return context;
+        return _factory.CreateContextWithoutInterceptors();
     }
 
     /// <summary>
@@ -91,14 +54,7 @@ public class PostgresTestContainer : IAsyncLifetime
     /// </summary>
     public QuaterDbContext CreateSeededDbContext()
     {
-        // Seed data without interceptors to avoid foreign key issues
-        using (var seedContext = CreateDbContextWithoutInterceptors())
-        {
-            SeedTestData(seedContext);
-        }
-        
-        // Return a new context with interceptors for tests
-        return CreateDbContext();
+        return _factory.CreateSeededContext();
     }
 
     /// <summary>
@@ -106,55 +62,7 @@ public class PostgresTestContainer : IAsyncLifetime
     /// </summary>
     public async Task ResetDatabaseAsync()
     {
-        using var context = CreateDbContext();
-        await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
-    }
-
-    private static void SeedTestData(QuaterDbContext context)
-    {
-        // First, create a test lab for the System user
-        var systemLab = new Lab
-        {
-            Id = Guid.NewGuid(),
-            Name = "System Lab",
-            Location = "System",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System",
-            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
-        };
-        context.Labs.Add(systemLab);
-        context.SaveChanges();
-        
-        // Then create a "System" user for audit logs
-        var systemUser = new User
-        {
-            Id = "System",
-            Email = "system@quater.test",
-            PasswordHash = "N/A",
-            Role = UserRole.Admin,
-            LabId = systemLab.Id,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
-        };
-        context.Users.Add(systemUser);
-        context.SaveChanges();
-        
-        var testData = MockDataFactory.CreateTestDataSet();
-        
-        context.Labs.AddRange(testData.Labs);
-        context.SaveChanges();
-        
-        context.Parameters.AddRange(testData.Parameters);
-        context.SaveChanges();
-        
-        context.Samples.AddRange(testData.Samples);
-        context.SaveChanges();
-        
-        context.TestResults.AddRange(testData.TestResults);
-        context.SaveChanges();
+        await _factory.ResetDatabaseAsync();
     }
 }
 

@@ -20,7 +20,7 @@ public class QuaterLocalContext : DbContext
     public DbSet<Sample> Samples { get; set; } = null!;
     public DbSet<TestResult> TestResults { get; set; } = null!;
     public DbSet<Parameter> Parameters { get; set; } = null!;
-    public DbSet<SyncLog> SyncLogs { get; set; } = null!;
+
     public DbSet<Lab> Labs { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
@@ -78,8 +78,7 @@ public class QuaterLocalContext : DbContext
         // Configure Parameter entity
         ConfigureParameter(modelBuilder);
 
-        // Configure SyncLog entity
-        ConfigureSyncLog(modelBuilder);
+
 
         // Configure Lab entity
         ConfigureLab(modelBuilder);
@@ -323,58 +322,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureSyncLog(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<SyncLog>(entity =>
-        {
-            entity.ToTable("SyncLogs");
 
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.DeviceId)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.Property(e => e.UserId)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.Property(e => e.LastSyncTimestamp)
-                .IsRequired();
-
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(20);
-
-            entity.Property(e => e.ErrorMessage)
-                .HasMaxLength(1000);
-
-            entity.Property(e => e.RecordsSynced)
-                .IsRequired()
-                .HasDefaultValue(0);
-
-            entity.Property(e => e.ConflictsDetected)
-                .IsRequired()
-                .HasDefaultValue(0);
-
-            entity.Property(e => e.ConflictsResolved)
-                .IsRequired()
-                .HasDefaultValue(0);
-
-            entity.Property(e => e.CreatedDate)
-                .IsRequired();
-
-            // Indexes
-            entity.HasIndex(e => e.DeviceId)
-                .HasDatabaseName("IX_SyncLogs_DeviceId");
-
-            entity.HasIndex(e => e.UserId)
-                .HasDatabaseName("IX_SyncLogs_UserId");
-
-            entity.HasIndex(e => e.LastSyncTimestamp)
-                .HasDatabaseName("IX_SyncLogs_LastSyncTimestamp");
-        });
-    }
 
     private void ConfigureLab(ModelBuilder modelBuilder)
     {
@@ -464,8 +412,7 @@ public class QuaterLocalContext : DbContext
             entity.Property(e => e.NewValue)
                 .HasMaxLength(4000);
 
-            entity.Property(e => e.ConflictResolutionNotes)
-                .HasMaxLength(1000);
+
 
             entity.Property(e => e.Timestamp)
                 .IsRequired();
@@ -513,9 +460,6 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.NewValue)
                 .HasMaxLength(4000);
-
-            entity.Property(e => e.ConflictResolutionNotes)
-                .HasMaxLength(1000);
 
             entity.Property(e => e.Timestamp)
                 .IsRequired();

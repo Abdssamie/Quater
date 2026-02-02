@@ -65,18 +65,40 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
         // Find all entities marked for deletion
         var deletedEntries = context.ChangeTracker
             .Entries()
-            .Where(e => e.State == EntityState.Deleted);
+            .Where(e => e.State == EntityState.Deleted)
+            .ToList(); // Materialize to avoid modification during iteration
 
         foreach (var entry in deletedEntries)
         {
             // Check if entity has IsDeleted property
             var isDeletedProperty = entry.Entity.GetType().GetProperty("IsDeleted");
-            
+
             if (isDeletedProperty != null && isDeletedProperty.PropertyType == typeof(bool))
             {
                 // Convert DELETE to UPDATE by setting IsDeleted = true
                 entry.State = EntityState.Modified;
                 isDeletedProperty.SetValue(entry.Entity, true);
+
+                // Also set DeletedAt if the entity supports it
+                var deletedAtProperty = entry.Entity.GetType().GetProperty("DeletedAt");
+                if (deletedAtProperty != null && deletedAtProperty.PropertyType == typeof(DateTime?))
+                {
+                    deletedAtProperty.SetValue(entry.Entity, DateTime.UtcNow);
+                }
+
+                // Ensure owned entities are properly included
+                // When switching from Deleted to Modified, owned entities need to be marked as well
+                foreach (var navigation in entry.Navigations)
+                {
+                    if (navigation.Metadata.TargetEntityType.IsOwned() && navigation.CurrentValue != null)
+                    {
+                        var ownedEntry = context.Entry(navigation.CurrentValue);
+                        if (ownedEntry.State == EntityState.Detached || ownedEntry.State == EntityState.Deleted)
+                        {
+                            ownedEntry.State = EntityState.Unchanged;
+                        }
+                    }
+                }
             }
             // If entity doesn't have IsDeleted property, allow hard delete
         }

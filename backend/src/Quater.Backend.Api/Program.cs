@@ -322,9 +322,7 @@ builder.Services.AddEmailInfrastructure(builder.Configuration);
 
 // TODO: Uncomment when Sync services are implemented by other agents
 // builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
-// builder.Services.AddScoped<ISyncLogService, Quater.Backend.Sync.SyncLogService>();
-// builder.Services.AddScoped<IBackupService, Quater.Backend.Sync.BackupService>();
-// builder.Services.AddScoped<IConflictResolver, Quater.Backend.Sync.ConflictResolver>();
+
 
 // Configure Quartz.NET
 builder.Services.AddQuartz(q =>
@@ -376,11 +374,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Email queue health check endpoint
-app.MapGet("/health/email", (IEmailQueue queue) => 
+app.MapGet("/health/email", (IEmailQueue queue) =>
 {
     var bgQueue = (BackgroundEmailQueue)queue;
-    return Results.Ok(new 
-    { 
+    return Results.Ok(new
+    {
         queueSize = bgQueue.ApproximateCount,
         status = bgQueue.ApproximateCount < 90 ? "healthy" : "warning",
         timestamp = DateTime.UtcNow

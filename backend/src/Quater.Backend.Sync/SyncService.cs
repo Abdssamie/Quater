@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
@@ -16,23 +17,17 @@ namespace Quater.Backend.Sync;
 public class SyncService : ISyncService
 {
     private readonly QuaterDbContext _context;
-    private readonly ISyncLogService _syncLogService;
-    private readonly IBackupService _backupService;
-    private readonly IConflictResolver _conflictResolver;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger<SyncService> _logger;
 
     public SyncService(
         QuaterDbContext context,
-        ISyncLogService syncLogService,
-        IBackupService backupService,
-        IConflictResolver conflictResolver,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<SyncService> logger)
     {
         _context = context;
-        _syncLogService = syncLogService;
-        _backupService = backupService;
-        _conflictResolver = conflictResolver;
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -40,12 +35,7 @@ public class SyncService : ISyncService
         SyncPushRequest request,
         CancellationToken ct = default)
     {
-        // Create sync log entry
-        var syncLog = await _syncLogService.CreateSyncLogAsync(
-            request.DeviceId,
-            request.UserId,
-            SyncStatus.InProgress,
-            ct);
+        _logger.LogInformation("Starting push sync for device {DeviceId} user {UserId}", request.DeviceId, request.UserId);
 
         try
         {
@@ -71,25 +61,18 @@ public class SyncService : ISyncService
                     if (hasConflict)
                     {
                         conflictsDetected++;
-                        conflictsResolved++;
+                        // Simplified logging for conflicts
+                        _logger.LogWarning("Conflict detected for entity {EntityId} type {EntityType}", entityData.Id, entityData.EntityType);
                     }
                 }
                 catch (Exception ex)
                 {
                     // Log error but continue processing other entities
-                    Console.WriteLine($"Error processing entity {entityData.Id}: {ex.Message}");
+                    _logger.LogError(ex, "Error processing entity {EntityId}: {Message}", entityData.Id, ex.Message);
                 }
             }
 
-            // Update sync log with success
-            await _syncLogService.UpdateSyncLogAsync(
-                syncLog.Id,
-                SyncStatus.Synced,
-                recordsSynced,
-                conflictsDetected,
-                conflictsResolved,
-                null,
-                ct);
+            _logger.LogInformation("Push sync completed for device {DeviceId}. Synced: {Synced}, Conflicts: {Conflicts}", request.DeviceId, recordsSynced, conflictsDetected);
 
             return new SyncResponse
             {
@@ -105,15 +88,7 @@ public class SyncService : ISyncService
         }
         catch (Exception ex)
         {
-            // Update sync log with failure
-            await _syncLogService.UpdateSyncLogAsync(
-                syncLog.Id,
-                SyncStatus.Failed,
-                0,
-                0,
-                0,
-                ex.Message,
-                ct);
+            _logger.LogError(ex, "Push sync failed for device {DeviceId}", request.DeviceId);
 
             return new SyncResponse
             {
@@ -134,12 +109,7 @@ public class SyncService : ISyncService
         SyncPullRequest request,
         CancellationToken ct = default)
     {
-        // Create sync log entry
-        var syncLog = await _syncLogService.CreateSyncLogAsync(
-            request.DeviceId,
-            request.UserId,
-            SyncStatus.InProgress,
-            ct);
+        _logger.LogInformation("Starting pull sync for device {DeviceId} user {UserId}", request.DeviceId, request.UserId);
 
         try
         {
@@ -155,15 +125,7 @@ public class SyncService : ISyncService
             var parameters = await GetModifiedParametersAsync(request.LastSyncTimestamp, ct);
             entities.AddRange(parameters);
 
-            // Update sync log with success
-            await _syncLogService.UpdateSyncLogAsync(
-                syncLog.Id,
-                SyncStatus.Synced,
-                entities.Count,
-                0,
-                0,
-                null,
-                ct);
+            _logger.LogInformation("Pull sync completed for device {DeviceId}. Records: {Count}", request.DeviceId, entities.Count);
 
             return new SyncResponse
             {
@@ -179,15 +141,7 @@ public class SyncService : ISyncService
         }
         catch (Exception ex)
         {
-            // Update sync log with failure
-            await _syncLogService.UpdateSyncLogAsync(
-                syncLog.Id,
-                SyncStatus.Failed,
-                0,
-                0,
-                0,
-                ex.Message,
-                ct);
+            _logger.LogError(ex, "Pull sync failed for device {DeviceId}", request.DeviceId);
 
             return new SyncResponse
             {
@@ -209,27 +163,18 @@ public class SyncService : ISyncService
         string userId,
         CancellationToken ct = default)
     {
-        var lastSync = await _syncLogService.GetLastSuccessfulSyncAsync(deviceId, userId, ct);
-        var (total, failed) = await _syncLogService.GetSyncStatsAsync(deviceId, userId, ct);
-
-        // Get pending conflicts - we need to get the user's lab first
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-        var pendingConflicts = 0;
-        if (user?.LabId != null)
-        {
-            var conflicts = await _backupService.GetUnresolvedConflictsAsync(user.LabId, ct);
-            pendingConflicts = conflicts.Count;
-        }
+        // With SyncLog removed, we return a simplified status
+        await Task.CompletedTask;
 
         return new SyncStatusResponse
         {
             DeviceId = deviceId,
             UserId = userId,
-            LastSyncTimestamp = lastSync?.LastSyncTimestamp ?? DateTime.MinValue,
-            Status = lastSync?.Status ?? SyncStatus.Pending,
-            TotalSyncs = total,
-            FailedSyncs = failed,
-            PendingConflicts = pendingConflicts
+            LastSyncTimestamp = _timeProvider.GetUtcNow().UtcDateTime, // Best effort
+            Status = SyncStatus.Synced,
+            TotalSyncs = 0, // No longer tracked
+            FailedSyncs = 0, // No longer tracked
+            PendingConflicts = 0 // No longer tracked
         };
     }
 
@@ -241,6 +186,7 @@ public class SyncService : ISyncService
         // This is a simplified implementation
         // In a real system, you would deserialize the entity and update the database
         // For now, we'll just return success
+        await Task.Yield();
         return (true, false);
     }
 

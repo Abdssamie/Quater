@@ -67,9 +67,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        entity.HasMany(e => e.SyncLogs)
-            .WithOne(e => e.User)
-            .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+
     }
 }

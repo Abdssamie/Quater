@@ -1,33 +1,51 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
 using Quater.Backend.Services;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
+using Xunit;
 
 namespace Quater.Backend.Core.Tests.Services;
 
-public class ComplianceCalculatorTests : IDisposable
+/// <summary>
+/// Tests for ComplianceCalculator using PostgreSQL TestContainers.
+/// </summary>
+[Collection("TestDatabase")]
+public class ComplianceCalculatorTests : IAsyncLifetime
 {
-    private readonly QuaterDbContext _context;
-    private readonly IComplianceCalculator _calculator;
+    private readonly TestDbContextFactoryFixture _fixture;
+    private QuaterDbContext _context = null!;
+    private IComplianceCalculator _calculator = null!;
 
-    public ComplianceCalculatorTests()
+    public ComplianceCalculatorTests(TestDbContextFactoryFixture fixture)
     {
-        // Setup in-memory database
-        var options = new DbContextOptionsBuilder<QuaterDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _context = new QuaterDbContext(options);
-        _calculator = new ComplianceCalculator(_context);
-
-        // Seed test data
-        SeedTestData();
+        _fixture = fixture;
     }
 
-    private void SeedTestData()
+    public async Task InitializeAsync()
+    {
+        // Reset database for clean state
+        await _fixture.Factory.ResetDatabaseAsync();
+
+        // Seed test data without interceptors
+        using (var seedContext = _fixture.Factory.CreateContextWithoutInterceptors())
+        {
+            SeedTestData(seedContext);
+        }
+
+        _context = _fixture.Factory.CreateContext();
+        _calculator = new ComplianceCalculator(_context);
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _context.DisposeAsync();
+    }
+
+    private static void SeedTestData(QuaterDbContext context)
     {
         var parameters = new List<Parameter>
         {
@@ -42,7 +60,9 @@ public class ComplianceCalculatorTests : IDisposable
                 MaxValue = 9.5,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test"
+                CreatedBy = "test",
+                RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
+                LastSyncedAt = DateTime.UtcNow
             },
             new()
             {
@@ -55,7 +75,9 @@ public class ComplianceCalculatorTests : IDisposable
                 MaxValue = null,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test"
+                CreatedBy = "test",
+                RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
+                LastSyncedAt = DateTime.UtcNow
             },
             new()
             {
@@ -68,7 +90,9 @@ public class ComplianceCalculatorTests : IDisposable
                 MaxValue = 5.0,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test"
+                CreatedBy = "test",
+                RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
+                LastSyncedAt = DateTime.UtcNow
             },
             new()
             {
@@ -81,12 +105,14 @@ public class ComplianceCalculatorTests : IDisposable
                 MaxValue = null,
                 IsActive = false,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test"
+                CreatedBy = "test",
+                RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
+                LastSyncedAt = DateTime.UtcNow
             }
         };
 
-        _context.Parameters.AddRange(parameters);
-        _context.SaveChanges();
+        context.Parameters.AddRange(parameters);
+        context.SaveChanges();
     }
 
     [Fact]
@@ -327,11 +353,5 @@ public class ComplianceCalculatorTests : IDisposable
 
         // Assert
         result.Should().Be(ComplianceStatus.Fail);
-    }
-
-    public void Dispose()
-    {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
     }
 }

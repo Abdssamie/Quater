@@ -8,32 +8,48 @@ using Xunit;
 
 namespace Quater.Backend.Core.Tests.Data;
 
-public class AuditTrailInterceptorTests : IDisposable
+/// <summary>
+/// Tests for AuditTrailInterceptor using PostgreSQL TestContainers.
+/// </summary>
+[Collection("TestDatabase")]
+public class AuditTrailInterceptorTests : IAsyncLifetime
 {
-    private readonly QuaterDbContext _context;
-    private readonly string _databaseName;
+    private readonly TestDbContextFactoryFixture _fixture;
+    private QuaterDbContext _context = null!;
 
-    public AuditTrailInterceptorTests()
+    public AuditTrailInterceptorTests(TestDbContextFactoryFixture fixture)
     {
-        _databaseName = Guid.NewGuid().ToString();
-        _context = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        _fixture = fixture;
+    }
+
+    public async Task InitializeAsync()
+    {
+        // Reset database to clean state before each test
+        await _fixture.Factory.ResetDatabaseAsync();
+        _context = _fixture.Factory.CreateContext();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _context.DisposeAsync();
     }
 
     [Fact]
     public async Task SaveChanges_NewEntity_CreatesAuditLog()
     {
         // Arrange
-        var sample = MockDataFactory.CreateSample();
+        var labId = await GetFirstLabIdAsync();
+        var sample = MockDataFactory.CreateSample(labId);
 
         // Act
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
-        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
-        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        // Assert - Query in fresh context to ensure audit logs are visible
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
-        
+
         var auditLog = auditLogs.FirstOrDefault(a => a.EntityId == sample.Id);
         auditLog.Should().NotBeNull();
         auditLog!.Action.Should().Be(AuditAction.Create);
@@ -44,11 +60,12 @@ public class AuditTrailInterceptorTests : IDisposable
     public async Task SaveChanges_UpdatedEntity_CreatesAuditLog()
     {
         // Arrange
-        var sample = MockDataFactory.CreateSample();
+        var labId = await GetFirstLabIdAsync();
+        var sample = MockDataFactory.CreateSample(labId);
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
-        // Clear existing audit logs for this test
+        // Clear existing audit logs for this test to isolate the update log
         var existingLogs = await _context.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         _context.AuditLogs.RemoveRange(existingLogs);
         await _context.SaveChangesAsync();
@@ -58,11 +75,11 @@ public class AuditTrailInterceptorTests : IDisposable
         _context.Samples.Update(sample);
         await _context.SaveChangesAsync();
 
-        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
-        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        // Assert - Query in fresh context to ensure audit logs are visible
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
-        
+
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
         auditLog!.EntityType.Should().Be(EntityType.Sample);
@@ -72,7 +89,8 @@ public class AuditTrailInterceptorTests : IDisposable
     public async Task SaveChanges_DeletedEntity_CreatesAuditLog()
     {
         // Arrange
-        var sample = MockDataFactory.CreateSample();
+        var labId = await GetFirstLabIdAsync();
+        var sample = MockDataFactory.CreateSample(labId);
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
@@ -88,10 +106,10 @@ public class AuditTrailInterceptorTests : IDisposable
         // Assert - Query in fresh context to ensure audit logs are visible
         // Note: SoftDeleteInterceptor converts Delete to Update (sets IsDeleted=true)
         // So we expect an Update audit log, not a Delete audit log
-        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
-        
+
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
         auditLog!.EntityType.Should().Be(EntityType.Sample);
@@ -101,25 +119,32 @@ public class AuditTrailInterceptorTests : IDisposable
     public async Task SaveChanges_MultipleChanges_CreatesMultipleAuditLogs()
     {
         // Arrange
-        var sample1 = MockDataFactory.CreateSample();
-        var sample2 = MockDataFactory.CreateSample();
+        var labId = await GetFirstLabIdAsync();
+        var sample1 = MockDataFactory.CreateSample(labId);
+        var sample2 = MockDataFactory.CreateSample(labId);
 
         // Act
         _context.Samples.AddRange(sample1, sample2);
         await _context.SaveChangesAsync();
 
-        // Assert - Query in fresh context to ensure audit logs are visible after two-phase save
-        using var verifyContext = TestDbContextFactory.CreateInMemoryContext(_databaseName);
+        // Assert - Query in fresh context to ensure audit logs are visible
+        using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs.ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(2);
-        
+
         auditLogs.Should().Contain(a => a.EntityId == sample1.Id && a.Action == AuditAction.Create);
         auditLogs.Should().Contain(a => a.EntityId == sample2.Id && a.Action == AuditAction.Create);
     }
 
-    public void Dispose()
+    private async Task<Guid> GetFirstLabIdAsync()
     {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
+        var lab = await _context.Labs.FirstOrDefaultAsync();
+        if (lab != null) return lab.Id;
+
+        // Create a lab if none exists
+        var newLab = MockDataFactory.CreateLab("Test Lab for Audit");
+        _context.Labs.Add(newLab);
+        await _context.SaveChangesAsync();
+        return newLab.Id;
     }
 }

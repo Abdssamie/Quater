@@ -13,6 +13,5 @@ public enum EntityType
     Parameter = 5,
     AuditLog = 6,
     AuditLogArchive = 7,
-    ConflictBackup = 8,
-    SyncLog = 9
+
 }
