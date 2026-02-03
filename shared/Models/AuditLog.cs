@@ -41,19 +41,19 @@ public sealed class AuditLog : IEntity
     public AuditAction Action { get; init; }
 
     /// <summary>
-    /// JSON serialized old value (for updates). Individual property values exceeding 200 chars are truncated.
+    /// JSON serialized old value (for updates). Individual property values exceeding 50 chars are truncated.
     /// </summary>
     [MaxLength(4000)]
     public string? OldValue { get; init; }
 
     /// <summary>
-    /// JSON serialized new value. Individual property values exceeding 200 chars are truncated.
+    /// JSON serialized new value. Individual property values exceeding 50 chars are truncated.
     /// </summary>
     [MaxLength(4000)]
     public string? NewValue { get; init; }
 
     /// <summary>
-    /// Flag indicating if any property values were truncated due to size limits (>200 chars)
+    /// Flag indicating if any property values were truncated due to size limits (>50 chars)
     /// </summary>
     [Required]
     public bool IsTruncated { get; init; } 

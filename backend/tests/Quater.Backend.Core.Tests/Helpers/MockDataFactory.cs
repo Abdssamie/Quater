@@ -51,20 +51,21 @@ public static class MockDataFactory
     /// <summary>
     /// Creates multiple test labs
     /// </summary>
-    public static List<Lab> CreateLabs(int count = 3)
+    private static List<Lab> CreateLabs(int count = 3)
     {
         var labs = new List<Lab>();
         for (int i = 1; i <= count; i++)
         {
             labs.Add(CreateLab($"Lab {i}", $"Location {i}"));
         }
+
         return labs;
     }
 
     /// <summary>
     /// Creates a test parameter
     /// </summary>
-    public static Parameter CreateParameter(
+    private static Parameter CreateParameter(
         string name = "pH",
         string unit = "pH units",
         double? whoThreshold = 8.5,
@@ -92,16 +93,16 @@ public static class MockDataFactory
     /// <summary>
     /// Creates multiple test parameters
     /// </summary>
-    public static List<Parameter> CreateParameters()
+    private static List<Parameter> CreateParameters()
     {
-        return new List<Parameter>
-        {
-            CreateParameter("pH", "pH units", 8.5, 9.0, 6.5, 9.5),
+        return
+        [
+            CreateParameter(),
             CreateParameter("Turbidity", "NTU", 5.0, 10.0, 0, null),
             CreateParameter("Chlorine", "mg/L", 5.0, null, 0.2, 5.0),
             CreateParameter("Temperature", "°C", 25.0, 30.0, 0, 40.0),
             CreateParameter("Conductivity", "µS/cm", 2500, 2700, null, null)
-        };
+        ];
     }
 
     /// <summary>
@@ -135,11 +136,11 @@ public static class MockDataFactory
     /// <summary>
     /// Creates multiple test samples
     /// </summary>
-    public static List<Sample> CreateSamples(List<Lab> labs, int samplesPerLab = 2)
+    private static List<Sample> CreateSamples(List<Lab> labs, int samplesPerLab = 2)
     {
         var samples = new List<Sample>();
         var sampleTypes = Enum.GetValues<SampleType>();
-        
+
         foreach (var lab in labs)
         {
             for (int i = 0; i < samplesPerLab; i++)
@@ -148,14 +149,14 @@ public static class MockDataFactory
                 samples.Add(CreateSample(lab.Id, type, SampleStatus.Pending, $"Collector {i + 1}"));
             }
         }
-        
+
         return samples;
     }
 
     /// <summary>
     /// Creates a test result
     /// </summary>
-    public static TestResult CreateTestResult(
+    private static TestResult CreateTestResult(
         Guid sampleId,
         Parameter parameter,
         double value,
@@ -182,10 +183,10 @@ public static class MockDataFactory
     /// <summary>
     /// Generates a realistic test value for a parameter
     /// </summary>
-    public static List<TestResult> CreateTestResults(List<Sample> samples, List<Parameter> parameters)
+    private static List<TestResult> CreateTestResults(List<Sample> samples, List<Parameter> parameters)
     {
         var testResults = new List<TestResult>();
-        
+
         foreach (var sample in samples)
         {
             // Create 2-3 test results per sample
@@ -195,16 +196,16 @@ public static class MockDataFactory
                 var parameter = parameters[i];
                 var value = GenerateTestValue(parameter);
                 var compliance = DetermineCompliance(value, parameter);
-                
+
                 testResults.Add(CreateTestResult(
                     sample.Id,
                     parameter,
                     value,
-                    compliance,
-                    TestMethod.Spectrophotometry));
+                    compliance
+                ));
             }
         }
-        
+
         return testResults;
     }
 
@@ -231,16 +232,16 @@ public static class MockDataFactory
     {
         if (parameter.MinValue.HasValue && value < parameter.MinValue.Value)
             return ComplianceStatus.Fail;
-        
+
         if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
             return ComplianceStatus.Fail;
-        
+
         if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
             return ComplianceStatus.Fail;
-        
+
         if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
             return ComplianceStatus.Warning;
-        
+
         return ComplianceStatus.Pass;
     }
 }
@@ -250,8 +251,8 @@ public static class MockDataFactory
 /// </summary>
 public class TestDataSet
 {
-    public List<Lab> Labs { get; set; } = new();
-    public List<Parameter> Parameters { get; set; } = new();
-    public List<Sample> Samples { get; set; } = new();
-    public List<TestResult> TestResults { get; set; } = new();
+    public List<Lab> Labs { get; init; } = [];
+    public List<Parameter> Parameters { get; init; } = [];
+    public List<Sample> Samples { get; init; } = [];
+    public List<TestResult> TestResults { get; init; } = [];
 }

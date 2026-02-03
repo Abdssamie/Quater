@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Repositories;
-using Xunit;
 
 namespace Quater.Backend.Core.Tests.Data;
 
@@ -28,7 +26,7 @@ public class UnitOfWorkTests : IAsyncLifetime
         await _fixture.Factory.ResetDatabaseAsync();
 
         // Seed test data
-        using (var seedContext = _fixture.Factory.CreateContextWithoutInterceptors())
+        await using (var seedContext = _fixture.Factory.CreateContextWithoutInterceptors())
         {
             SeedTestData(seedContext);
         }
@@ -87,7 +85,7 @@ public class UnitOfWorkTests : IAsyncLifetime
         _context.Samples.Add(sample);
 
         var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
@@ -140,7 +138,7 @@ public class UnitOfWorkTests : IAsyncLifetime
         _context.Database.CurrentTransaction.Should().BeNull();
 
         // Create new context to verify rollback
-        using var newContext = _fixture.Factory.CreateContext();
+        await using var newContext = _fixture.Factory.CreateContext();
         var rolledBackSample = await newContext.Samples.FindAsync(sampleId);
         rolledBackSample.Should().BeNull();
     }

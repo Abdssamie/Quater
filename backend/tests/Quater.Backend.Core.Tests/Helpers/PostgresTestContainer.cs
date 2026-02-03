@@ -1,10 +1,5 @@
-using DotNet.Testcontainers.Builders;
-using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Data;
-using Quater.Backend.Data.Interceptors;
-using Quater.Shared.Models;
-using Quater.Shared.Enums;
-using Testcontainers.PostgreSql;
+
 
 namespace Quater.Backend.Core.Tests.Helpers;
 
@@ -81,10 +76,7 @@ public class PostgresTestContainerFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (Container != null)
-        {
-            await Container.DisposeAsync();
-        }
+        await Container.DisposeAsync();
     }
 }
 

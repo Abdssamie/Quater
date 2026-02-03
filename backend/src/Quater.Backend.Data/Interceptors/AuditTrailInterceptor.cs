@@ -17,13 +17,13 @@ namespace Quater.Backend.Data.Interceptors;
 /// - Creates AuditLog entries ONLY for entities implementing IAuditable
 /// - Captures only properties that actually changed (for UPDATE operations)
 /// - Always includes IAuditable properties (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy)
-/// - Truncates individual property values exceeding 200 characters (keeps JSON valid)
+/// - Truncates individual property values exceeding 50 characters (keeps JSON valid)
 /// - Records the user who made the change (from ICurrentUserService, defaults to "System")
 /// - Timestamps all changes with UTC time
 /// - Captures IP address if available
 /// - Throws exception if entity implements IAuditable but has no EntityType enum value
 /// 
-/// Audited entities: Lab, Sample, TestResult, Parameter, User
+/// Audited entities: Lab, Sample, TestResult, Parameter
 /// 
 /// Usage in DbContext:
 /// <code>
@@ -111,23 +111,23 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
 
         try
         {
-            foreach (var auditData in pendingLogs)
+            foreach (var auditLog in pendingLogs.Select(
+                         auditData => new AuditLog
+                         {
+                             Id = Guid.NewGuid(),
+                             UserId = auditData.UserId,
+                             EntityType = auditData.EntityType,
+                             EntityId = auditData.EntityId,
+                             Action = auditData.Action,
+                             OldValue = auditData.OldValue,
+                             NewValue = auditData.NewValue,
+                             Timestamp = auditData.Timestamp,
+                             IpAddress = auditData.IpAddress,
+                             IsArchived = false,
+                             IsTruncated = auditData.IsTruncated
+                         })
+                     )
             {
-                var auditLog = new AuditLog
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = auditData.UserId,
-                    EntityType = auditData.EntityType,
-                    EntityId = auditData.EntityId,
-                    Action = auditData.Action,
-                    OldValue = auditData.OldValue,
-                    NewValue = auditData.NewValue,
-                    Timestamp = auditData.Timestamp,
-                    IpAddress = auditData.IpAddress,
-                    IsArchived = false,
-                    IsTruncated = auditData.IsTruncated
-                };
-
                 context.Set<AuditLog>().Add(auditLog);
             }
 
@@ -189,14 +189,11 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             var entityTypeName = entry.Entity.GetType().Name;
             var entityIdProperty = entry.Entity.GetType().GetProperty("Id");
 
-            if (entityIdProperty == null)
+            if (entityIdProperty == null || entityIdProperty.GetValue(entry.Entity) is not Guid entityId)
             {
-                continue; // Skip entities without Id property
-            }
-
-            if (entityIdProperty.GetValue(entry.Entity) is not Guid entityId)
-            {
-                continue; // Skip if Id is not a Guid
+                throw new InvalidOperationException("Unexpected error: " +
+                                                    "IAuditable models must have id property " +
+                                                    "and it must be Guid");
             }
 
             var action = entry.State switch
@@ -329,9 +326,9 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// </summary>
     private static (Dictionary<string, object?> values, bool wasTruncated) TruncatePropertyValues(
         Dictionary<string, object?> values,
-        int maxLength = 200)
+        int maxLength = 50)
     {
-        bool wasTruncated = false;
+        var wasTruncated = false;
         var result = new Dictionary<string, object?>();
 
         foreach (var kvp in values)

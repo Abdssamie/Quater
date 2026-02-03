@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Quater.Shared.Interfaces;
 
 namespace Quater.Backend.Data.Interceptors;
 
@@ -66,14 +67,19 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
         var deletedEntries = context.ChangeTracker
             .Entries()
             .Where(e => e.State == EntityState.Deleted)
+            .Where(e => e.Entity is ISoftDelete)
             .ToList(); // Materialize to avoid modification during iteration
 
         foreach (var entry in deletedEntries)
         {
             // Check if entity has IsDeleted property
             var isDeletedProperty = entry.Entity.GetType().GetProperty("IsDeleted");
+            if (isDeletedProperty is null || isDeletedProperty.PropertyType != typeof(bool))
+            {
+                throw new InvalidOperationException("Unexpected Error. IAuditable models must " + 
+                                                    "have IsDeleted property and it must be bool");
+            }
 
-            if (isDeletedProperty == null || isDeletedProperty.PropertyType != typeof(bool)) continue;
             // Convert DELETE to UPDATE by setting IsDeleted = true
             entry.State = EntityState.Modified;
             isDeletedProperty.SetValue(entry.Entity, true);
@@ -83,6 +89,9 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             if (deletedAtProperty != null && deletedAtProperty.PropertyType == typeof(DateTime?))
             {
                 deletedAtProperty.SetValue(entry.Entity, DateTime.UtcNow);
+            } else {
+                throw new InvalidOperationException("Unexpected Error. IAuditable models must " + 
+                                                    "have DeletedAt property and it must be DateTime");
             }
 
             // Ensure owned entities are properly included
@@ -90,17 +99,15 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             foreach (var navigation in entry.Navigations)
             {
                 if (
-                    !navigation.Metadata.TargetEntityType.IsOwned() 
-                    || navigation.CurrentValue == null
+                    ! navigation.Metadata.TargetEntityType.IsOwned() || navigation.CurrentValue == null
                     ) continue;
                 
                 var ownedEntry = context.Entry(navigation.CurrentValue);
-                if (ownedEntry.State == EntityState.Detached || ownedEntry.State == EntityState.Deleted)
+                if (ownedEntry.State is EntityState.Detached or EntityState.Deleted)
                 {
                     ownedEntry.State = EntityState.Unchanged;
                 }
             }
-            // If entity doesn't have IsDeleted property, allow hard delete
         }
     }
 }

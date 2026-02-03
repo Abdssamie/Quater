@@ -7,11 +7,9 @@ namespace Quater.Shared.Enums;
 public enum EntityType
 {
     Lab = 1,
-    User = 2,
-    Sample = 3,
-    TestResult = 4,
-    Parameter = 5,
-    AuditLog = 6,
-    AuditLogArchive = 7,
-
+    Sample = 2,
+    TestResult = 3,
+    Parameter = 4,
+    AuditLog = 5,
+    AuditLogArchive = 6,
 }
