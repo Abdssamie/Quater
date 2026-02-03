@@ -8,7 +8,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Represents a single water quality test performed on a sample.
 /// </summary>
-public sealed class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
+public sealed class TestResult : IEntity, IAuditable, ISoftDelete, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)
@@ -72,7 +72,7 @@ public sealed class TestResult : IEntity, IAuditable, ISoftDelete, ISyncable, IC
     /// <summary>
     /// Whether this result has been voided
     /// </summary>
-    public bool IsVoided { get; set; } = false;
+    public bool IsVoided { get; set; } 
 
     /// <summary>
     /// Reason for voiding this result

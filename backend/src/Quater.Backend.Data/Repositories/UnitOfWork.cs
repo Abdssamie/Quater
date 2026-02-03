@@ -13,28 +13,18 @@ public class UnitOfWork : IUnitOfWork
     private readonly QuaterDbContext _context;
     private IDbContextTransaction? _transaction;
 
-    // Lazy-loaded repositories
-    private IRepository<Lab>? _labs;
-    private IRepository<Sample>? _samples;
-    private IRepository<TestResult>? _testResults;
-    private IRepository<Parameter>? _parameters;
-
-    private IRepository<AuditLog>? _auditLogs;
-    private IRepository<AuditLogArchive>? _auditLogArchives;
-
-
     public UnitOfWork(QuaterDbContext context)
     {
         _context = context;
     }
+    
+    public IRepository<Lab> Labs => field ??= new Repository<Lab>(_context);
+    public IRepository<Sample> Samples => field ??= new Repository<Sample>(_context);
+    public IRepository<TestResult> TestResults => field ??= new Repository<TestResult>(_context);
+    public IRepository<Parameter> Parameters => field ??= new Repository<Parameter>(_context);
 
-    public IRepository<Lab> Labs => _labs ??= new Repository<Lab>(_context);
-    public IRepository<Sample> Samples => _samples ??= new Repository<Sample>(_context);
-    public IRepository<TestResult> TestResults => _testResults ??= new Repository<TestResult>(_context);
-    public IRepository<Parameter> Parameters => _parameters ??= new Repository<Parameter>(_context);
-
-    public IRepository<AuditLog> AuditLogs => _auditLogs ??= new Repository<AuditLog>(_context);
-    public IRepository<AuditLogArchive> AuditLogArchives => _auditLogArchives ??= new Repository<AuditLogArchive>(_context);
+    public IRepository<AuditLog> AuditLogs => field ??= new Repository<AuditLog>(_context);
+    public IRepository<AuditLogArchive> AuditLogArchives => field ??= new Repository<AuditLogArchive>(_context);
 
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -75,6 +65,8 @@ public class UnitOfWork : IUnitOfWork
     {
         _transaction?.Dispose();
         _context.Dispose();
+        
+        GC.SuppressFinalize(this);
     }
 }
 
@@ -84,18 +76,16 @@ public class UnitOfWork : IUnitOfWork
 /// <typeparam name="T">The entity type.</typeparam>
 public class Repository<T> : IRepository<T> where T : class
 {
-    private readonly QuaterDbContext _context;
     private readonly DbSet<T> _dbSet;
 
     public Repository(QuaterDbContext context)
     {
-        _context = context;
         _dbSet = context.Set<T>();
     }
 
     public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+        return await _dbSet.FindAsync([id], cancellationToken);
     }
 
     public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)

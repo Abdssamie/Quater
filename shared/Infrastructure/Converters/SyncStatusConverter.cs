@@ -13,11 +13,11 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// domain models while storing enums as strings in the database.
 /// 
 /// Conversion examples:
-/// - SyncStatus.Pending <-> "Pending"
-/// - SyncStatus.InProgress <-> "InProgress"
-/// - SyncStatus.Synced <-> "Synced"
-/// - SyncStatus.Failed <-> "Failed"
-/// - SyncStatus.Conflict <-> "Conflict"
+/// - SyncStatus.Pending = "Pending"
+/// - SyncStatus.InProgress = "InProgress"
+/// - SyncStatus.Synced = "Synced"
+/// - SyncStatus.Failed = "Failed"
+/// - SyncStatus.Conflict = "Conflict"
 /// 
 /// Usage in DbContext:
 /// <code>

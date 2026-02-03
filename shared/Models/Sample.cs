@@ -8,7 +8,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Represents a water sample collected from a specific location at a specific time.
 /// </summary>
-public sealed class Sample : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
+public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)

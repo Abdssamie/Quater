@@ -1,34 +1,42 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Quater.Shared.Enums;
+using Quater.Shared.Interfaces;
 using Quater.Shared.Models;
 using System.Text.Json;
 
 namespace Quater.Backend.Data.Interceptors;
 
 /// <summary>
-/// EF Core interceptor that automatically creates audit log entries for entity changes.
+/// EF Core interceptor that automatically creates audit log entries for entities implementing IAuditable.
 /// Tracks INSERT, UPDATE, and DELETE operations with before/after values.
 /// </summary>
 /// <remarks>
 /// This interceptor automatically:
-/// - Creates AuditLog entries for all entity changes (except AuditLog itself)
-/// - Captures old and new values as JSON for UPDATE operations
-/// - Records the user who made the change (from ICurrentUserService)
+/// - Creates AuditLog entries ONLY for entities implementing IAuditable
+/// - Captures only properties that actually changed (for UPDATE operations)
+/// - Always includes IAuditable properties (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy)
+/// - Truncates individual property values exceeding 200 characters (keeps JSON valid)
+/// - Records the user who made the change (from ICurrentUserService, defaults to "System")
 /// - Timestamps all changes with UTC time
 /// - Captures IP address if available
+/// - Throws exception if entity implements IAuditable but has no EntityType enum value
+/// 
+/// Audited entities: Lab, Sample, TestResult, Parameter, User
 /// 
 /// Usage in DbContext:
 /// <code>
 /// protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 /// {
-///     optionsBuilder.AddInterceptors(new AuditTrailInterceptor(currentUserService, httpContextAccessor));
+///     optionsBuilder.AddInterceptors(new AuditTrailInterceptor(currentUserService, ipAddress, logger));
 /// }
 /// </code>
 /// </remarks>
 public class AuditTrailInterceptor : SaveChangesInterceptor
 {
     private readonly ICurrentUserService? _currentUserService;
+    private readonly ILogger<AuditTrailInterceptor>? _logger;
     private readonly string? _ipAddress;
     private readonly AsyncLocal<bool> _isSavingAuditLogs = new();
     private readonly AsyncLocal<List<AuditLogData>> _pendingAuditLogs = new();
@@ -38,10 +46,15 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// </summary>
     /// <param name="currentUserService">Service to get current user information (optional).</param>
     /// <param name="ipAddress">IP address of the client making the change (optional).</param>
-    public AuditTrailInterceptor(ICurrentUserService? currentUserService = null, string? ipAddress = null)
+    /// <param name="logger">Logger for diagnostic information (optional).</param>
+    public AuditTrailInterceptor(
+        ICurrentUserService? currentUserService = null,
+        string? ipAddress = null,
+        ILogger<AuditTrailInterceptor>? logger = null)
     {
         _currentUserService = currentUserService;
         _ipAddress = ipAddress;
+        _logger = logger;
     }
 
     /// <summary>
@@ -57,10 +70,10 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         }
 
         CaptureAuditData(eventData.Context);
-        
+
         // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
         AddAuditLogsToContext(eventData.Context);
-        
+
         return base.SavingChanges(eventData, result);
     }
 
@@ -78,10 +91,10 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         }
 
         CaptureAuditData(eventData.Context);
-        
+
         // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
         AddAuditLogsToContext(eventData.Context);
-        
+
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -91,11 +104,11 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     private void AddAuditLogsToContext(DbContext context)
     {
         var pendingLogs = _pendingAuditLogs.Value;
-        if (pendingLogs == null || !pendingLogs.Any())
+        if (pendingLogs == null || pendingLogs.Count == 0)
             return;
 
         _isSavingAuditLogs.Value = true;
-        
+
         try
         {
             foreach (var auditData in pendingLogs)
@@ -111,27 +124,19 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
                     NewValue = auditData.NewValue,
                     Timestamp = auditData.Timestamp,
                     IpAddress = auditData.IpAddress,
-                    IsArchived = false
+                    IsArchived = false,
+                    IsTruncated = auditData.IsTruncated
                 };
 
                 context.Set<AuditLog>().Add(auditLog);
             }
-            
+
             pendingLogs.Clear();
         }
         finally
         {
             _isSavingAuditLogs.Value = false;
         }
-    }
-
-    /// <summary>
-    /// Intercepts SavedChanges to persist audit logs after the main save completes.
-    /// </summary>
-    public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
-    {
-        // No longer needed - audit logs are added in SavingChanges
-        return base.SavedChanges(eventData, result);
     }
 
     /// <summary>
@@ -153,21 +158,26 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     private void CaptureAuditData(DbContext context)
     {
         var userId = _currentUserService?.GetCurrentUserId() ?? "System";
+        _logger?.LogDebug("Capturing audit data for user: {UserId}", userId);
+
         var timestamp = DateTime.UtcNow;
 
-        // Get all modified, added, or deleted entities (except AuditLog itself)
+        // Get all modified, added, or deleted entities that implement IAuditable
         var auditableEntries = context.ChangeTracker
             .Entries()
-            .Where(e => e.State == EntityState.Added || 
-                       e.State == EntityState.Modified || 
-                       e.State == EntityState.Deleted)
-            .Where(e => e.Entity is not AuditLog && e.Entity is not AuditLogArchive)
+            .Where(e => e.State
+                is EntityState.Added
+                or EntityState.Modified
+                or EntityState.Deleted)
+            .Where(e => e.Entity is IAuditable)
             .ToList();
+
+        _logger?.LogDebug("Found {Count} auditable entities to process", auditableEntries.Count);
 
         // Initialize or clear pending audit logs for this save operation
         if (_pendingAuditLogs.Value == null)
         {
-            _pendingAuditLogs.Value = new List<AuditLogData>();
+            _pendingAuditLogs.Value = [];
         }
         else
         {
@@ -178,19 +188,18 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         {
             var entityTypeName = entry.Entity.GetType().Name;
             var entityIdProperty = entry.Entity.GetType().GetProperty("Id");
-            
+
             if (entityIdProperty == null)
             {
                 continue; // Skip entities without Id property
             }
 
-            var entityId = entityIdProperty.GetValue(entry.Entity) as Guid?;
-            if (entityId == null)
+            if (entityIdProperty.GetValue(entry.Entity) is not Guid entityId)
             {
                 continue; // Skip if Id is not a Guid
             }
 
-            AuditAction action = entry.State switch
+            var action = entry.State switch
             {
                 EntityState.Added => AuditAction.Create,
                 EntityState.Modified => AuditAction.Update,
@@ -200,53 +209,103 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
 
             string? oldValue = null;
             string? newValue = null;
+            bool isTruncated = false;
 
-            if (entry.State == EntityState.Modified)
+            switch (entry.State)
             {
-                // Capture old and new values for modified entities
-                var oldValues = new Dictionary<string, object?>();
-                var newValues = new Dictionary<string, object?>();
-
-                foreach (var property in entry.Properties)
+                case EntityState.Modified:
                 {
-                    if (property.IsModified)
+                    // Capture old and new values for modified entities (only changed properties)
+                    var oldValues = new Dictionary<string, object?>();
+                    var newValues = new Dictionary<string, object?>();
+
+                    foreach (var property in entry.Properties)
                     {
+                        if (!property.IsModified) continue; // Only changed properties
                         oldValues[property.Metadata.Name] = property.OriginalValue;
                         newValues[property.Metadata.Name] = property.CurrentValue;
                     }
-                }
 
-                if (oldValues.Any())
-                {
-                    oldValue = JsonSerializer.Serialize(oldValues);
-                    newValue = JsonSerializer.Serialize(newValues);
+                    if (oldValues.Count != 0)
+                    {
+                        // Truncate individual property values, not the entire JSON
+                        var (truncatedOld, oldTruncated) = TruncatePropertyValues(oldValues);
+                        var (truncatedNew, newTruncated) = TruncatePropertyValues(newValues);
+
+                        oldValue = JsonSerializer.Serialize(truncatedOld);
+                        newValue = JsonSerializer.Serialize(truncatedNew);
+                        isTruncated = oldTruncated || newTruncated;
+
+                        if (isTruncated)
+                        {
+                            _logger?.LogWarning(
+                                "Property values truncated for {EntityType} {EntityId}",
+                                entityTypeName, entityId);
+                        }
+                    }
+
+                    break;
                 }
-            }
-            else if (entry.State == EntityState.Added)
-            {
-                // Capture new values for added entities
-                var values = new Dictionary<string, object?>();
-                foreach (var property in entry.Properties)
+                case EntityState.Added:
                 {
-                    values[property.Metadata.Name] = property.CurrentValue;
+                    // Capture new values for added entities
+                    var values = new Dictionary<string, object?>();
+                    foreach (var property in entry.Properties)
+                    {
+                        values[property.Metadata.Name] = property.CurrentValue;
+                    }
+
+                    var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
+                    newValue = JsonSerializer.Serialize(truncatedValues);
+                    isTruncated = wasTruncated;
+
+                    if (isTruncated)
+                    {
+                        _logger?.LogWarning(
+                            "Property values truncated for new {EntityType} {EntityId}",
+                            entityTypeName, entityId);
+                    }
+
+                    break;
                 }
-                newValue = JsonSerializer.Serialize(values);
-            }
-            else if (entry.State == EntityState.Deleted)
-            {
-                // Capture old values for deleted entities
-                var values = new Dictionary<string, object?>();
-                foreach (var property in entry.Properties)
+                case EntityState.Deleted:
                 {
-                    values[property.Metadata.Name] = property.CurrentValue;
+                    // Capture old values for deleted entities
+                    var values = new Dictionary<string, object?>();
+                    foreach (var property in entry.Properties)
+                    {
+                        values[property.Metadata.Name] = property.OriginalValue; // Use OriginalValue
+                    }
+
+                    var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
+                    oldValue = JsonSerializer.Serialize(truncatedValues);
+                    isTruncated = wasTruncated;
+
+                    if (isTruncated)
+                    {
+                        _logger?.LogWarning(
+                            "Property values truncated for deleted {EntityType} {EntityId}",
+                            entityTypeName, entityId);
+                    }
+
+                    break;
                 }
-                oldValue = JsonSerializer.Serialize(values);
+                case EntityState.Detached:
+                case EntityState.Unchanged:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
             // Convert entity type name to EntityType enum
             if (!Enum.TryParse<EntityType>(entityTypeName, out var entityTypeEnum))
             {
-                continue; // Skip entities that don't have a corresponding EntityType enum value
+                _logger?.LogError(
+                    "Entity {EntityType} implements IAuditable but has no matching EntityType enum value",
+                    entityTypeName);
+                throw new InvalidOperationException(
+                    $"Entity '{entityTypeName}' implements IAuditable but has no corresponding EntityType enum value. " +
+                    $"Add '{entityTypeName}' to the EntityType enum.");
             }
 
             // Store audit data for later persistence
@@ -254,14 +313,41 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             {
                 UserId = userId,
                 EntityType = entityTypeEnum,
-                EntityId = entityId.Value,
+                EntityId = entityId,
                 Action = action,
-                OldValue = oldValue?.Length > 4000 ? oldValue.Substring(0, 4000) : oldValue,
-                NewValue = newValue?.Length > 4000 ? newValue.Substring(0, 4000) : newValue,
+                OldValue = oldValue,
+                NewValue = newValue,
                 Timestamp = timestamp,
-                IpAddress = _ipAddress
+                IpAddress = _ipAddress,
+                IsTruncated = isTruncated
             });
         }
+    }
+
+    /// <summary>
+    /// Truncates individual property values that exceed maxLength while keeping JSON structure valid.
+    /// </summary>
+    private static (Dictionary<string, object?> values, bool wasTruncated) TruncatePropertyValues(
+        Dictionary<string, object?> values,
+        int maxLength = 200)
+    {
+        bool wasTruncated = false;
+        var result = new Dictionary<string, object?>();
+
+        foreach (var kvp in values)
+        {
+            if (kvp.Value is string strValue && strValue.Length > maxLength)
+            {
+                result[kvp.Key] = strValue[..(maxLength - 15)] + "...[TRUNCATED]";
+                wasTruncated = true;
+            }
+            else
+            {
+                result[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return (result, wasTruncated);
     }
 
     /// <summary>
@@ -277,6 +363,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         public string? NewValue { get; init; }
         public required DateTime Timestamp { get; init; }
         public string? IpAddress { get; init; }
+        public bool IsTruncated { get; init; }
     }
 }
 

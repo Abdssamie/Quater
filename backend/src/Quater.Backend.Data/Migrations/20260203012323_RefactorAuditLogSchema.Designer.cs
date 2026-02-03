@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Quater.Backend.Data;
@@ -11,9 +12,11 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Data.Migrations
 {
     [DbContext(typeof(QuaterDbContext))]
-    partial class QuaterDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260203012323_RefactorAuditLogSchema")]
+    partial class RefactorAuditLogSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -392,12 +395,10 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("NewValue")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
+                        .HasColumnType("text");
 
                     b.Property<string>("OldValue")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -452,12 +453,10 @@ namespace Quater.Backend.Data.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("NewValue")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
+                        .HasColumnType("text");
 
                     b.Property<string>("OldValue")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");

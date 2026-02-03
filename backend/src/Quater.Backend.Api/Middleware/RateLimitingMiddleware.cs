@@ -49,14 +49,15 @@ public class RateLimitingMiddleware
         _next = next;
         _redis = redis;
         _logger = logger;
-        
+
         // Load configuration from appsettings.json or environment variables
-        _authenticatedLimit = configuration.GetValue<int>("RateLimiting:AuthenticatedLimit", 100);
-        _anonymousLimit = configuration.GetValue<int>("RateLimiting:AnonymousLimit", 20);
-        _windowSeconds = configuration.GetValue<int>("RateLimiting:WindowSeconds", 60);
-        
+        _authenticatedLimit = configuration.GetValue("RateLimiting:AuthenticatedLimit", 100);
+        _anonymousLimit = configuration.GetValue("RateLimiting:AnonymousLimit", 20);
+        _windowSeconds = configuration.GetValue("RateLimiting:WindowSeconds", 60);
+
         _logger.LogInformation(
-            "Rate limiting configured - Authenticated: {AuthLimit} req/{Window}s, Anonymous: {AnonLimit} req/{Window}s",
+            "Rate limiting configured - Authenticated: {AuthLimit} req/{AuthWindow}s," +
+            " Anonymous: {AnonLimit} req/{AnonWindow}s",
             _authenticatedLimit, _windowSeconds, _anonymousLimit, _windowSeconds);
     }
 
@@ -71,7 +72,7 @@ public class RateLimitingMiddleware
         try
         {
             var db = _redis.GetDatabase();
-            
+
             // Execute Lua script atomically
             var scriptResult = await db.ScriptEvaluateAsync(RateLimitScript, new
             {
@@ -82,25 +83,25 @@ public class RateLimitingMiddleware
             // Handle potential null result from Redis script
             if (scriptResult.IsNull)
             {
-            _logger.LogWarning(
-                "Redis script returned invalid result for client {ClientId}; failing open.",
-                clientId);
-            await _next(context);
-            return;
-        }
+                _logger.LogWarning(
+                    "Redis script returned invalid result for client {ClientId}; failing open.",
+                    clientId);
+                await _next(context);
+                return;
+            }
 
-        var result = (RedisResult[]?)scriptResult;
-        if (result == null || result.Length < 2)
-        {
-            _logger.LogWarning(
-                "Redis script returned invalid result array for client {ClientId}; failing open.",
-                clientId);
-            await _next(context);
-            return;
-        }
+            var result = (RedisResult[]?)scriptResult;
+            if (result == null || result.Length < 2)
+            {
+                _logger.LogWarning(
+                    "Redis script returned invalid result array for client {ClientId}; failing open.",
+                    clientId);
+                await _next(context);
+                return;
+            }
 
-        var currentCount = (long)result[0];
-        var ttlSeconds = (long)result[1];
+            var currentCount = (long)result[0];
+            var ttlSeconds = (long)result[1];
             var resetTime = DateTimeOffset.UtcNow.AddSeconds(ttlSeconds).ToUnixTimeSeconds();
 
             // Check if limit exceeded
@@ -113,7 +114,7 @@ public class RateLimitingMiddleware
                 context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 context.Response.Headers["Retry-After"] = ttlSeconds.ToString();
                 AddRateLimitHeaders(context.Response, limit, 0, resetTime);
-                
+
                 await context.Response.WriteAsJsonAsync(new
                 {
                     error = "Rate limit exceeded",
@@ -135,22 +136,22 @@ public class RateLimitingMiddleware
         {
             // Fail open: allow request to proceed if Redis is unavailable
             // This prevents Redis outages from taking down the entire API
-            _logger.LogError(ex, 
-                "Redis connection error for client {ClientId}; failing open.", 
+            _logger.LogError(ex,
+                "Redis connection error for client {ClientId}; failing open.",
                 clientId);
         }
         catch (RedisTimeoutException ex)
         {
             // Fail open on timeout
-            _logger.LogError(ex, 
-                "Redis timeout for client {ClientId}; failing open.", 
+            _logger.LogError(ex,
+                "Redis timeout for client {ClientId}; failing open.",
                 clientId);
         }
         catch (Exception ex)
         {
             // Fail open for any other errors
-            _logger.LogError(ex, 
-                "Rate limiting error for client {ClientId}; failing open.", 
+            _logger.LogError(ex,
+                "Rate limiting error for client {ClientId}; failing open.",
                 clientId);
         }
 
@@ -166,8 +167,8 @@ public class RateLimitingMiddleware
         // Use user ID if authenticated
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? context.User.FindFirst("sub")?.Value;
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? context.User.FindFirst("sub")?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
                 return $"user:{userId}";
@@ -192,6 +193,7 @@ public class RateLimitingMiddleware
 
 /// <summary>
 /// Extension method to register RateLimitingMiddleware
+/// </summary>
 //
 public static class RateLimitingMiddlewareExtensions
 {

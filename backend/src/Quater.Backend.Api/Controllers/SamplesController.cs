@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
@@ -77,8 +78,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = User.GetUserIdOrThrow();
             
             var created = await sampleService.CreateAsync(dto, userId, ct);
             logger.LogInformation("Sample created successfully with ID {SampleId} by user {UserId}", created.Id, userId);
@@ -107,8 +107,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = User.GetUserIdOrThrow();
             
             var updated = await sampleService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)

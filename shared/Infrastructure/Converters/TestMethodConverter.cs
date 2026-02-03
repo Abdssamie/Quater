@@ -13,9 +13,9 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// domain models while storing enums as strings in the database.
 /// 
 /// Conversion examples:
-/// - TestMethod.Titration <-> "Titration"
-/// - TestMethod.Spectrophotometry <-> "Spectrophotometry"
-/// - TestMethod.Chromatography <-> "Chromatography"
+/// - TestMethod.Titration = "Titration"
+/// - TestMethod.Spectrophotometry = "Spectrophotometry"
+/// - TestMethod.Chromatography = "Chromatography"
 /// 
 /// Usage in DbContext:
 /// <code>

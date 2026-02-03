@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 using Asp.Versioning;
 using FluentValidation;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -89,12 +90,23 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Register Redis connection for rate limiting
 builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString")
-        ?? "localhost:6379,abortConnect=false";
+    
+    // Throws error if not provided
+    var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString")!;
+        
     return StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString);
 });
 
@@ -316,12 +328,10 @@ builder.Services.AddScoped<IParameterService, ParameterService>();
 builder.Services.AddScoped<ILabService, LabService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Register Email Infrastructure (from Infrastructure.Email project)
 builder.Services.AddEmailInfrastructure(builder.Configuration);
-
-// TODO: Uncomment when Sync services are implemented by other agents
-// builder.Services.AddScoped<ISyncService, Quater.Backend.Sync.SyncService>();
 
 
 // Configure Quartz.NET
@@ -347,6 +357,7 @@ var app = builder.Build();
 
 // Add global exception handler (must be first in pipeline)
 app.UseGlobalExceptionHandler();
+app.UseForwardedHeaders();
 
 // HTTPS redirection and HSTS (before rate limiting to prevent HTTP bypass)
 app.UseHttpsRedirection();

@@ -13,9 +13,9 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// domain models while storing enums as strings in the database.
 /// 
 /// Conversion examples:
-/// - SampleType.DrinkingWater <-> "DrinkingWater"
-/// - SampleType.Wastewater <-> "Wastewater"
-/// - SampleType.SurfaceWater <-> "SurfaceWater"
+/// - SampleType.DrinkingWater = "DrinkingWater"
+/// - SampleType.Wastewater = "Wastewater"
+/// - SampleType.SurfaceWater = "SurfaceWater"
 /// 
 /// Usage in DbContext:
 /// <code>

@@ -13,9 +13,9 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// domain models while storing enums as strings in the database.
 /// 
 /// Conversion examples:
-/// - UserRole.Admin <-> "Admin"
-/// - UserRole.Technician <-> "Technician"
-/// - UserRole.Viewer <-> "Viewer"
+/// - UserRole.Admin = "Admin"
+/// - UserRole.Technician = "Technician"
+/// - UserRole.Viewer = "Viewer"
 /// 
 /// Usage in DbContext:
 /// <code>

@@ -13,11 +13,11 @@ namespace Quater.Shared.Infrastructure.Converters;
 /// domain models while storing enums as strings in the database.
 /// 
 /// Conversion examples:
-/// - AuditAction.Create <-> "Create"
-/// - AuditAction.Update <-> "Update"
-/// - AuditAction.Delete <-> "Delete"
-/// - AuditAction.Restore <-> "Restore"
-/// - AuditAction.ConflictResolution <-> "ConflictResolution"
+/// - AuditAction.Create = "Create"
+/// - AuditAction.Update = "Update"
+/// - AuditAction.Delete = "Delete"
+/// - AuditAction.Restore = "Restore"
+/// - AuditAction.ConflictResolution = "ConflictResolution"
 /// 
 /// Usage in DbContext:
 /// <code>

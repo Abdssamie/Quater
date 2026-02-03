@@ -1,6 +1,6 @@
 namespace Quater.Backend.Core.Interfaces;
 
-using Quater.Backend.Core.DTOs;
+using DTOs;
 
 /// <summary>
 /// Email sending service interface

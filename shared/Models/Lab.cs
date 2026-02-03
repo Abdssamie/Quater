@@ -46,7 +46,7 @@ public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
     public string? UpdatedBy { get; set; }
 
     // ISoftDelete interface properties
-    public bool IsDeleted { get; set; } = false;
+    public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public string? DeletedBy { get; set; }
 
@@ -55,6 +55,6 @@ public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
     public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
-    public ICollection<User> Users { get; set; } = [];
-    public ICollection<Sample> Samples { get; set; } = [];
+    public ICollection<User> Users { get; init; } = [];
+    public ICollection<Sample> Samples { get; init; } = [];
 }

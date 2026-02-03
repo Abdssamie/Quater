@@ -20,79 +20,62 @@ public sealed class AuditLogArchive : IEntity
     /// </summary>
     [Required]
     [MaxLength(100)]
-    public string UserId { get; set; } = string.Empty;
+    public string UserId { get; init; } = string.Empty;
 
     /// <summary>
     /// Type of entity modified
     /// </summary>
     [Required]
-    public EntityType EntityType { get; set; }
+    public EntityType EntityType { get; init; }
 
     /// <summary>
     /// ID of modified entity
     /// </summary>
     [Required]
-    public Guid EntityId { get; set; }
+    public Guid EntityId { get; init; }
 
     /// <summary>
     /// Action performed on the entity
     /// </summary>
     [Required]
-    public AuditAction Action { get; set; }
+    public AuditAction Action { get; init; }
 
     /// <summary>
-    /// JSON serialized old value (for updates). If data exceeds 4000 chars, stores truncation marker.
+    /// JSON serialized old value (for updates). Individual property values exceeding 200 chars are truncated.
     /// </summary>
     [MaxLength(4000)]
-    public string? OldValue { get; set; }
+    public string? OldValue { get; init; }
 
     /// <summary>
-    /// JSON serialized new value. If data exceeds 4000 chars, stores truncation marker.
+    /// JSON serialized new value. Individual property values exceeding 200 chars are truncated.
     /// </summary>
     [MaxLength(4000)]
-    public string? NewValue { get; set; }
+    public string? NewValue { get; init; }
 
     /// <summary>
-    /// Comma-separated list of field names that were changed (for quick filtering)
-    /// </summary>
-    [MaxLength(500)]
-    public string? ChangedFields { get; set; }
-
-    /// <summary>
-    /// Flag indicating if OldValue/NewValue were truncated due to size limits
+    /// Flag indicating if any property values were truncated due to size limits (>200 chars)
     /// </summary>
     [Required]
-    public bool IsTruncated { get; set; } = false;
-
-    /// <summary>
-    /// Full data storage path (e.g., blob storage URL) if values were too large for database
-    /// </summary>
-    [MaxLength(500)]
-    public string? OverflowStoragePath { get; set; }
-
-
-
-
+    public bool IsTruncated { get; init; }
 
     /// <summary>
     /// UTC timestamp of modification
     /// </summary>
     [Required]
-    public DateTime Timestamp { get; set; }
+    public DateTime Timestamp { get; init; }
 
     /// <summary>
     /// IP address of client (IPv4/IPv6)
     /// </summary>
     [MaxLength(45)]
-    public string? IpAddress { get; set; }
+    public string? IpAddress { get; init; }
 
     /// <summary>
     /// UTC timestamp when record was archived
     /// </summary>
     [Required]
-    public DateTime ArchivedDate { get; set; }
+    public DateTime ArchivedDate { get; init; }
 
     // Navigation properties
-    public User User { get; set; } = null!;
-
+    public User User { get; init; } = null!;
 }

@@ -30,11 +30,10 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .IsRequired()
             .HasMaxLength(20);
 
-        entity.Property(e => e.OldValue)
-            .HasMaxLength(4000);
+        // No MaxLength - allows unlimited text storage (nvarchar(max) or text)
+        entity.Property(e => e.OldValue);
 
-        entity.Property(e => e.NewValue)
-            .HasMaxLength(4000);
+        entity.Property(e => e.NewValue);
 
         entity.Property(e => e.Timestamp)
             .IsRequired();

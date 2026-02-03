@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
@@ -68,8 +68,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = User.GetUserIdOrThrow();
             
             var created = await labService.CreateAsync(dto, userId, ct);
             logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}", 
@@ -98,8 +97,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system"; // Placeholder until auth is implemented
+            var userId = User.GetUserIdOrThrow();
             
             var updated = await labService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)

@@ -9,8 +9,8 @@ namespace Quater.Shared.Models;
 /// Represents a system user with role-based access.
 /// Extends ASP.NET Core Identity IdentityUser.
 /// </summary>
-public class User : IdentityUser, IAuditable, IConcurrent
-{
+public class User : IdentityUser, IConcurrent
+{ 
     /// <summary>
     /// User role for access control
     /// </summary>
@@ -34,12 +34,6 @@ public class User : IdentityUser, IAuditable, IConcurrent
     [Required]
     public bool IsActive { get; set; } = true;
 
-    // IAuditable interface properties
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
-    public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
-
     // IConcurrent interface properties
     [Timestamp]
     public byte[] RowVersion { get; set; } = null!;
@@ -48,5 +42,4 @@ public class User : IdentityUser, IAuditable, IConcurrent
     public Lab Lab { get; init; } = null!;
     public ICollection<AuditLog> AuditLogs { get; init; } = new List<AuditLog>();
     public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = new List<AuditLogArchive>();
-
 }

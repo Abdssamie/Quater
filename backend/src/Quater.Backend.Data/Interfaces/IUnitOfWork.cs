@@ -48,7 +48,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Parameter> Parameters { get; }
 
 
-
     /// <summary>
     /// Repository for AuditLog entities.
     /// </summary>
@@ -58,7 +57,6 @@ public interface IUnitOfWork : IDisposable
     /// Repository for AuditLogArchive entities.
     /// </summary>
     IRepository<AuditLogArchive> AuditLogArchives { get; }
-
 
 
     /// <summary>

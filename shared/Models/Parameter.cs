@@ -6,7 +6,7 @@ namespace Quater.Shared.Models;
 /// <summary>
 /// Represents a water quality parameter with compliance thresholds.
 /// </summary>
-public sealed class Parameter : IEntity, IAuditable, ISoftDelete, ISyncable, IConcurrent
+public sealed class Parameter : IEntity, IAuditable, ISoftDelete, IConcurrent
 {
     /// <summary>
     /// Unique identifier (UUID)

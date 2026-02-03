@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
@@ -76,8 +77,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system";
+            var userId = User.GetUserIdOrThrow();
             
             var created = await testResultService.CreateAsync(dto, userId, ct);
             logger.LogInformation("Test result created successfully with ID {TestResultId} for sample {SampleId} by user {UserId}", 
@@ -112,8 +112,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     {
         try
         {
-            // TODO: Get actual user ID from authentication context
-            var userId = "system";
+            var userId = User.GetUserIdOrThrow();
             
             var updated = await testResultService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)

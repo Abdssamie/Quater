@@ -70,11 +70,6 @@ public class GlobalExceptionHandlerMiddleware
                 exception.Message,
                 null
             ),
-            SyncException => (
-                HttpStatusCode.InternalServerError,
-                exception.Message,
-                null
-            ),
             KeyNotFoundException => (
                 HttpStatusCode.NotFound,
                 "The requested resource was not found",

@@ -30,13 +30,9 @@ public class AuditLogArchiveConfiguration : IEntityTypeConfiguration<AuditLogArc
             .IsRequired()
             .HasMaxLength(20);
 
-        entity.Property(e => e.OldValue)
-            .HasMaxLength(4000);
+        entity.Property(e => e.OldValue);
 
-        entity.Property(e => e.NewValue)
-            .HasMaxLength(4000);
-
-
+        entity.Property(e => e.NewValue);
 
         entity.Property(e => e.Timestamp)
             .IsRequired();

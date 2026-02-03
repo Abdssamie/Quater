@@ -34,6 +34,7 @@ public sealed record PasswordResetEmailModel : EmailTemplateModel
 public sealed record WelcomeEmailModel : EmailTemplateModel
 {
     public required string LoginUrl { get; init; }
+
     public string[] Features { get; init; } =
     [
         "Track and analyze water quality samples",
