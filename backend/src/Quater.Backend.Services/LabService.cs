@@ -9,8 +9,7 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Services;
 
 public class LabService(
-    QuaterDbContext context,
-    TimeProvider timeProvider) : ILabService
+    QuaterDbContext context) : ILabService
 {
     public async Task<LabDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -63,17 +62,13 @@ public class LabService(
         if (exists)
             throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-
         var lab = new Lab
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Location = dto.Location,
             ContactInfo = dto.ContactInfo,
-            IsActive = true,
-            CreatedAt = now,
-            CreatedBy = userId
+            IsActive = true
         };
 
         context.Labs.Add(lab);
@@ -94,14 +89,10 @@ public class LabService(
         if (duplicateExists)
             throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-
         existing.Name = dto.Name;
         existing.Location = dto.Location;
         existing.ContactInfo = dto.ContactInfo;
         existing.IsActive = dto.IsActive;
-        existing.UpdatedAt = now;
-        existing.UpdatedBy = userId;
 
         await context.SaveChangesAsync(ct);
 

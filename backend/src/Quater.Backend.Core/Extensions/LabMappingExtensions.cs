@@ -33,16 +33,13 @@ public static class LabMappingExtensions
     /// </summary>
     public static Lab ToEntity(this CreateLabDto dto, string createdBy)
     {
-        var now = DateTime.UtcNow;
         return new Lab
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Location = dto.Location,
             ContactInfo = dto.ContactInfo,
-            IsActive = true,
-            CreatedAt = now,
-            CreatedBy = createdBy
+            IsActive = true
         };
     }
 
@@ -55,8 +52,6 @@ public static class LabMappingExtensions
         lab.Location = dto.Location;
         lab.ContactInfo = dto.ContactInfo;
         lab.IsActive = dto.IsActive;
-        lab.UpdatedAt = DateTime.UtcNow;
-        lab.UpdatedBy = updatedBy;
     }
 
     /// <summary>

@@ -34,7 +34,6 @@ public static class ParameterMappingExtensions
     /// </summary>
     public static Parameter ToEntity(this CreateParameterDto dto, string createdBy)
     {
-        var now = DateTime.UtcNow;
         return new Parameter
         {
             Id = Guid.NewGuid(),
@@ -46,8 +45,6 @@ public static class ParameterMappingExtensions
             MaxValue = dto.MaxValue,
             Description = dto.Description,
             IsActive = true,
-            CreatedAt = now,
-            CreatedBy = createdBy,
             LastSyncedAt = DateTime.MinValue
         };
     }
@@ -65,8 +62,6 @@ public static class ParameterMappingExtensions
         parameter.MaxValue = dto.MaxValue;
         parameter.Description = dto.Description;
         parameter.IsActive = dto.IsActive;
-        parameter.UpdatedAt = DateTime.UtcNow;
-        parameter.UpdatedBy = updatedBy;
     }
 
     /// <summary>

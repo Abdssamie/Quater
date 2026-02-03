@@ -33,7 +33,7 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateDbContext();
         _timeProvider = new FakeTimeProvider();
         
-        _service = new ParameterService(_context, _timeProvider);
+        _service = new ParameterService(_context);
     }
 
     public async Task DisposeAsync()
@@ -80,7 +80,6 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
             Name = "Turbidity",
             Unit = "NTU",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
         };
         _context.Parameters.Add(parameter);
         await _context.SaveChangesAsync();
@@ -104,7 +103,6 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
             Name = "Chlorine",
             Unit = "mg/L",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
         };
         _context.Parameters.Add(parameter);
         await _context.SaveChangesAsync();
@@ -127,7 +125,6 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
             Name = "Temp",
             Unit = "C",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
         };
         _context.Parameters.Add(parameter);
         await _context.SaveChangesAsync();
@@ -165,7 +162,6 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
             Name = "To Delete",
             Unit = "X",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
         };
         _context.Parameters.Add(parameter);
         await _context.SaveChangesAsync();
@@ -188,9 +184,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
         // Arrange
         var parameters = new List<Parameter>
         {
-            new() { Id = Guid.NewGuid(), Name = "Param 1", Unit = "U1", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "Param 2", Unit = "U2", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "Param 3", Unit = "U3", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "Param 1", Unit = "U1", IsActive = true },
+            new() { Id = Guid.NewGuid(), Name = "Param 2", Unit = "U2", IsActive = true },
+            new() { Id = Guid.NewGuid(), Name = "Param 3", Unit = "U3", IsActive = true }
         };
         _context.Parameters.AddRange(parameters);
         await _context.SaveChangesAsync();

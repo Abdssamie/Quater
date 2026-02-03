@@ -42,7 +42,6 @@ public static class SampleMappingExtensions
     /// </summary>
     public static Sample ToEntity(this CreateSampleDto dto, string createdBy)
     {
-        var now = DateTime.UtcNow;
         return new Sample
         {
             Id = Guid.NewGuid(),
@@ -53,8 +52,6 @@ public static class SampleMappingExtensions
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
             LabId = dto.LabId,
-            CreatedBy = createdBy,
-            CreatedAt = now,
             LastSyncedAt = DateTime.MinValue
         };
     }
@@ -70,8 +67,6 @@ public static class SampleMappingExtensions
         sample.CollectorName = dto.CollectorName;
         sample.Notes = dto.Notes;
         sample.Status = dto.Status;
-        sample.UpdatedAt = DateTime.UtcNow;
-        sample.UpdatedBy = updatedBy;
     }
 
     /// <summary>

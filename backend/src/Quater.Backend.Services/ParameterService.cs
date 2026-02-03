@@ -9,8 +9,7 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Services;
 
 public class ParameterService(
-    QuaterDbContext context,
-    TimeProvider timeProvider) : IParameterService
+    QuaterDbContext context) : IParameterService
 {
     public async Task<ParameterDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -70,8 +69,6 @@ public class ParameterService(
         if (exists)
             throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-
         var parameter = new Parameter
         {
             Id = Guid.NewGuid(),
@@ -83,8 +80,6 @@ public class ParameterService(
             MaxValue = dto.MaxValue,
             Description = dto.Description,
             IsActive = true,
-            CreatedAt = now,
-            CreatedBy = "system", // TODO: Get from current user context
             LastSyncedAt = DateTime.MinValue
         };
 
@@ -106,8 +101,6 @@ public class ParameterService(
         if (duplicateExists)
             throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-
         existing.Name = dto.Name;
         existing.Unit = dto.Unit;
         existing.WhoThreshold = dto.WhoThreshold;
@@ -116,8 +109,6 @@ public class ParameterService(
         existing.MaxValue = dto.MaxValue;
         existing.Description = dto.Description;
         existing.IsActive = dto.IsActive;
-        existing.UpdatedAt = now;
-        existing.UpdatedBy = "system"; // TODO: Get from current user context
 
         await context.SaveChangesAsync(ct);
 

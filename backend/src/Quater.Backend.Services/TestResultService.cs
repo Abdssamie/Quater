@@ -13,7 +13,6 @@ namespace Quater.Backend.Services;
 
 public class TestResultService(
     QuaterDbContext context,
-    TimeProvider timeProvider,
     IValidator<TestResult> validator) : ITestResultService
 {
     public async Task<TestResultDto?> GetByIdAsync(Guid id, CancellationToken ct = default)

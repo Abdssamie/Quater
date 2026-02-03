@@ -35,7 +35,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new SampleValidator(_timeProvider);
-        _service = new SampleService(_context, _timeProvider, validator);
+        _service = new SampleService(_context, validator);
     }
 
     public async Task DisposeAsync()

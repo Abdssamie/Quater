@@ -36,7 +36,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         // LabService doesn't have a specific validator injected based on typical pattern, 
         // but let's check the constructor to be sure.
         // Assuming (QuaterDbContext context, TimeProvider timeProvider)
-        _service = new LabService(_context, _timeProvider);
+        _service = new LabService(_context);
     }
 
     public async Task DisposeAsync()
@@ -68,7 +68,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         var persisted = await _context.Labs.FindAsync(result.Id);
         persisted.Should().NotBeNull();
         persisted!.Name.Should().Be(dto.Name);
-        persisted.CreatedBy.Should().Be("test-user");
+        persisted.CreatedBy.Should().Be("System"); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]
@@ -80,8 +80,6 @@ public class LabServiceIntegrationTests : IAsyncLifetime
             Id = Guid.NewGuid(), 
             Name = "Existing Lab", 
             IsActive = true,
-            CreatedBy = "setup",
-            CreatedAt = DateTime.UtcNow
         };
         _context.Labs.Add(lab);
         await _context.SaveChangesAsync();
@@ -104,8 +102,6 @@ public class LabServiceIntegrationTests : IAsyncLifetime
             Id = Guid.NewGuid(), 
             Name = "Original Name", 
             IsActive = true,
-            CreatedBy = "setup",
-            CreatedAt = DateTime.UtcNow
         };
         _context.Labs.Add(lab);
         await _context.SaveChangesAsync();
@@ -129,7 +125,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         // Verify persistence
         var persisted = await _context.Labs.FindAsync(lab.Id);
         persisted!.Name.Should().Be(dto.Name);
-        persisted.UpdatedBy.Should().Be("update-user");
+        persisted.UpdatedBy.Should().Be("System"); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]
@@ -141,8 +137,6 @@ public class LabServiceIntegrationTests : IAsyncLifetime
             Id = Guid.NewGuid(), 
             Name = "To Delete", 
             IsActive = true,
-            CreatedBy = "setup",
-            CreatedAt = DateTime.UtcNow
         };
         _context.Labs.Add(lab);
         await _context.SaveChangesAsync();
@@ -165,9 +159,9 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         // Arrange
         var labs = new List<Lab>
         {
-            new() { Id = Guid.NewGuid(), Name = "Lab 1", CreatedBy = "setup", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "Lab 2", CreatedBy = "setup", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "Lab 3", CreatedBy = "setup", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "Lab 1", IsActive = true },
+            new() { Id = Guid.NewGuid(), Name = "Lab 2", IsActive = true },
+            new() { Id = Guid.NewGuid(), Name = "Lab 3", IsActive = true }
         };
         _context.Labs.AddRange(labs);
         await _context.SaveChangesAsync();

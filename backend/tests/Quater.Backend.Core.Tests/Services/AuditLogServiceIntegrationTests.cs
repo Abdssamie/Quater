@@ -46,7 +46,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
     private async Task SeedAuditLogsAsync()
     {
         // Seed lab first
-        var lab = new Lab { Id = Guid.NewGuid(), Name = "Test Lab", IsActive = true, CreatedBy = "system", CreatedAt = DateTime.UtcNow };
+        var lab = new Lab { Id = Guid.NewGuid(), Name = "Test Lab", IsActive = true };
         _context.Labs.Add(lab);
         await _context.SaveChangesAsync();
 

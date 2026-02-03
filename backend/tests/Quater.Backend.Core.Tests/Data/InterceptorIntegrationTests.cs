@@ -61,9 +61,12 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         var lab = _context.Labs.First();
         var sample1 = MockDataFactory.CreateSample(lab.Id);
         var sample2 = MockDataFactory.CreateSample(lab.Id);
-        sample2.IsDeleted = true;
 
         _context.Samples.AddRange(sample1, sample2);
+        await _context.SaveChangesAsync();
+        
+        // Soft delete sample2
+        _context.Samples.Remove(sample2);
         await _context.SaveChangesAsync();
 
         // Act

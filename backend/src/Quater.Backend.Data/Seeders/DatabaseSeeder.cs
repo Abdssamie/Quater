@@ -48,11 +48,7 @@ public static class DatabaseSeeder
                 Description = "Measure of acidity or alkalinity of water",
                 MinValue = 6.5,
                 MaxValue = 8.5,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -62,11 +58,7 @@ public static class DatabaseSeeder
                 Description = "Cloudiness or haziness of water",
                 MinValue = 0,
                 MaxValue = 5,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -76,11 +68,7 @@ public static class DatabaseSeeder
                 Description = "Total amount of dissolved substances in water",
                 MinValue = 0,
                 MaxValue = 500,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -90,11 +78,7 @@ public static class DatabaseSeeder
                 Description = "Free chlorine remaining in water after treatment",
                 MinValue = 0.2,
                 MaxValue = 5.0,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -104,11 +88,7 @@ public static class DatabaseSeeder
                 Description = "Fluoride concentration in water",
                 MinValue = 0,
                 MaxValue = 1.5,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -118,11 +98,7 @@ public static class DatabaseSeeder
                 Description = "Nitrate concentration in water",
                 MinValue = 0,
                 MaxValue = 50,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -132,11 +108,7 @@ public static class DatabaseSeeder
                 Description = "Arsenic concentration in water",
                 MinValue = 0,
                 MaxValue = 10,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -146,11 +118,7 @@ public static class DatabaseSeeder
                 Description = "Lead concentration in water",
                 MinValue = 0,
                 MaxValue = 10,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -160,11 +128,7 @@ public static class DatabaseSeeder
                 Description = "Escherichia coli bacteria count",
                 MinValue = 0,
                 MaxValue = 0,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             },
             new Parameter
             {
@@ -174,11 +138,7 @@ public static class DatabaseSeeder
                 Description = "Total coliform bacteria count",
                 MinValue = 0,
                 MaxValue = 0,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                CreatedBy = "system",
-                UpdatedBy = "system"
+                IsActive = true
             }
         };
 
@@ -205,11 +165,7 @@ public static class DatabaseSeeder
             Name = "Default Laboratory",
             Location = "Main Office",
             ContactInfo = "admin@quater.local",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            CreatedBy = "system",
-            UpdatedBy = "system"
+            IsActive = true
         };
 
         await context.Labs.AddAsync(defaultLab);

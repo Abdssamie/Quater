@@ -41,8 +41,6 @@ public static class MockDataFactory
             Location = location ?? "Test Location",
             ContactInfo = $"{name.Replace(" ", "").ToLower()}@test.com, +212-123-456-789",
             IsActive = true,
-            CreatedAt = BaseDate,
-            CreatedBy = "test",
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -82,8 +80,6 @@ public static class MockDataFactory
             MinValue = minValue,
             MaxValue = maxValue,
             IsActive = true,
-            CreatedAt = BaseDate,
-            CreatedBy = "test",
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -122,9 +118,6 @@ public static class MockDataFactory
             Notes = "Test sample notes",
             Status = status,
             LabId = labId ?? Guid.NewGuid(),
-            CreatedAt = BaseDate,
-            CreatedBy = "test",
-            UpdatedBy = "test",
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -167,10 +160,7 @@ public static class MockDataFactory
             ComplianceStatus = complianceStatus,
             TestMethod = method,
             TechnicianName = "Test Technician",
-            TestDate = BaseDate,
-            CreatedAt = BaseDate,
-            CreatedBy = "test",
-            UpdatedBy = "test"
+            TestDate = BaseDate
         };
     }
 

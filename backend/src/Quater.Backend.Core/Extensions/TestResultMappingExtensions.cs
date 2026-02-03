@@ -46,7 +46,6 @@ public static class TestResultMappingExtensions
     /// <param name="complianceStatus">Compliance status (defaults to Pass)</param>
     public static TestResult ToEntity(this CreateTestResultDto dto, Parameter parameter, string createdBy, ComplianceStatus complianceStatus = ComplianceStatus.Pass)
     {
-        var now = DateTime.UtcNow;
         return new TestResult
         {
             Id = Guid.NewGuid(),
@@ -57,8 +56,6 @@ public static class TestResultMappingExtensions
             TestMethod = dto.TestMethod,
             ComplianceStatus = complianceStatus,
             Status = TestResultStatus.Draft,
-            CreatedBy = createdBy,
-            CreatedAt = now,
             LastSyncedAt = DateTime.MinValue
         };
     }
@@ -77,8 +74,6 @@ public static class TestResultMappingExtensions
         testResult.TechnicianName = dto.TechnicianName;
         testResult.TestMethod = dto.TestMethod;
         testResult.ComplianceStatus = dto.ComplianceStatus;
-        testResult.UpdatedAt = DateTime.UtcNow;
-        testResult.UpdatedBy = updatedBy;
     }
 
     /// <summary>

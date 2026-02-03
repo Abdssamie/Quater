@@ -163,8 +163,6 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             MinValue = 6.5,
             MaxValue = 9.5,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "test",
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
         _context.Parameters.Add(parameter);
@@ -392,8 +390,6 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             MinValue = 6.5,
             MaxValue = 9.5,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "test",
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
         _context.Parameters.Add(parameter);
@@ -408,9 +404,6 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             TestMethod = TestMethod.Spectrophotometry,
             TechnicianName = "Test Technician",
             TestDate = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "test",
-            UpdatedBy = "test"
         };
         _context.TestResults.Add(testResult);
         await _context.SaveChangesAsync();

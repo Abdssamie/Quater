@@ -145,6 +145,12 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Register EF Core Interceptors
 builder.Services.AddScoped<SoftDeleteInterceptor>();
+builder.Services.AddScoped<AuditInterceptor>(sp =>
+{
+    var currentUserService = sp.GetRequiredService<ICurrentUserService>();
+    var timeProvider = sp.GetRequiredService<TimeProvider>();
+    return new AuditInterceptor(currentUserService, timeProvider);
+});
 builder.Services.AddScoped<AuditTrailInterceptor>(sp =>
 {
     var currentUserService = sp.GetRequiredService<ICurrentUserService>();
@@ -157,6 +163,7 @@ builder.Services.AddScoped<AuditTrailInterceptor>(sp =>
 builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
 {
     var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
+    var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
     var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
 
     options.UseNpgsql(
@@ -167,7 +174,7 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
     options.UseOpenIddict();
 
     // Add interceptors
-    options.AddInterceptors(softDeleteInterceptor, auditTrailInterceptor);
+    options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
 });
 
 // Configure ASP.NET Core Identity with lockout settings

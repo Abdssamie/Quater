@@ -32,10 +32,6 @@ public class SampleTests
             LabId = Guid.NewGuid(),
             Status = SampleStatus.Pending,
             Type = SampleType.DrinkingWater,
-            CreatedBy = "System",
-            CreatedAt = _timeProvider.GetUtcNow().DateTime,
-            UpdatedAt = _timeProvider.GetUtcNow().DateTime,
-            UpdatedBy = "System"
         };
 
         // Act

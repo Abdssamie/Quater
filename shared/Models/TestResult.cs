@@ -86,11 +86,11 @@ public sealed class TestResult : IEntity, IAuditable, ISoftDelete, IConcurrent
     [Required]
     public bool IsDeleted { get; private set; }
 
-    // IAuditable interface properties
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
-    public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+    // IAuditable interface properties - Managed by AuditInterceptor
+    public DateTime CreatedAt { get; private set; }
+    public string CreatedBy { get; private set; } = string.Empty;
+    public DateTime? UpdatedAt { get; private set; }
+    public string? UpdatedBy { get; private set; }
 
     // ISoftDelete interface properties
     public DateTime? DeletedAt { get; set; }

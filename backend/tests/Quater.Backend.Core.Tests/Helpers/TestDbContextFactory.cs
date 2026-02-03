@@ -136,6 +136,7 @@ public class TestDbContextFactory : IAsyncLifetime
         {
             optionsBuilder.AddInterceptors(
                 new SoftDeleteInterceptor(),
+                new AuditInterceptor(),
                 new AuditTrailInterceptor());
         }
 
@@ -171,8 +172,6 @@ public class TestDbContextFactory : IAsyncLifetime
             Name = "System Lab",
             Location = "System",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
         };
         context.Labs.Add(systemLab);
         await context.SaveChangesAsync();

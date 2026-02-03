@@ -58,7 +58,7 @@
       }
     },
     "csharp-coding-style": {
-      "mode": "primary",
+      "mode": "all",
       "prompt": "{file:.opencode/prompts/csharp-coding-style.txt}",
       "tools": {
         "bash": true,
@@ -72,7 +72,7 @@
       }
     },
     "csharp-testing": {
-      "mode": "primary",
+      "mode": "all",
       "prompt": "{file:.opencode/prompts/csharp-testing.txt}",
       "tools": {
         "bash": true,

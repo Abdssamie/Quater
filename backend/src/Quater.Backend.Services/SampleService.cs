@@ -13,7 +13,6 @@ namespace Quater.Backend.Services;
 
 public class SampleService(
     QuaterDbContext context, 
-    TimeProvider timeProvider,
     IValidator<Sample> validator) : ISampleService
 {
     public async Task<SampleDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -74,8 +73,6 @@ public class SampleService(
 
     public async Task<SampleDto> CreateAsync(CreateSampleDto dto, string userId, CancellationToken ct = default)
     {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        
         var sample = new Sample
         {
             Id = Guid.NewGuid(),
@@ -85,9 +82,7 @@ public class SampleService(
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            LabId = dto.LabId,
-            CreatedBy = userId,
-            CreatedAt = now
+            LabId = dto.LabId
         };
 
         // Validate
@@ -108,8 +103,6 @@ public class SampleService(
         // Note: Optimistic concurrency is now handled by RowVersion (byte[]) in the database
         // The Version field in DTO is kept for backward compatibility but not used for concurrency
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-
         // Update fields
         existing.Type = dto.Type;
         existing.Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy);
@@ -117,8 +110,6 @@ public class SampleService(
         existing.CollectorName = dto.CollectorName;
         existing.Notes = dto.Notes;
         existing.Status = dto.Status;
-        existing.UpdatedAt = now;
-        existing.UpdatedBy = userId;
 
         // Validate
         await validator.ValidateAndThrowAsync(existing, ct);

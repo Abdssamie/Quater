@@ -20,8 +20,6 @@ public sealed class MeasurementTests
             MinValue = minValue,
             MaxValue = maxValue,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "Test",
             RowVersion = new byte[8]
         };
     }

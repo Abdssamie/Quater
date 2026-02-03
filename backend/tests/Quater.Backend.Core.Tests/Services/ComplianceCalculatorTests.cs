@@ -59,8 +59,6 @@ public class ComplianceCalculatorTests : IAsyncLifetime
                 MinValue = 6.5,
                 MaxValue = 9.5,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test",
                 RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
                 LastSyncedAt = DateTime.UtcNow
             },
@@ -74,8 +72,6 @@ public class ComplianceCalculatorTests : IAsyncLifetime
                 MinValue = 0,
                 MaxValue = null,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test",
                 RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
                 LastSyncedAt = DateTime.UtcNow
             },
@@ -89,8 +85,6 @@ public class ComplianceCalculatorTests : IAsyncLifetime
                 MinValue = 0.2,
                 MaxValue = 5.0,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test",
                 RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
                 LastSyncedAt = DateTime.UtcNow
             },
@@ -104,8 +98,6 @@ public class ComplianceCalculatorTests : IAsyncLifetime
                 MinValue = null,
                 MaxValue = null,
                 IsActive = false,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = "test",
                 RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 },
                 LastSyncedAt = DateTime.UtcNow
             }
