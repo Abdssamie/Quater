@@ -14,8 +14,6 @@ using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;
-using Quater.Backend.Data.Interfaces;
-using Quater.Backend.Data.Repositories;
 using Quater.Backend.Data.Seeders;
 using Quater.Backend.Services;
 using Serilog;
@@ -293,9 +291,6 @@ builder.Services.AddOpenIddict()
 
 // Register TimeProvider
 builder.Services.AddSingleton(TimeProvider.System);
-
-// Register Unit of Work
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();

@@ -1,7 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
-using Quater.Backend.Data.Interfaces;
+using Quater.Backend.Data;
 
 namespace Quater.Backend.Services;
 
@@ -17,39 +18,29 @@ namespace Quater.Backend.Services;
 /// <summary>
 /// Service for querying audit logs (read-only)
 /// </summary>
-public class AuditLogService : IAuditLogService
+public class AuditLogService(QuaterDbContext context) : IAuditLogService
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public AuditLogService(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
-
     /// <inheritdoc/>
     public async Task<PagedResult<AuditLogDto>> GetAllAsync(
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken ct = default)
     {
-        var allLogs = await _unitOfWork.AuditLogs.GetAllAsync(ct);
-        
-        var filteredLogs = allLogs
-            .Where(a => !a.IsArchived)
+        var query = context.AuditLogs
+            .AsNoTracking()
+            .Where(a => !a.IsArchived);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
             .OrderByDescending(a => a.Timestamp)
-            .ToList();
-
-        var totalCount = filteredLogs.Count;
-
-        var items = filteredLogs
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => a.ToDto())
-            .ToList();
+            .ToListAsync(ct);
 
         return new PagedResult<AuditLogDto>
         {
-            Items = items,
+            Items = items.Select(a => a.ToDto()),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -63,24 +54,21 @@ public class AuditLogService : IAuditLogService
         int pageSize = 50,
         CancellationToken ct = default)
     {
-        var allLogs = await _unitOfWork.AuditLogs.GetAllAsync(ct);
-        
-        var filteredLogs = allLogs
-            .Where(a => a.EntityId == entityId && !a.IsArchived)
+        var query = context.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.EntityId == entityId && !a.IsArchived);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
             .OrderByDescending(a => a.Timestamp)
-            .ToList();
-
-        var totalCount = filteredLogs.Count;
-
-        var items = filteredLogs
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => a.ToDto())
-            .ToList();
+            .ToListAsync(ct);
 
         return new PagedResult<AuditLogDto>
         {
-            Items = items,
+            Items = items.Select(a => a.ToDto()),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -94,24 +82,21 @@ public class AuditLogService : IAuditLogService
         int pageSize = 50,
         CancellationToken ct = default)
     {
-        var allLogs = await _unitOfWork.AuditLogs.GetAllAsync(ct);
-        
-        var filteredLogs = allLogs
-            .Where(a => a.UserId == userId && !a.IsArchived)
+        var query = context.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.UserId == userId && !a.IsArchived);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
             .OrderByDescending(a => a.Timestamp)
-            .ToList();
-
-        var totalCount = filteredLogs.Count;
-
-        var items = filteredLogs
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(a => a.ToDto())
-            .ToList();
+            .ToListAsync(ct);
 
         return new PagedResult<AuditLogDto>
         {
-            Items = items,
+            Items = items.Select(a => a.ToDto()),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -123,9 +108,12 @@ public class AuditLogService : IAuditLogService
         AuditLogFilterDto filter,
         CancellationToken ct = default)
     {
-        var allLogs = await _unitOfWork.AuditLogs.GetAllAsync(ct);
-        
-        var query = allLogs.AsQueryable();
+        var query = context.AuditLogs.AsNoTracking();
+
+        if (!filter.IncludeArchived)
+        {
+            query = query.Where(a => !a.IsArchived);
+        }
 
         // Apply filters
         if (filter.EntityType.HasValue)
@@ -160,26 +148,17 @@ public class AuditLogService : IAuditLogService
             query = query.Where(a => a.Timestamp <= endOfDay);
         }
 
-        if (!filter.IncludeArchived)
-        {
-            query = query.Where(a => !a.IsArchived);
-        }
+        var totalCount = await query.CountAsync(ct);
 
-        var filteredLogs = query
+        var items = await query
             .OrderByDescending(a => a.Timestamp)
-            .ToList();
-
-        var totalCount = filteredLogs.Count;
-
-        var items = filteredLogs
             .Skip((filter.PageNumber - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(a => a.ToDto())
-            .ToList();
+            .ToListAsync(ct);
 
         return new PagedResult<AuditLogDto>
         {
-            Items = items,
+            Items = items.Select(a => a.ToDto()),
             TotalCount = totalCount,
             PageNumber = filter.PageNumber,
             PageSize = filter.PageSize
@@ -189,7 +168,10 @@ public class AuditLogService : IAuditLogService
     /// <inheritdoc/>
     public async Task<AuditLogDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var auditLog = await _unitOfWork.AuditLogs.GetByIdAsync(id, ct);
+        var auditLog = await context.AuditLogs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+            
         return auditLog?.ToDto();
     }
 }
