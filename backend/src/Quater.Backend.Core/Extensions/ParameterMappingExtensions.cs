@@ -44,8 +44,7 @@ public static class ParameterMappingExtensions
             MinValue = dto.MinValue,
             MaxValue = dto.MaxValue,
             Description = dto.Description,
-            IsActive = true,
-            LastSyncedAt = DateTime.MinValue
+            IsActive = true
         };
     }
 

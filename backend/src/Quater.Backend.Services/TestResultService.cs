@@ -94,7 +94,7 @@ public class TestResultService(
         };
     }
 
-    public async Task<TestResultDto> CreateAsync(CreateTestResultDto dto, string userId, CancellationToken ct = default)
+    public async Task<TestResultDto> CreateAsync(CreateTestResultDto dto, Guid userId, CancellationToken ct = default)
     {
         // Verify sample exists
         var sampleExists = await context.Samples.AnyAsync(s => s.Id == dto.SampleId && !s.IsDeleted, ct);
@@ -124,7 +124,7 @@ public class TestResultService(
         return testResult.ToDto(parameter.Name);
     }
 
-    public async Task<TestResultDto?> UpdateAsync(Guid id, UpdateTestResultDto dto, string userId, CancellationToken ct = default)
+    public async Task<TestResultDto?> UpdateAsync(Guid id, UpdateTestResultDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.TestResults.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted)

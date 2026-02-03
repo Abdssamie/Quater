@@ -66,7 +66,7 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
 
         entity.Property(e => e.CreatedBy)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         // IAuditable properties
         entity.Property(e => e.CreatedAt)
@@ -75,20 +75,13 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
         entity.Property(e => e.UpdatedAt);
 
         entity.Property(e => e.UpdatedBy)
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         // ISoftDelete properties
         entity.Property(e => e.DeletedAt);
 
         entity.Property(e => e.DeletedBy)
             .HasMaxLength(100);
-
-        // ISyncable properties
-        entity.Property(e => e.LastSyncedAt)
-            .IsRequired();
-
-        entity.Property(e => e.SyncVersion)
-            .HasMaxLength(50);
 
         // IConcurrent properties
         entity.Property(e => e.RowVersion)

@@ -16,8 +16,7 @@ public class AuditLogArchiveConfiguration : IEntityTypeConfiguration<AuditLogArc
         entity.HasKey(e => e.Id);
 
         entity.Property(e => e.UserId)
-            .IsRequired()
-            .HasMaxLength(100);
+            .IsRequired();
 
         entity.Property(e => e.EntityType)
             .IsRequired()

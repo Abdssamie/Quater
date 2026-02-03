@@ -19,7 +19,7 @@ public interface IAuditable
     /// Gets the identifier of the user who created the entity.
     /// Automatically set by AuditInterceptor on entity creation.
     /// </summary>
-    string CreatedBy { get; }
+    Guid CreatedBy { get; }
 
     /// <summary>
     /// Gets the date and time when the entity was last updated.
@@ -31,5 +31,5 @@ public interface IAuditable
     /// Gets the identifier of the user who last updated the entity.
     /// Automatically set by AuditInterceptor on entity modification.
     /// </summary>
-    string? UpdatedBy { get; }
+    Guid? UpdatedBy { get; }
 }

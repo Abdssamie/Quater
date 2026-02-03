@@ -178,7 +178,7 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
 });
 
 // Configure ASP.NET Core Identity with lockout settings
-builder.Services.AddIdentity<User, IdentityRole>(options =>
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     // Bind password settings from configuration
     var passwordConfig = builder.Configuration.GetSection("Identity:Password");

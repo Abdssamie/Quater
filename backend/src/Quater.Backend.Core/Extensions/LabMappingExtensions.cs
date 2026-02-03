@@ -31,7 +31,7 @@ public static class LabMappingExtensions
     /// <summary>
     /// Converts CreateLabDto to Lab entity
     /// </summary>
-    public static Lab ToEntity(this CreateLabDto dto, string createdBy)
+    public static Lab ToEntity(this CreateLabDto dto, Guid createdBy)
     {
         return new Lab
         {
@@ -46,7 +46,7 @@ public static class LabMappingExtensions
     /// <summary>
     /// Updates Lab entity from UpdateLabDto
     /// </summary>
-    public static void UpdateFromDto(this Lab lab, UpdateLabDto dto, string updatedBy)
+    public static void UpdateFromDto(this Lab lab, UpdateLabDto dto, Guid updatedBy)
     {
         lab.Name = dto.Name;
         lab.Location = dto.Location;

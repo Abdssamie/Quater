@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Quater.Shared.Models;
@@ -8,7 +9,7 @@ namespace Quater.Backend.Data;
 /// Database context for the Quater water quality lab management system.
 /// Inherits from IdentityDbContext to support ASP.NET Core Identity.
 /// </summary>
-public class QuaterDbContext : IdentityDbContext<User>
+public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
     public QuaterDbContext(DbContextOptions<QuaterDbContext> options)
         : base(options)

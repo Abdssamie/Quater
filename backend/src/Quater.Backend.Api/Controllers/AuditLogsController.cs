@@ -88,8 +88,9 @@ public class AuditLogsController : ControllerBase
     /// </summary>
     [HttpGet("user/{userId}")]
     [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByUser(
-        string userId,
+        Guid userId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)

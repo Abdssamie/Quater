@@ -77,7 +77,7 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
 
     /// <inheritdoc/>
     public async Task<PagedResult<AuditLogDto>> GetByUserAsync(
-        string userId,
+        Guid userId,
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken ct = default)
@@ -126,9 +126,9 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
             query = query.Where(a => a.EntityId == filter.EntityId.Value);
         }
 
-        if (!string.IsNullOrEmpty(filter.UserId))
+        if (filter.UserId.HasValue)
         {
-            query = query.Where(a => a.UserId == filter.UserId);
+            query = query.Where(a => a.UserId == filter.UserId.Value);
         }
 
         if (filter.Action.HasValue)

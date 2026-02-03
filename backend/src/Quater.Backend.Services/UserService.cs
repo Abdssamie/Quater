@@ -14,7 +14,7 @@ public class UserService(
     UserManager<User> userManager
     ) : IUserService
 {
-    public async Task<UserDto?> GetByIdAsync(string id, CancellationToken ct = default)
+    public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var user = await context.Users
             .AsNoTracking()
@@ -83,7 +83,7 @@ public class UserService(
         return users.Select(MapToDto);
     }
 
-    public async Task<UserDto> CreateAsync(CreateUserDto dto, string createdBy, CancellationToken ct = default)
+    public async Task<UserDto> CreateAsync(CreateUserDto dto, Guid createdBy, CancellationToken ct = default)
     {
         // Verify lab exists
         var labExists = await context.Labs.AnyAsync(l => l.Id == dto.LabId && !l.IsDeleted, ct);
@@ -114,9 +114,9 @@ public class UserService(
         return MapToDto(createdUser);
     }
 
-    public async Task<UserDto?> UpdateAsync(string id, UpdateUserDto dto, string updatedBy, CancellationToken ct = default)
+    public async Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto, Guid updatedBy, CancellationToken ct = default)
     {
-        var user = await userManager.FindByIdAsync(id);
+        var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
             return null;
 
@@ -158,9 +158,9 @@ public class UserService(
         return MapToDto(updatedUser);
     }
 
-    public async Task<bool> DeleteAsync(string id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var user = await userManager.FindByIdAsync(id);
+        var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
             return false;
 
@@ -171,9 +171,9 @@ public class UserService(
         return result.Succeeded;
     }
 
-    public async Task<bool> ChangePasswordAsync(string id, ChangePasswordDto dto, CancellationToken ct = default)
+    public async Task<bool> ChangePasswordAsync(Guid id, ChangePasswordDto dto, CancellationToken ct = default)
     {
-        var user = await userManager.FindByIdAsync(id);
+        var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
             return false;
 

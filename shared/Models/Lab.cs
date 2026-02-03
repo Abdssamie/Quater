@@ -41,9 +41,9 @@ public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
 
     // IAuditable interface properties - Managed by AuditInterceptor
     public DateTime CreatedAt { get; private set; }
-    public string CreatedBy { get; private set; } = string.Empty;
+    public Guid CreatedBy { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
-    public string? UpdatedBy { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
 
     // ISoftDelete interface properties
     public bool IsDeleted { get; private set; }

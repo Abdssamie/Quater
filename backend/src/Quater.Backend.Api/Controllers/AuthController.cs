@@ -208,11 +208,11 @@ public sealed class AuthController : ControllerBase
             // Create claims principal
             var claims = new List<Claim>
             {
-                new (OpenIddictConstants.Claims.Subject, user.Id),
-                new (OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new (OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new (QuaterClaimTypes.Role, user.Role.ToString()),
-                new (QuaterClaimTypes.LabId, user.LabId.ToString())
+                new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
+                new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
+                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new Claim(QuaterClaimTypes.Role, user.Role.ToString()),
+                new Claim(QuaterClaimTypes.LabId, user.LabId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -302,7 +302,7 @@ public sealed class AuthController : ControllerBase
             // Create a new claims principal with updated claims
             var claims = new List<Claim>
             {
-                new Claim(OpenIddictConstants.Claims.Subject, user.Id),
+                new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
                 new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
                 new Claim(QuaterClaimTypes.Role, user.Role.ToString()),

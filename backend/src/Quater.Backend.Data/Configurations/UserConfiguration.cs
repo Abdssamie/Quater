@@ -13,6 +13,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         entity.ToTable("Users");
 
+        entity.Property(e => e.Id)
+            .HasColumnType("uuid")
+            .ValueGeneratedOnAdd();
+
         // Enum stored as string for compatibility with SQLite desktop app
         // UserRole.Admin -> "Admin", UserRole.Technician -> "Technician"
         entity.Property(e => e.Role)
@@ -53,7 +57,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(e => e.User)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Restrict);
-
-
     }
 }

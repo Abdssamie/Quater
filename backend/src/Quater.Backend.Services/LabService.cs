@@ -55,7 +55,7 @@ public class LabService(
         return labs.Select(MapToDto);
     }
 
-    public async Task<LabDto> CreateAsync(CreateLabDto dto, string userId, CancellationToken ct = default)
+    public async Task<LabDto> CreateAsync(CreateLabDto dto, Guid userId, CancellationToken ct = default)
     {
         // Check for duplicate name
         var exists = await context.Labs.AnyAsync(l => l.Name == dto.Name && !l.IsDeleted, ct);
@@ -77,7 +77,7 @@ public class LabService(
         return MapToDto(lab);
     }
 
-    public async Task<LabDto?> UpdateAsync(Guid id, UpdateLabDto dto, string userId, CancellationToken ct = default)
+    public async Task<LabDto?> UpdateAsync(Guid id, UpdateLabDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Labs.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted)

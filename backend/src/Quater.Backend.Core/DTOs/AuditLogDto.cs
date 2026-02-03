@@ -16,7 +16,7 @@ namespace Quater.Backend.Core.DTOs;
 public record AuditLogDto
 {
     public Guid Id { get; init; }
-    public string UserId { get; init; } = string.Empty;
+    public Guid UserId { get; init; }
     public string? UserEmail { get; init; }
     public EntityType EntityType { get; init; }
     public Guid EntityId { get; init; }
@@ -47,7 +47,7 @@ public record AuditLogFilterDto
     /// <summary>
     /// Filter by user ID
     /// </summary>
-    public string? UserId { get; init; }
+    public Guid? UserId { get; init; }
 
     /// <summary>
     /// Filter by action type

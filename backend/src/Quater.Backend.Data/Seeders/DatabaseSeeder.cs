@@ -174,7 +174,7 @@ public static class DatabaseSeeder
         // Create admin user
         var admin = new User
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = Guid.NewGuid(),
             UserName = "admin@quater.local",
             Email = "admin@quater.local",
             EmailConfirmed = true,

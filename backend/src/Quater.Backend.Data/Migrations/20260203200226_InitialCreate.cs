@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Quater.Backend.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,7 @@ namespace Quater.Backend.Data.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
@@ -36,9 +36,9 @@ namespace Quater.Backend.Data.Migrations
                     ContactInfo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
@@ -108,14 +108,12 @@ namespace Quater.Backend.Data.Migrations
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
@@ -129,7 +127,7 @@ namespace Quater.Backend.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<string>(type: "text", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     ClaimType = table.Column<string>(type: "text", nullable: true),
                     ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
@@ -142,38 +140,6 @@ namespace Quater.Backend.Data.Migrations
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ConflictBackups",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    EntityType = table.Column<int>(type: "integer", maxLength: 100, nullable: false),
-                    ServerVersion = table.Column<string>(type: "text", nullable: false),
-                    ClientVersion = table.Column<string>(type: "text", nullable: false),
-                    ResolutionStrategy = table.Column<string>(type: "text", nullable: false),
-                    ConflictDetectedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ResolvedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    ResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    DeviceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LabId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ConflictBackups", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ConflictBackups_Labs_LabId",
-                        column: x => x.LabId,
-                        principalTable: "Labs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -191,16 +157,13 @@ namespace Quater.Backend.Data.Migrations
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    IsSynced = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     LabId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
@@ -218,15 +181,11 @@ namespace Quater.Backend.Data.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Role = table.Column<string>(type: "text", nullable: false),
                     LabId = table.Column<Guid>(type: "uuid", nullable: false),
                     LastLogin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea"),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -287,7 +246,7 @@ namespace Quater.Backend.Data.Migrations
                     Measurement_ParameterId = table.Column<Guid>(type: "uuid", nullable: false),
                     Measurement_Value = table.Column<double>(type: "double precision", nullable: false),
                     Measurement_Unit = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
                     TestDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     TechnicianName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     TestMethod = table.Column<string>(type: "text", nullable: false),
@@ -297,15 +256,12 @@ namespace Quater.Backend.Data.Migrations
                     IsVoided = table.Column<bool>(type: "boolean", nullable: false),
                     VoidReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    IsSynced = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false, defaultValueSql: "'\\x0000000000000001'::bytea")
                 },
                 constraints: table =>
@@ -325,7 +281,7 @@ namespace Quater.Backend.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     ClaimType = table.Column<string>(type: "text", nullable: true),
                     ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
@@ -347,7 +303,7 @@ namespace Quater.Backend.Data.Migrations
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
                     ProviderKey = table.Column<string>(type: "text", nullable: false),
                     ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -364,8 +320,8 @@ namespace Quater.Backend.Data.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    RoleId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -388,7 +344,7 @@ namespace Quater.Backend.Data.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Value = table.Column<string>(type: "text", nullable: true)
@@ -409,17 +365,13 @@ namespace Quater.Backend.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     EntityType = table.Column<int>(type: "integer", maxLength: 50, nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
                     Action = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
                     OldValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
                     NewValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
-                    ChangedFields = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsTruncated = table.Column<bool>(type: "boolean", nullable: false),
-                    OverflowStoragePath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ConflictBackupId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ConflictResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IpAddress = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
                     ArchivedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -427,11 +379,6 @@ namespace Quater.Backend.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditLogArchive", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AuditLogArchive_ConflictBackups_ConflictBackupId",
-                        column: x => x.ConflictBackupId,
-                        principalTable: "ConflictBackups",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AuditLogArchive_Users_UserId",
                         column: x => x.UserId,
@@ -445,17 +392,13 @@ namespace Quater.Backend.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    EntityType = table.Column<int>(type: "integer", maxLength: 50, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", maxLength: 100, nullable: false),
+                    EntityType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Action = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
+                    Action = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     OldValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
                     NewValue = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
-                    ChangedFields = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsTruncated = table.Column<bool>(type: "boolean", nullable: false),
-                    OverflowStoragePath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ConflictBackupId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ConflictResolutionNotes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IpAddress = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
                     IsArchived = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
@@ -464,39 +407,7 @@ namespace Quater.Backend.Data.Migrations
                 {
                     table.PrimaryKey("PK_AuditLogs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AuditLogs_ConflictBackups_ConflictBackupId",
-                        column: x => x.ConflictBackupId,
-                        principalTable: "ConflictBackups",
-                        principalColumn: "Id");
-                    table.ForeignKey(
                         name: "FK_AuditLogs_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SyncLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeviceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    UserId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LastSyncTimestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<int>(type: "integer", maxLength: 20, nullable: false),
-                    ErrorMessage = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    RecordsSynced = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    ConflictsDetected = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    ConflictsResolved = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    LastSyncedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SyncVersion = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SyncLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SyncLogs_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -568,11 +479,6 @@ namespace Quater.Backend.Data.Migrations
                 column: "ArchivedDate");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AuditLogArchive_ConflictBackupId",
-                table: "AuditLogArchive",
-                column: "ConflictBackupId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AuditLogArchive_EntityType_EntityId",
                 table: "AuditLogArchive",
                 columns: new[] { "EntityType", "EntityId" });
@@ -586,11 +492,6 @@ namespace Quater.Backend.Data.Migrations
                 name: "IX_AuditLogArchive_UserId",
                 table: "AuditLogArchive",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AuditLogs_ConflictBackupId",
-                table: "AuditLogs",
-                column: "ConflictBackupId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_EntityType_EntityId",
@@ -611,31 +512,6 @@ namespace Quater.Backend.Data.Migrations
                 name: "IX_AuditLogs_UserId",
                 table: "AuditLogs",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ConflictBackups_ConflictDetectedAt",
-                table: "ConflictBackups",
-                column: "ConflictDetectedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ConflictBackups_DeviceId",
-                table: "ConflictBackups",
-                column: "DeviceId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ConflictBackups_EntityType_EntityId",
-                table: "ConflictBackups",
-                columns: new[] { "EntityType", "EntityId" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ConflictBackups_LabId",
-                table: "ConflictBackups",
-                column: "LabId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ConflictBackups_ResolvedAt",
-                table: "ConflictBackups",
-                column: "ResolvedAt");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Labs_IsDeleted",
@@ -707,16 +583,6 @@ namespace Quater.Backend.Data.Migrations
                 column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Samples_IsSynced",
-                table: "Samples",
-                column: "IsSynced");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Samples_IsSynced_UpdatedAt",
-                table: "Samples",
-                columns: new[] { "IsSynced", "UpdatedAt" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Samples_LabId",
                 table: "Samples",
                 column: "LabId");
@@ -737,26 +603,6 @@ namespace Quater.Backend.Data.Migrations
                 column: "UpdatedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SyncLogs_DeviceId",
-                table: "SyncLogs",
-                column: "DeviceId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SyncLogs_DeviceId_LastSyncTimestamp",
-                table: "SyncLogs",
-                columns: new[] { "DeviceId", "LastSyncTimestamp" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SyncLogs_LastSyncTimestamp",
-                table: "SyncLogs",
-                column: "LastSyncTimestamp");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SyncLogs_UserId",
-                table: "SyncLogs",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_TestResults_ComplianceStatus",
                 table: "TestResults",
                 column: "ComplianceStatus");
@@ -765,16 +611,6 @@ namespace Quater.Backend.Data.Migrations
                 name: "IX_TestResults_IsDeleted",
                 table: "TestResults",
                 column: "IsDeleted");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TestResults_IsSynced",
-                table: "TestResults",
-                column: "IsSynced");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TestResults_IsSynced_UpdatedAt",
-                table: "TestResults",
-                columns: new[] { "IsSynced", "UpdatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TestResults_SampleId",
@@ -853,22 +689,16 @@ namespace Quater.Backend.Data.Migrations
                 name: "Parameters");
 
             migrationBuilder.DropTable(
-                name: "SyncLogs");
-
-            migrationBuilder.DropTable(
                 name: "TestResults");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "ConflictBackups");
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictAuthorizations");
-
-            migrationBuilder.DropTable(
-                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Samples");

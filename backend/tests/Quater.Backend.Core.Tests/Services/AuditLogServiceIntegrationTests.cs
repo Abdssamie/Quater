@@ -51,10 +51,13 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Seed users
+        var userId1 = Guid.Parse("550e8400-e29b-41d4-a716-446655440010");
+        var userId2 = Guid.Parse("550e8400-e29b-41d4-a716-446655440011");
+        
         var users = new List<User>
         {
-            new() { Id = "user-1", UserName = "user1", Email = "user1@example.com", SecurityStamp = "stamp1", LabId = lab.Id },
-            new() { Id = "user-2", UserName = "user2", Email = "user2@example.com", SecurityStamp = "stamp2", LabId = lab.Id }
+            new() { Id = userId1, UserName = "user1", Email = "user1@example.com", SecurityStamp = "stamp1", LabId = lab.Id },
+            new() { Id = userId2, UserName = "user2", Email = "user2@example.com", SecurityStamp = "stamp2", LabId = lab.Id }
         };
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();
@@ -72,7 +75,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
                 Action = AuditAction.Create,
                 EntityType = EntityType.Sample,
                 EntityId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                UserId = "user-1",
+                UserId = userId1,
                 Timestamp = _baseTime, // Jan 1
                 IpAddress = "127.0.0.1"
             },
@@ -82,7 +85,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
                 Action = AuditAction.Update,
                 EntityType = EntityType.Sample,
                 EntityId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                UserId = "user-1",
+                UserId = userId1,
                 Timestamp = _baseTime.AddDays(1), // Jan 2
                 IpAddress = "127.0.0.1"
             },
@@ -93,7 +96,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
                 Action = AuditAction.Create,
                 EntityType = EntityType.Lab,
                 EntityId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                UserId = "user-2",
+                UserId = userId2,
                 Timestamp = _baseTime.AddDays(2), // Jan 3
                 IpAddress = "192.168.1.1"
             },
@@ -102,9 +105,9 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
             {
                 Id = Guid.NewGuid(),
                 Action = AuditAction.Delete,
-                EntityType = EntityType.Sample,
+         EntityType = EntityType.Sample,
                 EntityId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-                UserId = "user-1",
+                UserId = userId1,
                 Timestamp = _baseTime.AddMonths(-6), // Old log
                 IpAddress = "127.0.0.1",
                 IsArchived = true
@@ -148,11 +151,12 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
     public async Task GetByUserAsync_FiltersCorrectly()
     {
         // Act
-        var result = await _service.GetByUserAsync("user-2");
+        var userId2 = Guid.Parse("550e8400-e29b-41d4-a716-446655440011");
+        var result = await _service.GetByUserAsync(userId2);
 
         // Assert
         result.Items.Should().HaveCount(1);
-        result.Items.First().UserId.Should().Be("user-2");
+        result.Items.First().UserId.Should().Be(userId2);
         result.Items.First().EntityType.Should().Be(EntityType.Lab);
     }
 

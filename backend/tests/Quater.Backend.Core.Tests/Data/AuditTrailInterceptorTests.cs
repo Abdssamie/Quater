@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;
@@ -58,7 +58,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         auditLog.Should().NotBeNull();
         auditLog!.Action.Should().Be(AuditAction.Create);
         auditLog.EntityType.Should().Be(EntityType.Sample);
-        auditLog.UserId.Should().Be("System"); // Default when no ICurrentUserService
+        auditLog.UserId.Should().Be(SystemUser.GetId()); // Default when no ICurrentUserService
         auditLog.NewValue.Should().NotBeNullOrEmpty();
         auditLog.OldValue.Should().BeNull();
     }
@@ -180,7 +180,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         values.Should().NotBeNull();
         values!.Should().ContainKey("Notes");
         
-        var notesValue = values["Notes"].GetString();
+        var notesValue = values?["Notes"].GetString();
         notesValue.Should().EndWith("...[TRUNCATED]");
         notesValue.Should().HaveLength(49); // 35 chars + "...[TRUNCATED]" (14 chars) = 49
     }
@@ -193,7 +193,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var longString1 = new string('A', 80);
         var longString2 = new string('B', 90);
         
-        var lab = MockDataFactory.CreateLab("Test Lab");
+        var lab = MockDataFactory.CreateLab();
         lab.ContactInfo = longString1;
         lab.Location = longString2;
 
@@ -348,8 +348,8 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         oldValues.Should().ContainKey("CollectorName");
         newValues.Should().ContainKey("CollectorName");
         
-        oldValues["CollectorName"].GetString().Should().Be("Original Collector");
-        newValues["CollectorName"].GetString().Should().Be("Updated Collector");
+        oldValues?["CollectorName"].GetString().Should().Be("Original Collector");
+        newValues?["CollectorName"].GetString().Should().Be("Updated Collector");
 
         // Should NOT contain Notes (unchanged)
         oldValues.Should().NotContainKey("Notes");
@@ -456,7 +456,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             .FirstOrDefaultAsync(a => a.EntityId == sample.Id);
 
         auditLog.Should().NotBeNull();
-        auditLog!.UserId.Should().Be("System");
+        auditLog!.UserId.Should().Be(SystemUser.GetId());
     }
 
     [Fact]
@@ -464,9 +464,10 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     {
         // Arrange - Create the test user first to satisfy FK constraint
         var labId = await GetFirstLabIdAsync();
+        var testUserId = Guid.Parse("550e8400-e29b-41d4-a716-446655440001");
         var testUser = new User
         {
-            Id = "test-user-123",
+            Id = testUserId,
             UserName = "testuser123",
             NormalizedUserName = "TESTUSER123",
             Email = "testuser123@example.com",
@@ -481,7 +482,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         _context.Users.Add(testUser);
         await _context.SaveChangesAsync();
 
-        var mockUserService = new MockCurrentUserService("test-user-123");
+        var mockUserService = new MockCurrentUserService(testUserId);
         using var customContext = CreateContextWithUserService(mockUserService);
         
         var sample = MockDataFactory.CreateSample(labId);
@@ -496,7 +497,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             .FirstOrDefaultAsync(a => a.EntityId == sample.Id);
 
         auditLog.Should().NotBeNull();
-        auditLog!.UserId.Should().Be("test-user-123");
+        auditLog!.UserId.Should().Be(testUserId);
     }
 
     #endregion
@@ -527,7 +528,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     public async Task SaveChanges_LabEntity_CreatesAuditLogWithLabEntityType()
     {
         // Arrange
-        var lab = MockDataFactory.CreateLab("Test Lab");
+        var lab = MockDataFactory.CreateLab();
 
         // Act
         _context.Labs.Add(lab);
@@ -551,9 +552,10 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     {
         // Arrange - User does NOT implement IAuditable (security reasons)
         var labId = await GetFirstLabIdAsync();
+        var userId = Guid.Parse("550e8400-e29b-41d4-a716-446655440002");
         var user = new User
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = userId,
             UserName = "testuser",
             NormalizedUserName = "TESTUSER",
             Email = "test@example.com",
@@ -573,7 +575,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         // Assert - No audit log should be created for User
         using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs
-            .Where(a => a.EntityId.ToString() == user.Id)
+            .Where(a => a.EntityId == userId)
             .ToListAsync();
 
         auditLogs.Should().BeEmpty();
@@ -752,12 +754,13 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     {
         var connectionString = $"{_fixture.Factory.ConnectionString};Include Error Detail=true";
 
+        var mockUserService = new MockCurrentUserService(SystemUser.GetId());
         var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>()
             .UseNpgsql(connectionString)
             .EnableSensitiveDataLogging()
             .AddInterceptors(
                 new SoftDeleteInterceptor(),
-                new AuditTrailInterceptor(ipAddress: ipAddress));
+                new AuditTrailInterceptor(mockUserService, ipAddress));
 
         var context = new QuaterDbContext(optionsBuilder.Options);
         context.Database.EnsureCreated();
@@ -772,12 +775,12 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
 /// </summary>
 public class MockCurrentUserService : ICurrentUserService
 {
-    private readonly string _userId;
+    private readonly Guid _userId;
 
-    public MockCurrentUserService(string userId)
+    public MockCurrentUserService(Guid userId)
     {
         _userId = userId;
     }
 
-    public string GetCurrentUserId() => _userId;
+    public Guid GetCurrentUserId() => _userId;
 }

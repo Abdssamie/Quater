@@ -37,7 +37,7 @@ public interface IAuditLogService
     /// Get audit logs by user ID
     /// </summary>
     Task<PagedResult<AuditLogDto>> GetByUserAsync(
-        string userId,
+        Guid userId,
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken ct = default);

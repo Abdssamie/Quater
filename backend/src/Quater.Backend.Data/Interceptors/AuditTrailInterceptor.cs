@@ -5,6 +5,7 @@ using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 using Quater.Shared.Models;
 using System.Text.Json;
+using Quater.Backend.Core.Constants;
 
 namespace Quater.Backend.Data.Interceptors;
 
@@ -35,7 +36,7 @@ namespace Quater.Backend.Data.Interceptors;
 /// </remarks>
 public class AuditTrailInterceptor : SaveChangesInterceptor
 {
-    private readonly ICurrentUserService? _currentUserService;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AuditTrailInterceptor>? _logger;
     private readonly string? _ipAddress;
     private readonly AsyncLocal<bool> _isSavingAuditLogs = new();
@@ -44,15 +45,15 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// <summary>
     /// Initializes a new instance of the AuditTrailInterceptor.
     /// </summary>
-    /// <param name="currentUserService">Service to get current user information (optional).</param>
+    /// <param name="currentUserService">Service to get current user information.</param>
     /// <param name="ipAddress">IP address of the client making the change (optional).</param>
     /// <param name="logger">Logger for diagnostic information (optional).</param>
     public AuditTrailInterceptor(
-        ICurrentUserService? currentUserService = null,
+        ICurrentUserService currentUserService,
         string? ipAddress = null,
         ILogger<AuditTrailInterceptor>? logger = null)
     {
-        _currentUserService = currentUserService;
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _ipAddress = ipAddress;
         _logger = logger;
     }
@@ -157,7 +158,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// <param name="context">The DbContext containing the entities.</param>
     private void CaptureAuditData(DbContext context)
     {
-        var userId = _currentUserService?.GetCurrentUserId() ?? "System";
+        var userId = _currentUserService.GetCurrentUserId();
         _logger?.LogDebug("Capturing audit data for user: {UserId}", userId);
 
         var timestamp = DateTime.UtcNow;
@@ -352,7 +353,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// </summary>
     private class AuditLogData
     {
-        public required string UserId { get; init; }
+        public required Guid UserId { get; init; }
         public required EntityType EntityType { get; init; }
         public required Guid EntityId { get; init; }
         public required AuditAction Action { get; init; }
@@ -374,5 +375,5 @@ public interface ICurrentUserService
     /// Gets the current user's ID.
     /// </summary>
     /// <returns>The user ID, or "System" if no user is authenticated.</returns>
-    string GetCurrentUserId();
+    Guid GetCurrentUserId();
 }

@@ -67,17 +67,13 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
 
     // IAuditable interface properties - Managed by AuditInterceptor
     public DateTime CreatedAt { get; private set; }
-    public string CreatedBy { get; private set; } = string.Empty;
+    public Guid CreatedBy { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
-    public string? UpdatedBy { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
 
     // ISoftDelete interface properties
     public DateTime? DeletedAt { get; set; }
     public string? DeletedBy { get; set; }
-
-    // ISyncable interface properties
-    public DateTime LastSyncedAt { get; init; }
-    public string? SyncVersion { get; set; }
 
     // IConcurrent interface properties
     [Timestamp]

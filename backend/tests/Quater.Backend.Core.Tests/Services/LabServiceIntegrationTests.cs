@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
@@ -56,7 +57,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.CreateAsync(dto, "test-user");
+        var result = await _service.CreateAsync(dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();
@@ -68,7 +69,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         var persisted = await _context.Labs.FindAsync(result.Id);
         persisted.Should().NotBeNull();
         persisted!.Name.Should().Be(dto.Name);
-        persisted.CreatedBy.Should().Be("System"); // Set by AuditInterceptor (no ICurrentUserService in tests)
+        persisted.CreatedBy.Should().Be(SystemUser.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]
@@ -115,7 +116,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.UpdateAsync(lab.Id, dto, "update-user");
+        var result = await _service.UpdateAsync(lab.Id, dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();
@@ -125,7 +126,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         // Verify persistence
         var persisted = await _context.Labs.FindAsync(lab.Id);
         persisted!.Name.Should().Be(dto.Name);
-        persisted.UpdatedBy.Should().Be("System"); // Set by AuditInterceptor (no ICurrentUserService in tests)
+        persisted.UpdatedBy.Should().Be(SystemUser.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]

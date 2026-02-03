@@ -13,12 +13,17 @@ public static class ClaimsPrincipalExtensions
     /// <param name="principal">The claims principal.</param>
     /// <returns>The user ID.</returns>
     /// <exception cref="InvalidOperationException">Thrown when user ID is not found in claims.</exception>
-    public static string GetUserIdOrThrow(this ClaimsPrincipal principal)
+    public static Guid GetUserIdOrThrow(this ClaimsPrincipal principal)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        var userIdString = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdString))
         {
             throw new InvalidOperationException("User ID not found in claims. Ensure the user is authenticated.");
+        }
+
+        if (!Guid.TryParse(userIdString, out var userId))
+        {
+            throw new InvalidOperationException("User ID in claims is not a valid GUID.");
         }
 
         return userId;

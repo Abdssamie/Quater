@@ -19,15 +19,21 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .IsRequired()
             .HasMaxLength(100);
 
+        // Enum stored as string for compatibility with SQLite desktop app
+        // EntityType.Lab -> "Lab"
         entity.Property(e => e.EntityType)
             .IsRequired()
+            .HasConversion<string>()
             .HasMaxLength(50);
 
         entity.Property(e => e.EntityId)
             .IsRequired();
 
+        // Enum stored as string for compatibility with SQLite desktop app
+        // AuditAction.Create -> "Create"
         entity.Property(e => e.Action)
             .IsRequired()
+            .HasConversion<string>()
             .HasMaxLength(20);
 
         // No MaxLength - allows unlimited text storage (nvarchar(max) or text)

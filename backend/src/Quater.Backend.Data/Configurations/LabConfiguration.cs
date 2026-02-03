@@ -35,12 +35,12 @@ public class LabConfiguration : IEntityTypeConfiguration<Lab>
 
         entity.Property(e => e.CreatedBy)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         entity.Property(e => e.UpdatedAt);
 
         entity.Property(e => e.UpdatedBy)
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         // ISoftDelete properties
         entity.Property(e => e.IsDeleted)
@@ -75,5 +75,8 @@ public class LabConfiguration : IEntityTypeConfiguration<Lab>
             .WithOne(e => e.Lab)
             .HasForeignKey(e => e.LabId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Global query filter for soft delete
+        entity.HasQueryFilter(e => !e.IsDeleted);
     }
 }

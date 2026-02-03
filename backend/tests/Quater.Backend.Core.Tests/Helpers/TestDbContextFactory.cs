@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -134,10 +136,13 @@ public class TestDbContextFactory : IAsyncLifetime
 
         if (withInterceptors)
         {
+            // Create a mock user service that returns SystemUser.GetId()
+            var mockUserService = new TestCurrentUserService();
+            
             optionsBuilder.AddInterceptors(
                 new SoftDeleteInterceptor(),
-                new AuditInterceptor(),
-                new AuditTrailInterceptor());
+                new AuditInterceptor(mockUserService),
+                new AuditTrailInterceptor(mockUserService));
         }
 
         var context = new QuaterDbContext(optionsBuilder.Options);
@@ -162,7 +167,8 @@ public class TestDbContextFactory : IAsyncLifetime
     private async Task SeedSystemUserAsync(QuaterDbContext context)
     {
         // Check if System user already exists
-        var systemUserExists = await context.Users.AnyAsync(u => u.Id == "System");
+        var systemUserId = SystemUser.GetId();
+        var systemUserExists = await context.Users.AnyAsync(u => u.Id == systemUserId);
         if (systemUserExists) return;
 
         // First, create a System lab (required for User.LabId FK)
@@ -179,7 +185,7 @@ public class TestDbContextFactory : IAsyncLifetime
         // Create the System user (required for AuditLog.UserId FK)
         var systemUser = new User
         {
-            Id = "System",
+            Id = systemUserId,
             UserName = "system",
             NormalizedUserName = "SYSTEM",
             Email = "system@quater.app",
@@ -258,4 +264,13 @@ public class TestDatabaseCollection : ICollectionFixture<TestDbContextFactoryFix
     // This class has no code, and is never created. Its purpose is simply
     // to be the place to apply [CollectionDefinition] and all the
     // ICollectionFixture<> interfaces.
+}
+
+/// <summary>
+/// Mock implementation of ICurrentUserService for testing.
+/// Returns SystemUser.GetId() to simulate system operations.
+/// </summary>
+internal class TestCurrentUserService : ICurrentUserService
+{
+    public Guid GetCurrentUserId() => SystemUser.GetId();
 }

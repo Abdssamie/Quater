@@ -40,7 +40,7 @@ public static class SampleMappingExtensions
     /// <summary>
     /// Converts CreateSampleDto to Sample entity
     /// </summary>
-    public static Sample ToEntity(this CreateSampleDto dto, string createdBy)
+    public static Sample ToEntity(this CreateSampleDto dto, Guid createdBy)
     {
         return new Sample
         {
@@ -51,15 +51,14 @@ public static class SampleMappingExtensions
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            LabId = dto.LabId,
-            LastSyncedAt = DateTime.MinValue
+            LabId = dto.LabId
         };
     }
 
     /// <summary>
     /// Updates Sample entity from UpdateSampleDto
     /// </summary>
-    public static void UpdateFromDto(this Sample sample, UpdateSampleDto dto, string updatedBy)
+    public static void UpdateFromDto(this Sample sample, UpdateSampleDto dto, Guid updatedBy)
     {
         sample.Type = dto.Type;
         sample.Location = new Location(dto.LocationLatitude, dto.LocationLongitude, dto.LocationDescription, dto.LocationHierarchy);

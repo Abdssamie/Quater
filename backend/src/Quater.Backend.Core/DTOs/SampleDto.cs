@@ -20,11 +20,11 @@ public class SampleDto
     public SampleStatus Status { get; set; }
     public int Version { get; set; }
     public DateTime LastModified { get; set; }
-    public string LastModifiedBy { get; set; } = string.Empty;
+    public Guid LastModifiedBy { get; set; }
     public bool IsDeleted { get; set; }
     public bool IsSynced { get; set; }
     public Guid LabId { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid CreatedBy { get; set; }
     public DateTime CreatedDate { get; set; }
 }
 

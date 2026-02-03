@@ -29,11 +29,11 @@ public static class UserMappingExtensions
     /// <summary>
     /// Converts CreateUserDto to User entity
     /// </summary>
-    public static User ToEntity(this CreateUserDto dto, string createdBy)
+    public static User ToEntity(this CreateUserDto dto, Guid createdBy)
     {
         return new User
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = Guid.NewGuid(),
             UserName = dto.UserName,
             Email = dto.Email,
             Role = dto.Role,
@@ -45,7 +45,7 @@ public static class UserMappingExtensions
     /// <summary>
     /// Updates User entity from UpdateUserDto
     /// </summary>
-    public static void UpdateFromDto(this User user, UpdateUserDto dto, string updatedBy)
+    public static void UpdateFromDto(this User user, UpdateUserDto dto, Guid updatedBy)
     {
         if (dto.UserName != null)
             user.UserName = dto.UserName;

@@ -64,7 +64,7 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.CreateAsync(dto, "test-tech");
+        var result = await _service.CreateAsync(dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();
@@ -99,7 +99,7 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.CreateAsync(dto, "test-tech");
+        var result = await _service.CreateAsync(dto, Guid.NewGuid());
 
         // Assert
         result.ComplianceStatus.Should().Be(ComplianceStatus.Fail);
@@ -161,7 +161,7 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.UpdateAsync(existing.Id, dto, "test-tech");
+        var result = await _service.UpdateAsync(existing.Id, dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();

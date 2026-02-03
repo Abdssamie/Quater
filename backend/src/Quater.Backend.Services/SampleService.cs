@@ -1,8 +1,6 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
-using Quater.Backend.Core.Exceptions;
 using Quater.Shared.Enums;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
@@ -71,7 +69,7 @@ public class SampleService(
         };
     }
 
-    public async Task<SampleDto> CreateAsync(CreateSampleDto dto, string userId, CancellationToken ct = default)
+    public async Task<SampleDto> CreateAsync(CreateSampleDto dto, Guid userId, CancellationToken ct = default)
     {
         var sample = new Sample
         {
@@ -94,7 +92,7 @@ public class SampleService(
         return MapToDto(sample);
     }
 
-    public async Task<SampleDto?> UpdateAsync(Guid id, UpdateSampleDto dto, string userId, CancellationToken ct = default)
+    public async Task<SampleDto?> UpdateAsync(Guid id, UpdateSampleDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Samples.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted) 

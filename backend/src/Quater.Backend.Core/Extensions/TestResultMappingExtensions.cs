@@ -42,9 +42,9 @@ public static class TestResultMappingExtensions
     /// </summary>
     /// <param name="dto">The DTO containing test result data</param>
     /// <param name="parameter">The Parameter entity (required for Measurement ValueObject creation)</param>
-    /// <param name="createdBy">Username of the creator</param>
+    /// <param name="createdBy">User ID of the creator</param>
     /// <param name="complianceStatus">Compliance status (defaults to Pass)</param>
-    public static TestResult ToEntity(this CreateTestResultDto dto, Parameter parameter, string createdBy, ComplianceStatus complianceStatus = ComplianceStatus.Pass)
+    public static TestResult ToEntity(this CreateTestResultDto dto, Parameter parameter, Guid createdBy, ComplianceStatus complianceStatus = ComplianceStatus.Pass)
     {
         return new TestResult
         {
@@ -55,8 +55,7 @@ public static class TestResultMappingExtensions
             TechnicianName = dto.TechnicianName,
             TestMethod = dto.TestMethod,
             ComplianceStatus = complianceStatus,
-            Status = TestResultStatus.Draft,
-            LastSyncedAt = DateTime.MinValue
+            Status = TestResultStatus.Draft
         };
     }
 
@@ -66,8 +65,8 @@ public static class TestResultMappingExtensions
     /// <param name="testResult">The TestResult entity to update</param>
     /// <param name="dto">The DTO containing updated data</param>
     /// <param name="parameter">The Parameter entity (required for Measurement ValueObject creation)</param>
-    /// <param name="updatedBy">Username of the updater</param>
-    public static void UpdateFromDto(this TestResult testResult, UpdateTestResultDto dto, Parameter parameter, string updatedBy)
+    /// <param name="updatedBy">User ID of the updater</param>
+    public static void UpdateFromDto(this TestResult testResult, UpdateTestResultDto dto, Parameter parameter, Guid updatedBy)
     {
         testResult.Measurement = new Measurement(parameter, dto.Value, dto.Unit);
         testResult.TestDate = dto.TestDate;

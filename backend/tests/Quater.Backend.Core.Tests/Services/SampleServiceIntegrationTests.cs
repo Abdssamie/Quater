@@ -75,7 +75,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.CreateAsync(dto, "test-user");
+        var result = await _service.CreateAsync(dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();
@@ -104,7 +104,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         };
 
         // Act
-        var result = await _service.UpdateAsync(sample.Id, dto, "test-user");
+        var result = await _service.UpdateAsync(sample.Id, dto, Guid.NewGuid());
 
         // Assert
         result.Should().NotBeNull();
@@ -134,7 +134,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
 
         // Act & Assert
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => 
-            _service.UpdateAsync(sample.Id, dto, "test-user"));
+            _service.UpdateAsync(sample.Id, dto, Guid.NewGuid()));
     }
 
     [Fact]

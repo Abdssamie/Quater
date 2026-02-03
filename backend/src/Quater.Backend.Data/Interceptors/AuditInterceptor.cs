@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Quater.Backend.Core.Constants;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Backend.Data.Interceptors;
@@ -10,12 +11,12 @@ namespace Quater.Backend.Data.Interceptors;
 /// </summary>
 public class AuditInterceptor : SaveChangesInterceptor
 {
-    private readonly ICurrentUserService? _currentUserService;
+    private readonly ICurrentUserService _currentUserService;
     private readonly TimeProvider _timeProvider;
 
-    public AuditInterceptor(ICurrentUserService? currentUserService = null, TimeProvider? timeProvider = null)
+    public AuditInterceptor(ICurrentUserService currentUserService, TimeProvider? timeProvider = null)
     {
-        _currentUserService = currentUserService;
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -27,6 +28,7 @@ public class AuditInterceptor : SaveChangesInterceptor
         {
             ApplyAuditInfo(eventData.Context);
         }
+
         return base.SavingChanges(eventData, result);
     }
 
@@ -39,12 +41,13 @@ public class AuditInterceptor : SaveChangesInterceptor
         {
             ApplyAuditInfo(eventData.Context);
         }
+
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
     private void ApplyAuditInfo(DbContext context)
     {
-        var userId = _currentUserService?.GetCurrentUserId() ?? "System";
+        var userId = _currentUserService.GetCurrentUserId();
         var now = _timeProvider.GetUtcNow().UtcDateTime;
 
         var entries = context.ChangeTracker

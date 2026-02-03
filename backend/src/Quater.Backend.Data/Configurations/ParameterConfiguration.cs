@@ -36,12 +36,12 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
 
         entity.Property(e => e.CreatedBy)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         entity.Property(e => e.UpdatedAt);
 
         entity.Property(e => e.UpdatedBy)
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         // ISoftDelete properties
         entity.Property(e => e.IsDeleted)
@@ -52,13 +52,6 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
 
         entity.Property(e => e.DeletedBy)
             .HasMaxLength(100);
-
-        // ISyncable properties
-        entity.Property(e => e.LastSyncedAt)
-            .IsRequired();
-
-        entity.Property(e => e.SyncVersion)
-            .HasMaxLength(50);
 
         // IConcurrent properties
         entity.Property(e => e.RowVersion)
@@ -76,5 +69,8 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
 
         entity.HasIndex(e => e.IsDeleted)
             .HasDatabaseName("IX_Parameters_IsDeleted");
+
+        // Global query filter for soft delete
+        entity.HasQueryFilter(e => !e.IsDeleted);
     }
 }

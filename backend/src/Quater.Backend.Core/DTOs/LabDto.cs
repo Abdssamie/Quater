@@ -14,9 +14,9 @@ public class LabDto
     public DateTime CreatedDate { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 }
 
 /// <summary>

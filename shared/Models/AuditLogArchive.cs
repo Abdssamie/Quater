@@ -19,8 +19,7 @@ public sealed class AuditLogArchive : IEntity
     /// Foreign key to User
     /// </summary>
     [Required]
-    [MaxLength(100)]
-    public string UserId { get; init; } = string.Empty;
+    public Guid UserId { get; init; }
 
     /// <summary>
     /// Type of entity modified
