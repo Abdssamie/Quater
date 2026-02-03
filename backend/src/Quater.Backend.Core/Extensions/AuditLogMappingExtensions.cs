@@ -25,7 +25,7 @@ public static class AuditLogMappingExtensions
         {
             Id = auditLog.Id,
             UserId = auditLog.UserId,
-            UserEmail = auditLog.User.Email,
+            UserEmail = auditLog.User?.Email,
             EntityType = auditLog.EntityType,
             EntityId = auditLog.EntityId,
             Action = auditLog.Action,
