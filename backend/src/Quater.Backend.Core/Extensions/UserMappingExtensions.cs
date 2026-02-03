@@ -20,14 +20,9 @@ public static class UserMappingExtensions
             Email = user.Email,
             Role = user.Role,
             LabId = user.LabId,
-            LabName = user.Lab?.Name,
-            CreatedDate = user.CreatedAt,
+            LabName = user.Lab.Name,
             LastLogin = user.LastLogin,
             IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt,
-            CreatedBy = user.CreatedBy,
-            UpdatedAt = user.UpdatedAt,
-            UpdatedBy = user.UpdatedBy
         };
     }
 
@@ -36,7 +31,6 @@ public static class UserMappingExtensions
     /// </summary>
     public static User ToEntity(this CreateUserDto dto, string createdBy)
     {
-        var now = DateTime.UtcNow;
         return new User
         {
             Id = Guid.NewGuid().ToString(),
@@ -45,8 +39,6 @@ public static class UserMappingExtensions
             Role = dto.Role,
             LabId = dto.LabId,
             IsActive = true,
-            CreatedAt = now,
-            CreatedBy = createdBy
         };
     }
 
@@ -69,9 +61,6 @@ public static class UserMappingExtensions
 
         if (dto.IsActive.HasValue)
             user.IsActive = dto.IsActive.Value;
-
-        user.UpdatedAt = DateTime.UtcNow;
-        user.UpdatedBy = updatedBy;
     }
 
     /// <summary>

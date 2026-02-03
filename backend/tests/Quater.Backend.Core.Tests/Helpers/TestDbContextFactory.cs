@@ -36,7 +36,8 @@ public class TestDbContextFactory : IAsyncLifetime
     /// Gets the connection string for the test database.
     /// </summary>
     public string ConnectionString => _connectionString
-        ?? throw new InvalidOperationException("Container not initialized. Call InitializeAsync first.");
+                                      ?? throw new InvalidOperationException(
+                                          "Container not initialized. Call InitializeAsync first.");
 
     /// <summary>
     /// Initializes the PostgreSQL container.
@@ -187,8 +188,6 @@ public class TestDbContextFactory : IAsyncLifetime
             EmailConfirmed = true,
             Role = UserRole.Admin,
             LabId = systemLab.Id,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System",
             IsActive = true,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             SecurityStamp = Guid.NewGuid().ToString()
@@ -228,7 +227,6 @@ public class TestDbContextFactory : IAsyncLifetime
                 "or use the shared fixture pattern with [Collection(\"PostgreSQL\")].");
         }
     }
-
 }
 
 /// <summary>

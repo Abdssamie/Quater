@@ -26,19 +26,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasDefaultValue(true);
 
-        // IAuditable properties
-        entity.Property(e => e.CreatedAt)
-            .IsRequired();
-
-        entity.Property(e => e.CreatedBy)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        entity.Property(e => e.UpdatedAt);
-
-        entity.Property(e => e.UpdatedBy)
-            .HasMaxLength(100);
-
         // IConcurrent properties
         entity.Property(e => e.RowVersion)
             .IsRowVersion()

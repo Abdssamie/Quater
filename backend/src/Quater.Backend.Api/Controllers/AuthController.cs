@@ -67,8 +67,6 @@ public sealed class AuthController : ControllerBase
             Role = request.Role,
             LabId = request.LabId,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "System"
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -494,7 +492,6 @@ public sealed class AuthController : ControllerBase
             role = user.Role.ToString(),
             labId = user.LabId,
             isActive = user.IsActive,
-            createdDate = user.CreatedAt,
             lastLogin = user.LastLogin
         });
     }

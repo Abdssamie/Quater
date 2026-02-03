@@ -11,8 +11,8 @@ namespace Quater.Backend.Services;
 
 public class UserService(
     QuaterDbContext context,
-    UserManager<User> userManager,
-    TimeProvider timeProvider) : IUserService
+    UserManager<User> userManager
+    ) : IUserService
 {
     public async Task<UserDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
@@ -90,8 +90,6 @@ public class UserService(
         if (!labExists)
             throw new NotFoundException(ErrorMessages.LabNotFound);
 
-        var now = timeProvider.GetUtcNow().DateTime;
-
         var user = new User
         {
             UserName = dto.UserName,
@@ -99,8 +97,6 @@ public class UserService(
             Role = dto.Role,
             LabId = dto.LabId,
             IsActive = true,
-            CreatedAt = now,
-            CreatedBy = createdBy
         };
 
         var result = await userManager.CreateAsync(user, dto.Password);
@@ -123,8 +119,6 @@ public class UserService(
         var user = await userManager.FindByIdAsync(id);
         if (user == null)
             return null;
-
-        var now = timeProvider.GetUtcNow().DateTime;
 
         // Update fields if provided
         if (!string.IsNullOrEmpty(dto.UserName))
@@ -149,9 +143,6 @@ public class UserService(
         if (dto.IsActive.HasValue)
             user.IsActive = dto.IsActive.Value;
 
-        user.UpdatedAt = now;
-        user.UpdatedBy = updatedBy;
-
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
@@ -175,7 +166,6 @@ public class UserService(
 
         // Soft delete by marking as inactive
         user.IsActive = false;
-        user.UpdatedAt = timeProvider.GetUtcNow().DateTime;
 
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded;
@@ -198,12 +188,8 @@ public class UserService(
         Email = user.Email,
         Role = user.Role,
         LabId = user.LabId,
-        LabName = user.Lab?.Name,
+        LabName = user.Lab.Name,
         LastLogin = user.LastLogin,
         IsActive = user.IsActive,
-        CreatedAt = user.CreatedAt,
-        CreatedBy = user.CreatedBy,
-        UpdatedAt = user.UpdatedAt,
-        UpdatedBy = user.UpdatedBy
     };
 }

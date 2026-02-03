@@ -225,10 +225,6 @@ public static class DatabaseSeeder
             Role = UserRole.Admin,
             LabId = defaultLab.Id,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            CreatedBy = "system",
-            UpdatedBy = "system"
         };
 
         // Get admin password from environment variable or generate a secure random one
