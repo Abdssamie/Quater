@@ -70,7 +70,7 @@ public class ParameterService(
         if (exists)
             throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         var parameter = new Parameter
         {
@@ -107,7 +107,7 @@ public class ParameterService(
         if (duplicateExists)
             throw new ConflictException(ErrorMessages.ParameterAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         existing.Name = dto.Name;
         existing.Unit = dto.Unit;
@@ -133,7 +133,7 @@ public class ParameterService(
 
         // Soft delete by marking as inactive
         parameter.IsActive = false;
-        parameter.UpdatedAt = timeProvider.GetUtcNow().DateTime;
+        parameter.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
         parameter.UpdatedBy = "system"; // TODO: Get from current user context
 
         await context.SaveChangesAsync(ct);

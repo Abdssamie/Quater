@@ -63,7 +63,7 @@ public class LabService(
         if (exists)
             throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         var lab = new Lab
         {
@@ -95,7 +95,7 @@ public class LabService(
         if (duplicateExists)
             throw new ConflictException(ErrorMessages.LabAlreadyExists);
 
-        var now = timeProvider.GetUtcNow().DateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         existing.Name = dto.Name;
         existing.Location = dto.Location;
@@ -117,7 +117,7 @@ public class LabService(
 
         // Soft delete
         lab.IsDeleted = true;
-        lab.DeletedAt = timeProvider.GetUtcNow().DateTime;
+        lab.DeletedAt = timeProvider.GetUtcNow().UtcDateTime;
 
         await context.SaveChangesAsync(ct);
         return true;
