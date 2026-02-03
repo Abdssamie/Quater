@@ -82,8 +82,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         result.Id.Should().NotBeEmpty();
         result.CollectorName.Should().Be(dto.CollectorName);
         result.Status.Should().Be(SampleStatus.Pending);
-        result.IsSynced.Should().BeFalse();
-
         // Verify it was persisted
         var persisted = await _context.Samples.FindAsync(result.Id);
         persisted.Should().NotBeNull();
@@ -113,7 +111,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         result!.CollectorName.Should().Be(dto.CollectorName);
         result.Type.Should().Be(dto.Type);
         result.Status.Should().Be(dto.Status);
-        result.IsSynced.Should().BeFalse();
     }
 
     [Fact]
@@ -157,7 +154,6 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         var deletedSample = await _context.Samples.FindAsync(sampleId);
         deletedSample.Should().NotBeNull();
         deletedSample!.IsDeleted.Should().BeTrue();
-        deletedSample.IsSynced.Should().BeFalse();
     }
 
     [Fact]

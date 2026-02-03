@@ -46,7 +46,7 @@ public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
     public string? UpdatedBy { get; set; }
 
     // ISoftDelete interface properties
-    public bool IsDeleted { get; set; }
+    public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; set; }
     public string? DeletedBy { get; set; }
 

@@ -43,7 +43,6 @@ public static class MockDataFactory
             IsActive = true,
             CreatedAt = BaseDate,
             CreatedBy = "test",
-            IsDeleted = false,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -85,7 +84,6 @@ public static class MockDataFactory
             IsActive = true,
             CreatedAt = BaseDate,
             CreatedBy = "test",
-            IsDeleted = false,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -127,8 +125,6 @@ public static class MockDataFactory
             CreatedAt = BaseDate,
             CreatedBy = "test",
             UpdatedBy = "test",
-            IsDeleted = false,
-            IsSynced = true,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
         };
     }
@@ -174,9 +170,7 @@ public static class MockDataFactory
             TestDate = BaseDate,
             CreatedAt = BaseDate,
             CreatedBy = "test",
-            UpdatedBy = "test",
-            IsDeleted = false,
-            IsSynced = true
+            UpdatedBy = "test"
         };
     }
 

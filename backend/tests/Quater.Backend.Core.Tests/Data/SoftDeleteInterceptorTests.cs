@@ -165,7 +165,6 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "test",
-            IsDeleted = false,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
         _context.Parameters.Add(parameter);
@@ -395,7 +394,6 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "test",
-            IsDeleted = false,
             RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
         _context.Parameters.Add(parameter);
@@ -412,9 +410,7 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
             TestDate = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "test",
-            UpdatedBy = "test",
-            IsDeleted = false,
-            IsSynced = true
+            UpdatedBy = "test"
         };
         _context.TestResults.Add(testResult);
         await _context.SaveChangesAsync();

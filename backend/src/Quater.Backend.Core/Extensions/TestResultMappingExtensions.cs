@@ -32,7 +32,6 @@ public static class TestResultMappingExtensions
             LastModified = testResult.UpdatedAt ?? testResult.CreatedAt,
             LastModifiedBy = testResult.UpdatedBy ?? testResult.CreatedBy,
             IsDeleted = testResult.IsDeleted,
-            IsSynced = testResult.IsSynced,
             CreatedBy = testResult.CreatedBy,
             CreatedDate = testResult.CreatedAt
         };
@@ -58,8 +57,6 @@ public static class TestResultMappingExtensions
             TestMethod = dto.TestMethod,
             ComplianceStatus = complianceStatus,
             Status = TestResultStatus.Draft,
-            IsDeleted = false,
-            IsSynced = false,
             CreatedBy = createdBy,
             CreatedAt = now,
             LastSyncedAt = DateTime.MinValue
@@ -82,7 +79,6 @@ public static class TestResultMappingExtensions
         testResult.ComplianceStatus = dto.ComplianceStatus;
         testResult.UpdatedAt = DateTime.UtcNow;
         testResult.UpdatedBy = updatedBy;
-        testResult.IsSynced = false;
     }
 
     /// <summary>

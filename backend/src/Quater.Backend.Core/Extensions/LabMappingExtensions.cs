@@ -42,8 +42,7 @@ public static class LabMappingExtensions
             ContactInfo = dto.ContactInfo,
             IsActive = true,
             CreatedAt = now,
-            CreatedBy = createdBy,
-            IsDeleted = false
+            CreatedBy = createdBy
         };
     }
 

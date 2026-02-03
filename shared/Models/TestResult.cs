@@ -81,16 +81,10 @@ public sealed class TestResult : IEntity, IAuditable, ISoftDelete, IConcurrent
     public string? VoidReason { get; set; }
 
     /// <summary>
-    /// Soft delete flag for sync
+    /// Soft delete flag managed by SoftDeleteInterceptor
     /// </summary>
     [Required]
-    public bool IsDeleted { get; set; }
-
-    /// <summary>
-    /// Sync status flag
-    /// </summary>
-    [Required]
-    public bool IsSynced { get; set; }
+    public bool IsDeleted { get; private set; }
 
     // IAuditable interface properties
     public DateTime CreatedAt { get; set; }

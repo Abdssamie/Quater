@@ -85,7 +85,6 @@ public class ParameterService(
             IsActive = true,
             CreatedAt = now,
             CreatedBy = "system", // TODO: Get from current user context
-            IsDeleted = false,
             LastSyncedAt = DateTime.MinValue
         };
 
@@ -131,10 +130,7 @@ public class ParameterService(
         if (parameter == null)
             return false;
 
-        // Soft delete by marking as inactive
-        parameter.IsActive = false;
-        parameter.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
-        parameter.UpdatedBy = "system"; // TODO: Get from current user context
+        context.Parameters.Remove(parameter);
 
         await context.SaveChangesAsync(ct);
         return true;

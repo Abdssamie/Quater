@@ -61,10 +61,6 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             .IsRequired()
             .HasDefaultValue(false);
 
-        entity.Property(e => e.IsSynced)
-            .IsRequired()
-            .HasDefaultValue(false);
-
         entity.Property(e => e.LabId)
             .IsRequired();
 
@@ -104,9 +100,6 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
         entity.HasIndex(e => e.UpdatedAt)
             .HasDatabaseName("IX_Samples_UpdatedAt");
 
-        entity.HasIndex(e => e.IsSynced)
-            .HasDatabaseName("IX_Samples_IsSynced");
-
         entity.HasIndex(e => e.Status)
             .HasDatabaseName("IX_Samples_Status");
 
@@ -118,10 +111,6 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
 
         entity.HasIndex(e => e.IsDeleted)
             .HasDatabaseName("IX_Samples_IsDeleted");
-
-        // Composite index for sync queries
-        entity.HasIndex(e => new { e.IsSynced, e.UpdatedAt })
-            .HasDatabaseName("IX_Samples_IsSynced_UpdatedAt");
 
         // Composite index for lab queries (LabId, CollectionDate, Status)
         entity.HasIndex(e => new { e.LabId, e.CollectionDate, e.Status })

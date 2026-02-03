@@ -31,7 +31,6 @@ public static class SampleMappingExtensions
             LastModified = sample.UpdatedAt ?? sample.CreatedAt,
             LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
             IsDeleted = sample.IsDeleted,
-            IsSynced = sample.IsSynced,
             LabId = sample.LabId,
             CreatedBy = sample.CreatedBy,
             CreatedDate = sample.CreatedAt
@@ -53,8 +52,6 @@ public static class SampleMappingExtensions
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            IsDeleted = false,
-            IsSynced = false,
             LabId = dto.LabId,
             CreatedBy = createdBy,
             CreatedAt = now,
@@ -75,7 +72,6 @@ public static class SampleMappingExtensions
         sample.Status = dto.Status;
         sample.UpdatedAt = DateTime.UtcNow;
         sample.UpdatedBy = updatedBy;
-        sample.IsSynced = false;
     }
 
     /// <summary>

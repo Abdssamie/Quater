@@ -163,10 +163,7 @@ public class TestResultService(
         if (testResult == null || testResult.IsDeleted)
             return false;
 
-        // Soft delete
-        testResult.IsDeleted = true;
-        testResult.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
-        testResult.IsSynced = false;
+        context.TestResults.Remove(testResult);
 
         await context.SaveChangesAsync(ct);
         return true;

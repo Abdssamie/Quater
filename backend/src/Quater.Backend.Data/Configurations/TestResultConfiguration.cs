@@ -58,10 +58,6 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
             .IsRequired()
             .HasDefaultValue(false);
 
-        entity.Property(e => e.IsSynced)
-            .IsRequired()
-            .HasDefaultValue(false);
-
         entity.Property(e => e.CreatedBy)
             .IsRequired()
             .HasMaxLength(100);
@@ -101,9 +97,6 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         entity.HasIndex(e => e.UpdatedAt)
             .HasDatabaseName("IX_TestResults_UpdatedAt");
 
-        entity.HasIndex(e => e.IsSynced)
-            .HasDatabaseName("IX_TestResults_IsSynced");
-
         entity.HasIndex(e => e.ComplianceStatus)
             .HasDatabaseName("IX_TestResults_ComplianceStatus");
 
@@ -112,10 +105,6 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
 
         entity.HasIndex(e => e.IsDeleted)
             .HasDatabaseName("IX_TestResults_IsDeleted");
-
-        // Composite index for sync queries
-        entity.HasIndex(e => new { e.IsSynced, e.UpdatedAt })
-            .HasDatabaseName("IX_TestResults_IsSynced_UpdatedAt");
 
         // Note: Composite index with owned entity property (SampleId + ParameterId) 
         // is handled by the individual indexes above for query optimization

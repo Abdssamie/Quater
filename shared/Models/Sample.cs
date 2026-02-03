@@ -54,16 +54,10 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
     public SampleStatus Status { get; set; }
 
     /// <summary>
-    /// Soft delete flag for sync
+    /// Soft delete flag managed by SoftDeleteInterceptor
     /// </summary>
     [Required]
-    public bool IsDeleted { get; set; }
-
-    /// <summary>
-    /// Sync status flag
-    /// </summary>
-    [Required]
-    public bool IsSynced { get; set; }
+    public bool IsDeleted { get; private set; }
 
     /// <summary>
     /// Foreign key to Lab

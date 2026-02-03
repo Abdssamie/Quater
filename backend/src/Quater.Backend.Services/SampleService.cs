@@ -85,8 +85,6 @@ public class SampleService(
             CollectorName = dto.CollectorName,
             Notes = dto.Notes,
             Status = SampleStatus.Pending,
-            IsDeleted = false,
-            IsSynced = false,
             LabId = dto.LabId,
             CreatedBy = userId,
             CreatedAt = now
@@ -121,7 +119,6 @@ public class SampleService(
         existing.Status = dto.Status;
         existing.UpdatedAt = now;
         existing.UpdatedBy = userId;
-        existing.IsSynced = false;
 
         // Validate
         await validator.ValidateAndThrowAsync(existing, ct);
@@ -137,10 +134,7 @@ public class SampleService(
         if (sample == null || sample.IsDeleted) 
             return false;
 
-        // Soft delete
-        sample.IsDeleted = true;
-        sample.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
-        sample.IsSynced = false;
+        context.Samples.Remove(sample);
 
         await context.SaveChangesAsync(ct);
         return true;
@@ -162,7 +156,6 @@ public class SampleService(
         LastModified = sample.UpdatedAt ?? sample.CreatedAt,
         LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
         IsDeleted = sample.IsDeleted,
-        IsSynced = sample.IsSynced,
         LabId = sample.LabId,
         CreatedBy = sample.CreatedBy,
         CreatedDate = sample.CreatedAt

@@ -48,7 +48,6 @@ public static class ParameterMappingExtensions
             IsActive = true,
             CreatedAt = now,
             CreatedBy = createdBy,
-            IsDeleted = false,
             LastSyncedAt = DateTime.MinValue
         };
     }

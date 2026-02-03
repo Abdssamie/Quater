@@ -73,8 +73,7 @@ public class LabService(
             ContactInfo = dto.ContactInfo,
             IsActive = true,
             CreatedAt = now,
-            CreatedBy = userId,
-            IsDeleted = false
+            CreatedBy = userId
         };
 
         context.Labs.Add(lab);
@@ -115,9 +114,7 @@ public class LabService(
         if (lab == null || lab.IsDeleted)
             return false;
 
-        // Soft delete
-        lab.IsDeleted = true;
-        lab.DeletedAt = timeProvider.GetUtcNow().UtcDateTime;
+        context.Labs.Remove(lab);
 
         await context.SaveChangesAsync(ct);
         return true;
