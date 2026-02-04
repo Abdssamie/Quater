@@ -11,6 +11,7 @@ project.lock.json
 **/BuildHost-*/
 
 **/appsettings.json
+.env.staging
 
 ## Visual Studio Code
 .vscode/*
