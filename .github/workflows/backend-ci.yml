@@ -2,22 +2,22 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
     paths:
-      - "backend/**"
-      - "shared/**"
-      - "Dockerfile"
-      - ".github/workflows/backend-ci.yml"
+      - 'backend/**'
+      - 'shared/**'
+      - 'Dockerfile'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [ main, develop ]
     paths:
-      - "backend/**"
-      - "shared/**"
-      - "docker/Dockerfile"
-      - ".github/workflows/backend-ci.yml"
+      - 'backend/**'
+      - 'shared/**'
+      - 'docker/Dockerfile'
+      - '.github/workflows/backend-ci.yml'
 
 env:
-  DOTNET_VERSION: "9.0.x"
+  DOTNET_VERSION: '10.0.x'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
@@ -25,7 +25,7 @@ jobs:
   build-and-test:
     name: Build and Test Backend
     runs-on: ubuntu-latest
-
+    
     services:
       postgres:
         image: postgres:15-alpine
@@ -40,7 +40,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+      
       redis:
         image: redis:7-alpine
         ports:
@@ -113,7 +113,7 @@ jobs:
           hide_complexity: false
           indicators: true
           output: both
-          thresholds: "60 80"
+          thresholds: '60 80'
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
