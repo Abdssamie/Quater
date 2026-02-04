@@ -24,11 +24,11 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
             measurement.Property(m => m.ParameterId)
                 .HasColumnName("Measurement_ParameterId")
                 .IsRequired();
-            
+
             measurement.Property(m => m.Value)
                 .HasColumnName("Measurement_Value")
                 .IsRequired();
-            
+
             measurement.Property(m => m.Unit)
                 .HasColumnName("Measurement_Unit")
                 .IsRequired()

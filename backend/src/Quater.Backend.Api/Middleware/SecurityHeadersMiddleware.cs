@@ -43,7 +43,7 @@ public class SecurityHeadersMiddleware
                   "frame-ancestors 'none'; " +
                   "base-uri 'self'; " +
                   "form-action 'self'";
-                
+
             context.Response.Headers.Append("Content-Security-Policy", cspPolicy);
 
             // Prevent clickjacking attacks
@@ -59,7 +59,7 @@ public class SecurityHeadersMiddleware
             context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
 
             // Disable feature policy for sensitive features
-            context.Response.Headers.Append("Permissions-Policy", 
+            context.Response.Headers.Append("Permissions-Policy",
                 "geolocation=(), microphone=(), camera=()");
 
             return Task.CompletedTask;

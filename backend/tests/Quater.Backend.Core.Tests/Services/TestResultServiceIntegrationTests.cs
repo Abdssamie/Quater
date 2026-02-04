@@ -33,7 +33,7 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
     {
         // Reset database before each test
         await _fixture.Container.ResetDatabaseAsync();
-        
+
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new TestResultValidator(_timeProvider);
@@ -52,7 +52,7 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         // Arrange
         var sample = _context.Samples.First();
         var parameter = _context.Parameters.First(p => p.Name == "pH"); // Assuming "pH" is seeded by MockDataFactory
-        
+
         var dto = new CreateTestResultDto
         {
             SampleId = sample.Id,
@@ -86,8 +86,8 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         // Arrange
         var sample = _context.Samples.First();
         // Assuming MockDataFactory seeds "Turbidity" with MaxValue=5
-        var parameter = _context.Parameters.First(p => p.Name == "Turbidity"); 
-        
+        var parameter = _context.Parameters.First(p => p.Name == "Turbidity");
+
         var dto = new CreateTestResultDto
         {
             SampleId = sample.Id,

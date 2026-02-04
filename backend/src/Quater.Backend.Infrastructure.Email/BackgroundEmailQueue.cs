@@ -93,7 +93,7 @@ public sealed class EmailQueueProcessor(
 
                     // Requeue immediately, delay will happen in the background
                     var retryItem = item with { RetryCount = item.RetryCount + 1 };
-                    
+
                     // Use fire-and-forget pattern to avoid blocking the processor
                     _ = Task.Run(async () =>
                     {
@@ -113,7 +113,7 @@ public sealed class EmailQueueProcessor(
                     logger.LogError(
                         "DEAD LETTER: Email failed after {MaxRetries} attempts. " +
                         "To: {To}, Subject: {Subject}, Body: {Body}, Error: {Error}",
-                        MaxRetries, item.Email.To, item.Email.Subject, 
+                        MaxRetries, item.Email.To, item.Email.Subject,
                         item.Email.Body, result.Error);
                 }
             }

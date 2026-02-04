@@ -76,7 +76,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
         var testResult = await testResultService.GetByIdAsync(id, ct);
         if (testResult == null)
             return NotFound(new { message = $"Test result with ID {id} not found" });
-        
+
         return Ok(testResult);
     }
 
@@ -94,9 +94,9 @@ public class TestResultsController(ITestResultService testResultService, ILogger
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var created = await testResultService.CreateAsync(dto, userId, ct);
-            logger.LogInformation("Test result created successfully with ID {TestResultId} for sample {SampleId} by user {UserId}", 
+            logger.LogInformation("Test result created successfully with ID {TestResultId} for sample {SampleId} by user {UserId}",
                 created.Id, dto.SampleId, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
@@ -129,7 +129,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var updated = await testResultService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
             {

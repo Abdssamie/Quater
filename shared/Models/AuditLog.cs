@@ -20,7 +20,7 @@ public sealed class AuditLog : IEntity
     /// </summary>
     [Required]
     [MaxLength(100)]
-    public Guid UserId { get; init; } 
+    public Guid UserId { get; init; }
 
     /// <summary>
     /// Type of entity modified
@@ -56,7 +56,7 @@ public sealed class AuditLog : IEntity
     /// Flag indicating if any property values were truncated due to size limits (>50 chars)
     /// </summary>
     [Required]
-    public bool IsTruncated { get; init; } 
+    public bool IsTruncated { get; init; }
 
     /// <summary>
     /// UTC timestamp of modification
@@ -74,7 +74,7 @@ public sealed class AuditLog : IEntity
     /// Flag indicating if record is archived (for 90-day archival strategy)
     /// </summary>
     [Required]
-    public bool IsArchived { get; set; } 
+    public bool IsArchived { get; set; }
 
     /// <summary>
     /// UTC timestamp when this record becomes eligible for archival (Timestamp + 90 days)

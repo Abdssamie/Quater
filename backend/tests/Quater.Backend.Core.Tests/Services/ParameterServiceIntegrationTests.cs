@@ -31,11 +31,11 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
     {
         // Reset database before each test
         await _fixture.Container.ResetDatabaseAsync();
-        
+
         _context = _fixture.Container.CreateDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new ParameterValidator();
-        
+
         _service = new ParameterService(_context, validator);
     }
 
@@ -77,9 +77,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
     public async Task GetByIdAsync_ExistingParameter_ReturnsParameter()
     {
         // Arrange
-        var parameter = new Parameter 
-        { 
-            Id = Guid.NewGuid(), 
+        var parameter = new Parameter
+        {
+            Id = Guid.NewGuid(),
             Name = "Turbidity",
             Unit = "NTU",
             IsActive = true,
@@ -100,9 +100,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
     public async Task GetByNameAsync_ExistingParameter_ReturnsParameter()
     {
         // Arrange
-        var parameter = new Parameter 
-        { 
-            Id = Guid.NewGuid(), 
+        var parameter = new Parameter
+        {
+            Id = Guid.NewGuid(),
             Name = "Chlorine",
             Unit = "mg/L",
             IsActive = true,
@@ -122,9 +122,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
     public async Task UpdateAsync_ExistingParameter_UpdatesParameter()
     {
         // Arrange
-        var parameter = new Parameter 
-        { 
-            Id = Guid.NewGuid(), 
+        var parameter = new Parameter
+        {
+            Id = Guid.NewGuid(),
             Name = "Temp",
             Unit = "C",
             IsActive = true,
@@ -159,9 +159,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
     public async Task DeleteAsync_ExistingParameter_SoftDeletesParameter()
     {
         // Arrange
-        var parameter = new Parameter 
-        { 
-            Id = Guid.NewGuid(), 
+        var parameter = new Parameter
+        {
+            Id = Guid.NewGuid(),
             Name = "To Delete",
             Unit = "X",
             IsActive = true,

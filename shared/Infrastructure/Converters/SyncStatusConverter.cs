@@ -30,7 +30,7 @@ public class SyncStatusConverter : ValueConverter<SyncStatus, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="SyncStatusConverter"/> class.
     /// </summary>
-    public SyncStatusConverter() 
+    public SyncStatusConverter()
         : base(
             v => v.ToString(),             // Convert enum to string
             v => Enum.Parse<SyncStatus>(v)) // Convert string to enum

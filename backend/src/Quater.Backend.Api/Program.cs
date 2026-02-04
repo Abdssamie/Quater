@@ -109,10 +109,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    
+
     // Throws error if not provided
     var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString")!;
-        
+
     return StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString);
 });
 

@@ -8,7 +8,7 @@ namespace Quater.Shared.Interfaces;
 public interface IAuditable
 {
     Guid Id { get; } // Every auditable entity MUST have a Guid Id
-    
+
     /// <summary>
     /// Gets the date and time when the entity was created.
     /// Automatically set by AuditInterceptor on entity creation.

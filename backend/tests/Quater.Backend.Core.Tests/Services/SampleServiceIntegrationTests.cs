@@ -32,7 +32,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
     {
         // Reset database before each test
         await _fixture.Container.ResetDatabaseAsync();
-        
+
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new SampleValidator(_timeProvider);
@@ -120,27 +120,27 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         // This test verifies that EF Core's RowVersion optimistic concurrency mechanism works.
         // Note: The current SampleService doesn't enforce concurrency checks, but the infrastructure
         // is in place for future implementation.
-        
+
         // Arrange - Get a sample ID
         var sampleId = _context.Samples.First().Id;
-        
+
         // User 1 loads the sample
         var user1Sample = await _context.Samples.FirstAsync(s => s.Id == sampleId);
-        
+
         // User 2 loads the same sample (use AsNoTracking to avoid tracking conflict)
         var user2Sample = await _context.Samples.AsNoTracking().FirstAsync(s => s.Id == sampleId);
-        
+
         // User 1 makes and saves changes
         user1Sample.CollectorName = "User 1 Update";
         await _context.SaveChangesAsync();
-        
+
         // Clear the context so user2Sample can be tracked
         _context.ChangeTracker.Clear();
-        
+
         // User 2 tries to update with stale data
         user2Sample.CollectorName = "User 2 Update";
         _context.Attach(user2Sample);
-        
+
         // For PostgreSQL without auto-incrementing row version triggers,
         // we simulate the concurrency conflict by manually setting the original
         // value to what it was before User 1's update
@@ -148,7 +148,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
             new byte[] { 0, 0, 0, 0, 0, 0, 0, 99 }; // Different from what's in DB
 
         // Act & Assert - Should throw concurrency exception
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => 
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>
             _context.SaveChangesAsync());
     }
 
@@ -164,7 +164,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
 
         // Assert
         result.Should().BeTrue();
-        
+
         // Verify soft delete
         var deletedSample = await _context.Samples.FindAsync(sampleId);
         deletedSample.Should().NotBeNull();

@@ -25,18 +25,18 @@ public sealed class ScribanTemplateService(ILogger<ScribanTemplateService> logge
         try
         {
             var template = await GetTemplateAsync(templateName, cancellationToken);
-            
+
             var scriptObject = new ScriptObject();
             // Use snake_case renamer to match template variables (user_name, app_name, etc.)
             scriptObject.Import(model, renamer: member => ToSnakeCase(member.Name));
-            
+
             var context = new TemplateContext();
             context.PushGlobal(scriptObject);
 
             var result = await template.RenderAsync(context);
-            
+
             logger.LogDebug("Successfully rendered template '{TemplateName}'", templateName);
-            
+
             return result;
         }
         catch (Exception ex)

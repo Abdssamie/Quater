@@ -10,7 +10,7 @@ namespace Quater.Shared.Models;
 /// Extends ASP.NET Core Identity IdentityUser.
 /// </summary>
 public class User : IdentityUser<Guid>, IConcurrent
-{ 
+{
     /// <summary>
     /// User role for access control
     /// </summary>

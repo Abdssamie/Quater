@@ -35,7 +35,7 @@ public class CreateSampleDtoValidator : AbstractValidator<CreateSampleDto>
         RuleFor(x => x.CollectionDate)
             .LessThanOrEqualTo(x => timeProvider.GetUtcNow().DateTime)
             .WithMessage("Collection date cannot be in the future");
-            
+
         RuleFor(x => x.LabId)
             .NotEmpty().WithMessage("Lab ID is required");
 

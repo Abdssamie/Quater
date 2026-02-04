@@ -10,12 +10,12 @@ public enum TestResultStatus
     /// Draft result, can be modified
     /// </summary>
     Draft = 0,
-    
+
     /// <summary>
     /// Submitted result, immutable for regulatory compliance
     /// </summary>
     Submitted = 1,
-    
+
     /// <summary>
     /// Voided result (replaced by another TestResult)
     /// </summary>

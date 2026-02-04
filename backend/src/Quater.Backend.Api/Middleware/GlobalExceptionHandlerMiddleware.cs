@@ -98,8 +98,8 @@ public class GlobalExceptionHandlerMiddleware
             ),
             _ => (
                 HttpStatusCode.InternalServerError,
-                _environment.IsDevelopment() 
-                    ? exception.Message 
+                _environment.IsDevelopment()
+                    ? exception.Message
                     : "An internal server error occurred",
                 null
             )

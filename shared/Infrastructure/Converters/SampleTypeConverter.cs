@@ -28,7 +28,7 @@ public class SampleTypeConverter : ValueConverter<SampleType, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="SampleTypeConverter"/> class.
     /// </summary>
-    public SampleTypeConverter() 
+    public SampleTypeConverter()
         : base(
             v => v.ToString(),             // Convert enum to string
             v => Enum.Parse<SampleType>(v)) // Convert string to enum

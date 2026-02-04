@@ -464,7 +464,7 @@ public sealed class AuthController : ControllerBase
             return BadRequest(ModelState);
 
         var user = await _userManager.FindByEmailAsync(request.Email);
-        
+
         // Always return success to prevent email enumeration
         if (user == null || !user.IsActive)
         {
@@ -545,7 +545,7 @@ public sealed class AuthController : ControllerBase
         var result = await _userManager.ConfirmEmailAsync(user, request.Code);
         if (!result.Succeeded)
         {
-            _logger.LogWarning("Email verification failed for user {UserId}: {Errors}", 
+            _logger.LogWarning("Email verification failed for user {UserId}: {Errors}",
                 request.UserId, string.Join(", ", result.Errors.Select(e => e.Description)));
             return BadRequest(new { error = "Invalid or expired verification code" });
         }
@@ -577,7 +577,7 @@ public sealed class AuthController : ControllerBase
             return BadRequest(ModelState);
 
         var user = await _userManager.FindByEmailAsync(request.Email);
-        
+
         // Always return success to prevent email enumeration
         if (user == null || user.EmailConfirmed)
         {
@@ -616,7 +616,7 @@ public sealed class AuthController : ControllerBase
         var result = await _userManager.ResetPasswordAsync(user, request.Code, request.NewPassword);
         if (!result.Succeeded)
         {
-            _logger.LogWarning("Password reset failed for user {Email}: {Errors}", 
+            _logger.LogWarning("Password reset failed for user {Email}: {Errors}",
                 request.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
             return BadRequest(new { error = "Invalid or expired reset token" });
         }
@@ -644,7 +644,7 @@ public sealed class AuthController : ControllerBase
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var frontendUrl = _emailSettings.FrontendUrl;
-        
+
         // URL encode the token and userId
         var encodedToken = HttpUtility.UrlEncode(token);
         var verificationUrl = $"{frontendUrl}/verify-email?userId={user.Id}&code={encodedToken}";
@@ -675,7 +675,7 @@ public sealed class AuthController : ControllerBase
     private async Task SendWelcomeEmailAsync(User user)
     {
         var frontendUrl = _emailSettings.FrontendUrl;
-        
+
         var model = new WelcomeEmailModel
         {
             UserName = user.UserName ?? user.Email ?? "User",
@@ -702,7 +702,7 @@ public sealed class AuthController : ControllerBase
     {
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var frontendUrl = _emailSettings.FrontendUrl;
-        
+
         // URL encode the token and email
         var encodedToken = HttpUtility.UrlEncode(token);
         var encodedEmail = HttpUtility.UrlEncode(user.Email);

@@ -31,10 +31,10 @@ public class LabServiceIntegrationTests : IAsyncLifetime
     {
         // Reset database before each test
         await _fixture.Container.ResetDatabaseAsync();
-        
+
         _context = _fixture.Container.CreateDbContext();
         _timeProvider = new FakeTimeProvider();
-        
+
         // Create LabService with required validator
         var validator = new LabValidator();
         _service = new LabService(_context, validator);
@@ -76,10 +76,10 @@ public class LabServiceIntegrationTests : IAsyncLifetime
     public async Task GetByIdAsync_ExistingLab_ReturnsLab()
     {
         // Arrange
-        var lab = new Lab 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Existing Lab", 
+        var lab = new Lab
+        {
+            Id = Guid.NewGuid(),
+            Name = "Existing Lab",
             IsActive = true,
         };
         _context.Labs.Add(lab);
@@ -98,10 +98,10 @@ public class LabServiceIntegrationTests : IAsyncLifetime
     public async Task UpdateAsync_ExistingLab_UpdatesLab()
     {
         // Arrange
-        var lab = new Lab 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "Original Name", 
+        var lab = new Lab
+        {
+            Id = Guid.NewGuid(),
+            Name = "Original Name",
             IsActive = true,
         };
         _context.Labs.Add(lab);
@@ -133,10 +133,10 @@ public class LabServiceIntegrationTests : IAsyncLifetime
     public async Task DeleteAsync_ExistingLab_SoftDeletesLab()
     {
         // Arrange
-        var lab = new Lab 
-        { 
-            Id = Guid.NewGuid(), 
-            Name = "To Delete", 
+        var lab = new Lab
+        {
+            Id = Guid.NewGuid(),
+            Name = "To Delete",
             IsActive = true,
         };
         _context.Labs.Add(lab);

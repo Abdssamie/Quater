@@ -34,7 +34,7 @@ public class TestResultService(
             throw new InvalidOperationException(
                 $"Data integrity error: TestResult {id} references non-existent Parameter {testResult.Measurement.ParameterId}");
         }
-        
+
         return testResult.ToDto(testResult.Parameter.Name);
     }
 
@@ -109,7 +109,7 @@ public class TestResultService(
         var parameter = await context.Parameters
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Name == dto.ParameterName && p.IsActive, ct);
-        
+
         if (parameter == null)
             throw new NotFoundException($"Parameter '{dto.ParameterName}' not found");
 
@@ -138,7 +138,7 @@ public class TestResultService(
         var parameter = await context.Parameters
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Name == dto.ParameterName && p.IsActive, ct);
-        
+
         if (parameter == null)
             throw new NotFoundException($"Parameter '{dto.ParameterName}' not found");
 

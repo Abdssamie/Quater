@@ -122,7 +122,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
         auditLog.Should().NotBeNull();
         auditLog!.EntityType.Should().Be(EntityType.Sample);
-        
+
         // Should have both old and new values (soft delete changes IsDeleted property)
         auditLog.OldValue.Should().NotBeNullOrEmpty();
         auditLog.NewValue.Should().NotBeNullOrEmpty();
@@ -179,7 +179,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(auditLog.NewValue!);
         values.Should().NotBeNull();
         values!.Should().ContainKey("Notes");
-        
+
         var notesValue = values?["Notes"].GetString();
         notesValue.Should().EndWith("...[TRUNCATED]");
         notesValue.Should().HaveLength(49); // 35 chars + "...[TRUNCATED]" (14 chars) = 49
@@ -192,7 +192,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var labId = await GetFirstLabIdAsync();
         var longString1 = new string('A', 80);
         var longString2 = new string('B', 90);
-        
+
         var lab = MockDataFactory.CreateLab();
         lab.ContactInfo = longString1;
         lab.Location = longString2;
@@ -316,7 +316,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var sample = MockDataFactory.CreateSample(labId);
         sample.CollectorName = "Original Collector";
         sample.Notes = "Original Notes";
-        
+
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
@@ -347,14 +347,14 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         // Should contain CollectorName (changed)
         oldValues.Should().ContainKey("CollectorName");
         newValues.Should().ContainKey("CollectorName");
-        
+
         oldValues?["CollectorName"].GetString().Should().Be("Original Collector");
         newValues?["CollectorName"].GetString().Should().Be("Updated Collector");
 
         // Should NOT contain Notes (unchanged)
         oldValues.Should().NotContainKey("Notes");
         newValues.Should().NotContainKey("Notes");
-        
+
         // Note: UpdatedAt/UpdatedBy are only captured if they're actually modified
         // In this test, we're not explicitly setting them, so they may or may not be present
         // depending on whether EF Core's change tracking marks them as modified
@@ -368,7 +368,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         var sample = MockDataFactory.CreateSample(labId);
         sample.CollectorName = "Original Collector";
         sample.Notes = "Original Notes";
-        
+
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
@@ -409,7 +409,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         // Arrange
         var labId = await GetFirstLabIdAsync();
         var sample = MockDataFactory.CreateSample(labId);
-        
+
         _context.Samples.Add(sample);
         await _context.SaveChangesAsync();
 
@@ -484,7 +484,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
 
         var mockUserService = new MockCurrentUserService(testUserId);
         using var customContext = CreateContextWithUserService(mockUserService);
-        
+
         var sample = MockDataFactory.CreateSample(labId);
 
         // Act
@@ -591,7 +591,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         // Arrange
         var ipAddress = "192.168.1.100";
         using var customContext = CreateContextWithIpAddress(ipAddress);
-        
+
         var labId = await GetFirstLabIdAsync();
         var sample = MockDataFactory.CreateSample(labId);
 
@@ -652,10 +652,10 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
 
         auditLog.Should().NotBeNull();
         auditLog!.NewValue.Should().NotBeNullOrEmpty();
-        
+
         // Verify JSON is valid and under 4000 chars
         auditLog.NewValue!.Length.Should().BeLessThan(4000);
-        
+
         // Verify JSON is parseable
         var act = () => JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(auditLog.NewValue!);
         act.Should().NotThrow();
@@ -681,7 +681,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         auditLog.Should().NotBeNull();
         auditLog!.NewValue.Should().NotBeNullOrEmpty();
         auditLog.NewValue!.Length.Should().BeLessThan(4000);
-        
+
         // Verify JSON is parseable
         var values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(auditLog.NewValue!);
         values.Should().NotBeNull();

@@ -12,17 +12,17 @@ public sealed record Measurement
     /// Reference to the Parameter entity defining valid units and ranges
     /// </summary>
     public Guid ParameterId { get; init; }
-    
+
     /// <summary>
     /// Measured value
     /// </summary>
     public double Value { get; init; }
-    
+
     /// <summary>
     /// Unit of measurement (must match Parameter definition)
     /// </summary>
     public string Unit { get; init; }
-    
+
     /// <summary>
     /// Creates a new Measurement with validation against Parameter definition.
     /// </summary>
@@ -35,27 +35,27 @@ public sealed record Measurement
     {
         ArgumentNullException.ThrowIfNull(parameter);
         ArgumentException.ThrowIfNullOrWhiteSpace(unit);
-        
+
         // Validate unit matches parameter
         if (!string.Equals(parameter.Unit, unit, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException(
                 $"Unit '{unit}' does not match parameter '{parameter.Name}' expected unit '{parameter.Unit}'",
                 nameof(unit));
-        
+
         // Validate value range
         if (parameter.MinValue.HasValue && value < parameter.MinValue.Value)
             throw new ArgumentOutOfRangeException(nameof(value), value,
                 $"Value {value} is below minimum {parameter.MinValue.Value} for parameter '{parameter.Name}'");
-        
+
         if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
             throw new ArgumentOutOfRangeException(nameof(value), value,
                 $"Value {value} exceeds maximum {parameter.MaxValue.Value} for parameter '{parameter.Name}'");
-        
+
         ParameterId = parameter.Id;
         Value = value;
         Unit = unit;
     }
-    
+
     /// <summary>
     /// Creates a Measurement from existing data (for deserialization/EF Core).
     /// Does not validate against Parameter entity.

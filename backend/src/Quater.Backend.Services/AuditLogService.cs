@@ -171,7 +171,7 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
         var auditLog = await context.AuditLogs
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == id, ct);
-            
+
         return auditLog?.ToDto();
     }
 }

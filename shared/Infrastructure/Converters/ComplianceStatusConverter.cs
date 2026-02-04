@@ -22,7 +22,7 @@ public class ComplianceStatusConverter : ValueConverter<ComplianceStatus, string
     /// <summary>
     /// Initializes a new instance of the <see cref="ComplianceStatusConverter"/> class.
     /// </summary>
-    public ComplianceStatusConverter() 
+    public ComplianceStatusConverter()
         : base(
             v => v.ToString(),                 // Convert enum to string
             v => Enum.Parse<ComplianceStatus>(v)) // Convert string to enum

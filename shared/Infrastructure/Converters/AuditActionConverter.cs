@@ -30,7 +30,7 @@ public class AuditActionConverter : ValueConverter<AuditAction, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="AuditActionConverter"/> class.
     /// </summary>
-    public AuditActionConverter() 
+    public AuditActionConverter()
         : base(
             v => v.ToString(),              // Convert enum to string
             v => Enum.Parse<AuditAction>(v)) // Convert string to enum

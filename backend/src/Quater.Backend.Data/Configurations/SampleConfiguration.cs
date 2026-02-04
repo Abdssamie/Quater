@@ -27,15 +27,15 @@ public class SampleConfiguration : IEntityTypeConfiguration<Sample>
             location.Property(l => l.Latitude)
                 .HasColumnName("Location_Latitude")
                 .IsRequired();
-            
+
             location.Property(l => l.Longitude)
                 .HasColumnName("Location_Longitude")
                 .IsRequired();
-            
+
             location.Property(l => l.Description)
                 .HasColumnName("Location_Description")
                 .HasMaxLength(200);
-            
+
             location.Property(l => l.Hierarchy)
                 .HasColumnName("Location_Hierarchy")
                 .HasMaxLength(500);

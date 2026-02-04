@@ -138,7 +138,7 @@ public class TestDbContextFactory : IAsyncLifetime
         {
             // Create a mock user service that returns SystemUser.GetId()
             var mockUserService = new TestCurrentUserService();
-            
+
             optionsBuilder.AddInterceptors(
                 new SoftDeleteInterceptor(),
                 new AuditInterceptor(mockUserService),

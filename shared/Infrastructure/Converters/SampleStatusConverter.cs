@@ -23,7 +23,7 @@ public class SampleStatusConverter : ValueConverter<SampleStatus, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="SampleStatusConverter"/> class.
     /// </summary>
-    public SampleStatusConverter() 
+    public SampleStatusConverter()
         : base(
             v => v.ToString(),                                    // Convert enum to string
             v => Enum.Parse<SampleStatus>(v)) // Convert string to enum

@@ -61,7 +61,7 @@ public class HealthController : ControllerBase
         {
             // Check database connectivity
             var canConnect = await _context.Database.CanConnectAsync(cancellationToken);
-            
+
             if (!canConnect)
             {
                 _logger.LogWarning("Readiness check failed: Cannot connect to database");

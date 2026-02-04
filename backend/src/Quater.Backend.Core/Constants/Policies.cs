@@ -10,12 +10,12 @@ public static class Policies
     /// Requires Admin role only
     /// </summary>
     public const string AdminOnly = "AdminOnly";
-    
+
     /// <summary>
     /// Requires Technician or Admin role
     /// </summary>
     public const string TechnicianOrAbove = "TechnicianOrAbove";
-    
+
     /// <summary>
     /// Requires any authenticated user (Viewer, Technician, or Admin)
     /// </summary>

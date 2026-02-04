@@ -82,10 +82,10 @@ public static class TestResultMappingExtensions
     /// <param name="parameterLookup">Dictionary mapping ParameterId to ParameterName</param>
     public static IEnumerable<TestResultDto> ToDtos(this IEnumerable<TestResult> testResults, Dictionary<Guid, string> parameterLookup)
     {
-        return testResults.Select(testResult => 
+        return testResults.Select(testResult =>
         {
-            var parameterName = parameterLookup.TryGetValue(testResult.Measurement.ParameterId, out var name) 
-                ? name 
+            var parameterName = parameterLookup.TryGetValue(testResult.Measurement.ParameterId, out var name)
+                ? name
                 : "Unknown";
             return testResult.ToDto(parameterName);
         });

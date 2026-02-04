@@ -28,7 +28,7 @@ public class TestMethodConverter : ValueConverter<TestMethod, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="TestMethodConverter"/> class.
     /// </summary>
-    public TestMethodConverter() 
+    public TestMethodConverter()
         : base(
             v => v.ToString(),             // Convert enum to string
             v => Enum.Parse<TestMethod>(v)) // Convert string to enum

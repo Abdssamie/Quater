@@ -69,9 +69,9 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var created = await labService.CreateAsync(dto, userId, ct);
-            logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}", 
+            logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}",
                 created.Id, created.Name, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
@@ -98,7 +98,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var updated = await labService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
             {

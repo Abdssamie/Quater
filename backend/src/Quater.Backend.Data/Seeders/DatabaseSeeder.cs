@@ -185,7 +185,7 @@ public static class DatabaseSeeder
 
         // Get admin password from environment variable or generate a secure random one
         var adminPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
-        
+
         if (string.IsNullOrEmpty(adminPassword))
         {
             // Generate a secure random password if not provided
@@ -198,15 +198,15 @@ public static class DatabaseSeeder
             Console.WriteLine("Set ADMIN_DEFAULT_PASSWORD environment variable to use a custom password.");
             Console.WriteLine("=".PadRight(80, '='));
         }
-        
+
         var result = await userManager.CreateAsync(admin, adminPassword);
-        
+
         if (!result.Succeeded)
         {
             throw new Exception($"Failed to create admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
     }
-    
+
     /// <summary>
     /// Generates a secure random password that meets the password requirements.
     /// </summary>
@@ -216,23 +216,23 @@ public static class DatabaseSeeder
         const string lowercase = "abcdefghijklmnopqrstuvwxyz";
         const string digits = "0123456789";
         const string special = "!@#$%^&*";
-        
+
         var random = new Random();
         var password = new char[16];
-        
+
         // Ensure at least one of each required character type
         password[0] = uppercase[random.Next(uppercase.Length)];
         password[1] = lowercase[random.Next(lowercase.Length)];
         password[2] = digits[random.Next(digits.Length)];
         password[3] = special[random.Next(special.Length)];
-        
+
         // Fill the rest with random characters from all sets
         var allChars = uppercase + lowercase + digits + special;
         for (int i = 4; i < password.Length; i++)
         {
             password[i] = allChars[random.Next(allChars.Length)];
         }
-        
+
         // Shuffle the password to avoid predictable patterns
         return new string(password.OrderBy(x => random.Next()).ToArray());
     }

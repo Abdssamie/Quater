@@ -11,7 +11,7 @@ using Quater.Shared.ValueObjects;
 namespace Quater.Backend.Services;
 
 public class SampleService(
-    QuaterDbContext context, 
+    QuaterDbContext context,
     IValidator<Sample> validator) : ISampleService
 {
     public async Task<SampleDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -32,7 +32,7 @@ public class SampleService(
             .OrderByDescending(s => s.CollectionDate);
 
         var totalCount = await query.CountAsync(ct);
-        
+
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -55,7 +55,7 @@ public class SampleService(
             .OrderByDescending(s => s.CollectionDate);
 
         var totalCount = await query.CountAsync(ct);
-        
+
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -89,14 +89,14 @@ public class SampleService(
 
         context.Samples.Add(sample);
         await context.SaveChangesAsync(ct);
-        
+
         return MapToDto(sample);
     }
 
     public async Task<SampleDto?> UpdateAsync(Guid id, UpdateSampleDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Samples.FindAsync([id], ct);
-        if (existing == null || existing.IsDeleted) 
+        if (existing == null || existing.IsDeleted)
             return null;
 
         // Note: Optimistic concurrency is now handled by RowVersion (byte[]) in the database
@@ -122,17 +122,17 @@ public class SampleService(
             var exists = await context.Samples.AnyAsync(s => s.Id == id && !s.IsDeleted, ct);
             if (!exists)
                 return null;
-            
+
             throw new ConflictException("Sample was modified by another user. Please refresh and try again.");
         }
-        
+
         return MapToDto(existing);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var sample = await context.Samples.FindAsync([id], ct);
-        if (sample == null || sample.IsDeleted) 
+        if (sample == null || sample.IsDeleted)
             return false;
 
         context.Samples.Remove(sample);

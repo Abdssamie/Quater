@@ -28,7 +28,7 @@ public class UserRoleConverter : ValueConverter<UserRole, string>
     /// <summary>
     /// Initializes a new instance of the <see cref="UserRoleConverter"/> class.
     /// </summary>
-    public UserRoleConverter() 
+    public UserRoleConverter()
         : base(
             v => v.ToString(),           // Convert enum to string
             v => Enum.Parse<UserRole>(v)) // Convert string to enum

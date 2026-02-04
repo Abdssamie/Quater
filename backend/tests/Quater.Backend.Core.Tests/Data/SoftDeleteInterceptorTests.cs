@@ -177,7 +177,7 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
 
         deletedParameter.Should().NotBeNull();
         deletedParameter!.IsDeleted.Should().BeTrue();
-        
+
         // Lab should still be active (not deleted)
         var activeLab = await _context.Labs.FirstOrDefaultAsync(l => l.Id == lab.Id);
         activeLab.Should().NotBeNull();

@@ -205,7 +205,7 @@ public sealed class MeasurementTests
 
         // Act
         var act = () => new Measurement(parameterId, value, unit!);
-        
+
         // Assert
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("unit");
@@ -224,7 +224,7 @@ public sealed class MeasurementTests
         (measurement1 == measurement2).Should().BeTrue();
         measurement1.GetHashCode().Should().Be(measurement2.GetHashCode());
     }
-    
+
     [Fact]
     public void RecordEquality_WithDifferentValues_ShouldNotBeEqual()
     {

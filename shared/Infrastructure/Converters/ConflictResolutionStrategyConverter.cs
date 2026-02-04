@@ -23,7 +23,7 @@ public class ConflictResolutionStrategyConverter : ValueConverter<ConflictResolu
     /// <summary>
     /// Initializes a new instance of the <see cref="ConflictResolutionStrategyConverter"/> class.
     /// </summary>
-    public ConflictResolutionStrategyConverter() 
+    public ConflictResolutionStrategyConverter()
         : base(
             v => v.ToString(),                              // Convert enum to string
             v => Enum.Parse<ConflictResolutionStrategy>(v)) // Convert string to enum

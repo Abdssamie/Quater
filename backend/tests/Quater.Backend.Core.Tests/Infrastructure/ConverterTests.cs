@@ -204,7 +204,7 @@ public class ConverterTests
         // Act
         var stringValue = converter.ConvertToProvider(originalValue);
         var roundTripValue = converter.ConvertFromProvider(stringValue);
- // Assert
+        // Assert
         roundTripValue.Should().Be(originalValue);
     }
 

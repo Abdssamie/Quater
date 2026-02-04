@@ -24,7 +24,7 @@ public sealed class SmtpEmailSender(
         if (!_settings.Enabled)
         {
             logger.LogWarning(
-                "Email sending disabled. Would send to {To}: {Subject}", 
+                "Email sending disabled. Would send to {To}: {Subject}",
                 email.To, email.Subject);
             return EmailSendResult.Success("disabled-" + Guid.NewGuid());
         }
@@ -54,7 +54,7 @@ public sealed class SmtpEmailSender(
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            
+
             // Connect to SMTP server
             await client.ConnectAsync(
                 _settings.SmtpHost,

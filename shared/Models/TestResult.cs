@@ -72,7 +72,7 @@ public sealed class TestResult : IEntity, IAuditable, ISoftDelete, IConcurrent
     /// <summary>
     /// Whether this result has been voided
     /// </summary>
-    public bool IsVoided { get; set; } 
+    public bool IsVoided { get; set; }
 
     /// <summary>
     /// Reason for voiding this result

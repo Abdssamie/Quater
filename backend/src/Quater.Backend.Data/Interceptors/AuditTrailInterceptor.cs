@@ -212,82 +212,82 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             switch (entry.State)
             {
                 case EntityState.Modified:
-                {
-                    // Capture old and new values for modified entities (only changed properties)
-                    var oldValues = new Dictionary<string, object?>();
-                    var newValues = new Dictionary<string, object?>();
-
-                    foreach (var property in entry.Properties)
                     {
-                        if (!property.IsModified) continue; // Only changed properties
-                        oldValues[property.Metadata.Name] = property.OriginalValue;
-                        newValues[property.Metadata.Name] = property.CurrentValue;
+                        // Capture old and new values for modified entities (only changed properties)
+                        var oldValues = new Dictionary<string, object?>();
+                        var newValues = new Dictionary<string, object?>();
+
+                        foreach (var property in entry.Properties)
+                        {
+                            if (!property.IsModified) continue; // Only changed properties
+                            oldValues[property.Metadata.Name] = property.OriginalValue;
+                            newValues[property.Metadata.Name] = property.CurrentValue;
+                        }
+
+                        if (oldValues.Count != 0)
+                        {
+                            // Truncate individual property values, not the entire JSON
+                            var (truncatedOld, oldTruncated) = TruncatePropertyValues(oldValues);
+                            var (truncatedNew, newTruncated) = TruncatePropertyValues(newValues);
+
+                            oldValue = JsonSerializer.Serialize(truncatedOld);
+                            newValue = JsonSerializer.Serialize(truncatedNew);
+                            isTruncated = oldTruncated || newTruncated;
+
+                            if (isTruncated)
+                            {
+                                _logger?.LogWarning(
+                                    "Property values truncated for {EntityType} {EntityId}",
+                                    entityTypeName, entityId);
+                            }
+                        }
+
+                        break;
                     }
-
-                    if (oldValues.Count != 0)
+                case EntityState.Added:
                     {
-                        // Truncate individual property values, not the entire JSON
-                        var (truncatedOld, oldTruncated) = TruncatePropertyValues(oldValues);
-                        var (truncatedNew, newTruncated) = TruncatePropertyValues(newValues);
+                        // Capture new values for added entities
+                        var values = new Dictionary<string, object?>();
+                        foreach (var property in entry.Properties)
+                        {
+                            values[property.Metadata.Name] = property.CurrentValue;
+                        }
 
-                        oldValue = JsonSerializer.Serialize(truncatedOld);
-                        newValue = JsonSerializer.Serialize(truncatedNew);
-                        isTruncated = oldTruncated || newTruncated;
+                        var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
+                        newValue = JsonSerializer.Serialize(truncatedValues);
+                        isTruncated = wasTruncated;
 
                         if (isTruncated)
                         {
                             _logger?.LogWarning(
-                                "Property values truncated for {EntityType} {EntityId}",
+                                "Property values truncated for new {EntityType} {EntityId}",
                                 entityTypeName, entityId);
                         }
+
+                        break;
                     }
-
-                    break;
-                }
-                case EntityState.Added:
-                {
-                    // Capture new values for added entities
-                    var values = new Dictionary<string, object?>();
-                    foreach (var property in entry.Properties)
-                    {
-                        values[property.Metadata.Name] = property.CurrentValue;
-                    }
-
-                    var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
-                    newValue = JsonSerializer.Serialize(truncatedValues);
-                    isTruncated = wasTruncated;
-
-                    if (isTruncated)
-                    {
-                        _logger?.LogWarning(
-                            "Property values truncated for new {EntityType} {EntityId}",
-                            entityTypeName, entityId);
-                    }
-
-                    break;
-                }
                 case EntityState.Deleted:
-                {
-                    // Capture old values for deleted entities
-                    var values = new Dictionary<string, object?>();
-                    foreach (var property in entry.Properties)
                     {
-                        values[property.Metadata.Name] = property.OriginalValue; // Use OriginalValue
+                        // Capture old values for deleted entities
+                        var values = new Dictionary<string, object?>();
+                        foreach (var property in entry.Properties)
+                        {
+                            values[property.Metadata.Name] = property.OriginalValue; // Use OriginalValue
+                        }
+
+                        var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
+                        oldValue = JsonSerializer.Serialize(truncatedValues);
+                        isTruncated = wasTruncated;
+
+                        if (isTruncated)
+                        {
+                            _logger?.LogWarning(
+                                "Property values truncated for deleted {EntityType} {EntityId}",
+                                entityTypeName, entityId);
+                        }
+
+                        break;
                     }
-
-                    var (truncatedValues, wasTruncated) = TruncatePropertyValues(values);
-                    oldValue = JsonSerializer.Serialize(truncatedValues);
-                    isTruncated = wasTruncated;
-
-                    if (isTruncated)
-                    {
-                        _logger?.LogWarning(
-                            "Property values truncated for deleted {EntityType} {EntityId}",
-                            entityTypeName, entityId);
-                    }
-
-                    break;
-                }
                 case EntityState.Detached:
                 case EntityState.Unchanged:
                     break;

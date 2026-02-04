@@ -76,7 +76,7 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             var isDeletedProperty = entry.Entity.GetType().GetProperty("IsDeleted");
             if (isDeletedProperty is null || isDeletedProperty.PropertyType != typeof(bool))
             {
-                throw new InvalidOperationException("Unexpected Error. IAuditable models must " + 
+                throw new InvalidOperationException("Unexpected Error. IAuditable models must " +
                                                     "have IsDeleted property and it must be bool");
             }
 
@@ -89,8 +89,10 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             if (deletedAtProperty != null && deletedAtProperty.PropertyType == typeof(DateTime?))
             {
                 deletedAtProperty.SetValue(entry.Entity, DateTime.UtcNow);
-            } else {
-                throw new InvalidOperationException("Unexpected Error. IAuditable models must " + 
+            }
+            else
+            {
+                throw new InvalidOperationException("Unexpected Error. IAuditable models must " +
                                                     "have DeletedAt property and it must be DateTime");
             }
 
@@ -99,9 +101,9 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             foreach (var navigation in entry.Navigations)
             {
                 if (
-                    ! navigation.Metadata.TargetEntityType.IsOwned() || navigation.CurrentValue == null
+                    !navigation.Metadata.TargetEntityType.IsOwned() || navigation.CurrentValue == null
                     ) continue;
-                
+
                 var ownedEntry = context.Entry(navigation.CurrentValue);
                 if (ownedEntry.State is EntityState.Detached or EntityState.Deleted)
                 {

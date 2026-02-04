@@ -25,10 +25,10 @@ public class TestResultValidator : AbstractValidator<TestResult>
         RuleFor(x => x.TechnicianName)
             .NotEmpty().WithMessage("Technician name is required")
             .MaximumLength(100).WithMessage("Technician name must not exceed 100 characters");
-            
+
         RuleFor(x => x.TestMethod)
             .IsInEnum().WithMessage("Invalid test method");
-            
+
         RuleFor(x => x.ComplianceStatus)
             .IsInEnum().WithMessage("Invalid compliance status");
     }

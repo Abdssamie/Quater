@@ -95,12 +95,12 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var created = await userService.CreateAsync(dto, userId, ct);
             logger.LogInformation(
-                "User created successfully with ID {UserId}, Username: {UserName}, Role: {Role} by user {CreatedBy}", 
+                "User created successfully with ID {UserId}, Username: {UserName}, Role: {Role} by user {CreatedBy}",
                 created.Id, created.UserName, created.Role, userId);
-            
+
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (BadRequestException ex)
@@ -132,7 +132,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var updated = await userService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
             {

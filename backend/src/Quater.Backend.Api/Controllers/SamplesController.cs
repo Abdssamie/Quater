@@ -78,7 +78,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
         var sample = await sampleService.GetByIdAsync(id, ct);
         if (sample == null)
             return NotFound(new { message = $"Sample with ID {id} not found" });
-        
+
         return Ok(sample);
     }
 
@@ -96,7 +96,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var created = await sampleService.CreateAsync(dto, userId, ct);
             logger.LogInformation("Sample created successfully with ID {SampleId} by user {UserId}", created.Id, userId);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -125,7 +125,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
         try
         {
             var userId = User.GetUserIdOrThrow();
-            
+
             var updated = await sampleService.UpdateAsync(id, dto, userId, ct);
             if (updated == null)
             {

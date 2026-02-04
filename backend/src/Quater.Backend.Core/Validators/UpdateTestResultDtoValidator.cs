@@ -28,7 +28,7 @@ public class UpdateTestResultDtoValidator : AbstractValidator<UpdateTestResultDt
         RuleFor(x => x.TechnicianName)
             .NotEmpty().WithMessage("Technician name is required")
             .MaximumLength(100).WithMessage("Technician name must not exceed 100 characters");
-            
+
         RuleFor(x => x.TestMethod)
             .IsInEnum().WithMessage("Invalid test method");
 

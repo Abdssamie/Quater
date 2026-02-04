@@ -30,7 +30,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
     {
         // Reset database before each test
         await _fixture.Container.ResetDatabaseAsync();
-        
+
         _context = _fixture.Container.CreateDbContext();
         _service = new AuditLogService(_context);
 
@@ -53,7 +53,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         // Seed users
         var userId1 = Guid.Parse("550e8400-e29b-41d4-a716-446655440010");
         var userId2 = Guid.Parse("550e8400-e29b-41d4-a716-446655440011");
-        
+
         var users = new List<User>
         {
             new() { Id = userId1, UserName = "user1", Email = "user1@example.com", SecurityStamp = "stamp1", LabId = lab.Id },
@@ -128,7 +128,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         result.Should().NotBeNull();
         result.Items.Should().HaveCount(3); // 3 active logs, 1 archived
         result.TotalCount.Should().Be(3);
-        
+
         // Verify ordering (newest first)
         var items = result.Items.ToList();
         items[0].Timestamp.Should().Be(_baseTime.AddDays(2)); // Jan 3
@@ -176,7 +176,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         // Assert
         // Should catch the Jan 2 log (Update Sample)
         // Should NOT catch Jan 1 (Create Sample) or Jan 3 (Create Lab)
-        
+
         // Let's try a strict range that only includes the middle log (Jan 2)
         var strictFilter = new AuditLogFilterDto
         {
@@ -185,7 +185,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         };
 
         var strictResult = await _service.GetByFilterAsync(strictFilter);
-        
+
         strictResult.Items.Should().Contain(x => x.Action == AuditAction.Update);
         strictResult.Items.Should().NotContain(x => x.Action == AuditAction.Create && x.EntityType == EntityType.Lab); // Jan 3
     }

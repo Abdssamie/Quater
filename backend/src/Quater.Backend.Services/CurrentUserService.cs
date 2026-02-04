@@ -24,17 +24,17 @@ public class CurrentUserService : ICurrentUserService
     public Guid GetCurrentUserId()
     {
         var userIdString = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-        
+
         if (string.IsNullOrEmpty(userIdString))
         {
             return SystemUser.GetId();
         }
-        
+
         if (Guid.TryParse(userIdString, out var userId))
         {
             return userId;
         }
-        
+
         // Fallback to system user if parsing fails
         return SystemUser.GetId();
     }

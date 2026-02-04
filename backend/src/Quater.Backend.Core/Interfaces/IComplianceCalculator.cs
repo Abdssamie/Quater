@@ -23,7 +23,7 @@ public interface IComplianceCalculator
     /// <param name="ct">Cancellation token</param>
     /// <returns>Dictionary of parameter names and their compliance status</returns>
     Task<Dictionary<string, ComplianceStatus>> CalculateBatchComplianceAsync(
-        Dictionary<string, double> testResults, 
+        Dictionary<string, double> testResults,
         CancellationToken ct = default);
 
     /// <summary>

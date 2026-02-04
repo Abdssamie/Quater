@@ -64,7 +64,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
 
         _context.Samples.AddRange(sample1, sample2);
         await _context.SaveChangesAsync();
-        
+
         // Soft delete sample2
         _context.Samples.Remove(sample2);
         await _context.SaveChangesAsync();
