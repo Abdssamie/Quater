@@ -78,6 +78,7 @@ public class UserService(
             .Include(u => u.Lab)
             .Where(u => u.IsActive)
             .OrderBy(u => u.UserName)
+            .Take(1000)
             .ToListAsync(ct);
 
         return users.Select(MapToDto);
@@ -188,7 +189,7 @@ public class UserService(
         Email = user.Email,
         Role = user.Role,
         LabId = user.LabId,
-        LabName = user.Lab.Name,
+        LabName = user.Lab?.Name ?? "Unknown",
         LastLogin = user.LastLogin,
         IsActive = user.IsActive,
     };

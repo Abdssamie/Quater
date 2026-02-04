@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Quartz;
-using Quater.Backend.Api.Jobs;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
@@ -16,9 +14,19 @@ using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;
 using Quater.Backend.Data.Seeders;
 using Quater.Backend.Services;
+using Quater.Backend.Api.Extensions;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// TODO: [MEDIUM PRIORITY] Extract service configuration into extension methods (Est: 2 hours)
+// Program.cs is verbose (400+ lines) with all service registration inline.
+// Consider creating extension methods in separate files:
+//   - AddAuthenticationServices()
+//   - AddDatabaseServices()
+//   - AddApplicationServices()
+//   - AddInfrastructureServices()
+// This works fine but could improve readability.
 
 // Configure Serilog to read from appsettings.json
 Log.Logger = new LoggerConfiguration()
@@ -114,13 +122,29 @@ builder.Services.AddCors(options =>
     options.AddPolicy("QuaterCorsPolicy", policy =>
     {
         // Get allowed origins from configuration
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? ["http://localhost:5000"]; // Fallback for development
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+
+        // If not configured, use environment-specific defaults
+        if (allowedOrigins == null || allowedOrigins.Length == 0)
+        {
+            if (builder.Environment.IsDevelopment())
+            {
+                // Allow localhost in development
+                allowedOrigins = ["http://localhost:5000", "http://localhost:5173"];
+            }
+            else
+            {
+                // In production, CORS must be explicitly configured
+                throw new InvalidOperationException(
+                    "CORS:AllowedOrigins is not configured. " +
+                    "Please set CORS_ORIGIN_1, CORS_ORIGIN_2, CORS_ORIGIN_3 environment variables.");
+            }
+        }
 
         // In production, validate that all origins use HTTPS
         if (!builder.Environment.IsDevelopment())
         {
-            var httpOrigins = allowedOrigins.Where(o => o.StartsWith("https://", StringComparison.OrdinalIgnoreCase)).ToArray();
+            var httpOrigins = allowedOrigins.Where(o => o.StartsWith("http://", StringComparison.OrdinalIgnoreCase)).ToArray();
             if (httpOrigins.Length != 0)
             {
                 throw new InvalidOperationException(
@@ -166,9 +190,12 @@ builder.Services.AddDbContext<QuaterDbContext>((sp, options) =>
     var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
     var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
 
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection") ??
-        "Host=localhost;Database=quater;Username=postgres;Password=postgres");
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "Database connection string 'DefaultConnection' is not configured. " +
+            "Please set the following environment variables: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD");
+
+    options.UseNpgsql(connectionString);
 
     // Register the entity sets needed by OpenIddict.
     options.UseOpenIddict();
@@ -301,6 +328,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();
+builder.Services.AddScoped<IValidator<Lab>, Quater.Backend.Core.Validators.LabValidator>();
+builder.Services.AddScoped<IValidator<Parameter>, Quater.Backend.Core.Validators.ParameterValidator>();
 
 // Configure role-based authorization policies
 builder.Services.AddAuthorization(options =>
@@ -335,27 +364,13 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 // Register Email Infrastructure (from Infrastructure.Email project)
 builder.Services.AddEmailInfrastructure(builder.Configuration);
 
-
-// Configure Quartz.NET
-builder.Services.AddQuartz(q =>
-{
-    // Create a job key for the audit log archival job
-    var jobKey = new JobKey("AuditLogArchivalJob");
-
-    q.AddJob<AuditLogArchivalJob>(opts => opts.WithIdentity(jobKey));
-
-    // Schedule the job to run nightly at 2 AM
-    q.AddTrigger(opts => opts
-        .ForJob(jobKey)
-        .WithIdentity("AuditLogArchivalJob-trigger")
-        .WithCronSchedule("0 0 2 * * ?") // Run at 2:00 AM every day
-    );
-});
-
-// Add Quartz.NET hosted service
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+// NOTE: Quartz.NET and AuditLogArchivalJob removed - audit log archival will be implemented
+// in a future phase when archival strategy is finalized. For now, audit logs are retained
+// indefinitely. Consider implementing database partitioning or manual archival process.
 
 var app = builder.Build();
+
+app.ValidateConfiguration();
 
 // Add global exception handler (must be first in pipeline)
 app.UseGlobalExceptionHandler();

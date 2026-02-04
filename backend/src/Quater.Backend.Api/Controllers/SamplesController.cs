@@ -34,7 +34,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     /// <summary>
     /// Get samples by lab ID with pagination
     /// </summary>
-    [HttpGet("lab/{labId}")]
+    [HttpGet("by-lab/{labId}")]
     [ProducesResponseType(typeof(PagedResult<SampleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<SampleDto>>> GetByLabId(
@@ -48,6 +48,23 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
 
         var result = await sampleService.GetByLabIdAsync(labId, pageNumber, pageSize, ct);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get samples by lab ID with pagination (DEPRECATED - use /by-lab/{labId} instead)
+    /// </summary>
+    [HttpGet("lab/{labId}")]
+    [Obsolete("This endpoint is deprecated. Use GET /api/samples/by-lab/{labId} instead.")]
+    [ProducesResponseType(typeof(PagedResult<SampleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<SampleDto>>> GetByLabIdLegacy(
+        Guid labId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        // Redirect to new endpoint implementation
+        return await GetByLabId(labId, pageNumber, pageSize, ct);
     }
 
     /// <summary>

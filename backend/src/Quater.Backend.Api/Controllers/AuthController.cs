@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using System.ComponentModel.DataAnnotations;
@@ -20,6 +22,14 @@ namespace Quater.Backend.Api.Controllers;
 /// Authentication controller handling user registration, token management, and password operations.
 /// Uses OAuth2/OpenIddict for authentication - clients should use the /token endpoint for login.
 /// </summary>
+// TODO: [MEDIUM PRIORITY] Split AuthController into focused controllers (Est: 4 hours)
+// This controller is large (800+ lines) and handles multiple responsibilities.
+// Consider splitting into:
+//   - AuthController (token endpoint only)
+//   - RegistrationController (user registration)
+//   - PasswordController (password operations)
+//   - EmailVerificationController (email verification)
+// This is functional but could improve maintainability.
 [ApiController]
 [Route("api/[controller]")]
 public sealed class AuthController : ControllerBase
@@ -31,6 +41,7 @@ public sealed class AuthController : ControllerBase
     private readonly IEmailQueue _emailQueue;
     private readonly IEmailTemplateService _emailTemplateService;
     private readonly IConfiguration _configuration;
+    private readonly EmailSettings _emailSettings;
 
     public AuthController(
         UserManager<User> userManager,
@@ -39,7 +50,8 @@ public sealed class AuthController : ControllerBase
         IOpenIddictTokenManager tokenManager,
         IEmailQueue emailQueue,
         IEmailTemplateService emailTemplateService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IOptions<EmailSettings> emailSettings)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -48,11 +60,19 @@ public sealed class AuthController : ControllerBase
         _emailQueue = emailQueue;
         _emailTemplateService = emailTemplateService;
         _configuration = configuration;
+        _emailSettings = emailSettings.Value;
     }
 
     /// <summary>
     /// Register a new user account
     /// </summary>
+    // TODO: [MEDIUM PRIORITY] Add stricter rate limiting for auth endpoints (Est: 2 hours)
+    // Currently uses global rate limit (100 req/min for authenticated, 20 for anonymous).
+    // Auth endpoints should have stricter limits to prevent brute force attacks:
+    //   - Register: 3 attempts per hour per IP
+    //   - ForgotPassword: 5 attempts per 15 minutes per email
+    //   - ResetPassword: 5 attempts per 15 minutes per email
+    // Consider creating a [StrictRateLimit] attribute or using ASP.NET Core rate limiting.
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -462,6 +482,11 @@ public sealed class AuthController : ControllerBase
             // Don't reveal the error to prevent information disclosure
         }
 
+        // TODO: [LOW PRIORITY] Fix timing attack vulnerability (Est: 1 hour)
+        // The response time differs when email exists vs doesn't exist, potentially
+        // leaking user existence information. Add constant-time delay or always
+        // perform same operations regardless of email existence.
+        // Risk is low for MVP but should be addressed before public launch.
         return Ok(new { message = "If the email exists, a password reset link has been sent" });
     }
 
@@ -618,7 +643,7 @@ public sealed class AuthController : ControllerBase
     private async Task SendVerificationEmailAsync(User user)
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        var frontendUrl = _emailSettings.FrontendUrl;
         
         // URL encode the token and userId
         var encodedToken = HttpUtility.UrlEncode(token);
@@ -649,7 +674,7 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     private async Task SendWelcomeEmailAsync(User user)
     {
-        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        var frontendUrl = _emailSettings.FrontendUrl;
         
         var model = new WelcomeEmailModel
         {
@@ -676,7 +701,7 @@ public sealed class AuthController : ControllerBase
     private async Task SendPasswordResetEmailAsync(User user)
     {
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var frontendUrl = _configuration["Email:FrontendUrl"] ?? "http://localhost:5173";
+        var frontendUrl = _emailSettings.FrontendUrl;
         
         // URL encode the token and email
         var encodedToken = HttpUtility.UrlEncode(token);

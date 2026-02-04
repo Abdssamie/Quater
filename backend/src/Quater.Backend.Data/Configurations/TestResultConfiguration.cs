@@ -108,6 +108,12 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         // Note: Composite index with owned entity property (SampleId + ParameterId) 
         // is handled by the individual indexes above for query optimization
 
+        // Configure relationship to Parameter via Measurement.ParameterId
+        entity.HasOne(e => e.Parameter)
+            .WithMany()
+            .HasForeignKey("Measurement_ParameterId")
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Global query filter to match Sample's soft delete filter
         // This prevents TestResults from appearing when their Sample is soft-deleted
         entity.HasQueryFilter(e => !e.IsDeleted && !e.Sample.IsDeleted);

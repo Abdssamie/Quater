@@ -68,7 +68,7 @@ public class AuditLogsController : ControllerBase
     /// <summary>
     /// Get audit logs by entity ID
     /// </summary>
-    [HttpGet("entity/{entityId}")]
+    [HttpGet("by-entity/{entityId}")]
     [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByEntity(
         Guid entityId,
@@ -84,9 +84,25 @@ public class AuditLogsController : ControllerBase
     }
 
     /// <summary>
+    /// Get audit logs by entity ID (DEPRECATED - use /by-entity/{entityId} instead)
+    /// </summary>
+    [HttpGet("entity/{entityId}")]
+    [Obsolete("This endpoint is deprecated. Use GET /api/auditlogs/by-entity/{entityId} instead.")]
+    [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByEntityLegacy(
+        Guid entityId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        // Redirect to new endpoint implementation
+        return await GetByEntity(entityId, pageNumber, pageSize, ct);
+    }
+
+    /// <summary>
     /// Get audit logs by user ID
     /// </summary>
-    [HttpGet("user/{userId}")]
+    [HttpGet("by-user/{userId}")]
     [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByUser(
@@ -100,6 +116,23 @@ public class AuditLogsController : ControllerBase
 
         var result = await _auditLogService.GetByUserAsync(userId, pageNumber, pageSize, ct);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get audit logs by user ID (DEPRECATED - use /by-user/{userId} instead)
+    /// </summary>
+    [HttpGet("user/{userId}")]
+    [Obsolete("This endpoint is deprecated. Use GET /api/auditlogs/by-user/{userId} instead.")]
+    [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByUserLegacy(
+        Guid userId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        // Redirect to new endpoint implementation
+        return await GetByUser(userId, pageNumber, pageSize, ct);
     }
 
     /// <summary>

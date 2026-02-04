@@ -13,25 +13,29 @@ namespace Quater.Backend.Services;
 
 public class TestResultService(
     QuaterDbContext context,
-    IValidator<TestResult> validator) : ITestResultService
+    IValidator<TestResult> validator,
+    IComplianceCalculator complianceCalculator) : ITestResultService
 {
     public async Task<TestResultDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var testResult = await context.TestResults
             .AsNoTracking()
-            .Where(tr => tr.Id == id && !tr.IsDeleted)
+            .Include(tr => tr.Parameter)
+            .IgnoreQueryFilters()  // Ignore soft-delete filters to load Parameter navigation property
+            .Where(tr => tr.Id == id && !tr.IsDeleted)  // Manually filter TestResult
             .FirstOrDefaultAsync(ct);
 
         if (testResult == null)
             return null;
 
-        // Look up parameter name
-        var parameter = await context.Parameters
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == testResult.Measurement.ParameterId, ct);
-
-        var parameterName = parameter?.Name ?? "Unknown";
-        return testResult.ToDto(parameterName);
+        // Parameter should never be null if FK integrity is maintained
+        if (testResult.Parameter == null)
+        {
+            throw new InvalidOperationException(
+                $"Data integrity error: TestResult {id} references non-existent Parameter {testResult.Measurement.ParameterId}");
+        }
+        
+        return testResult.ToDto(testResult.Parameter.Name);
     }
 
     public async Task<PagedResult<TestResultDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -68,7 +72,9 @@ public class TestResultService(
     {
         var query = context.TestResults
             .AsNoTracking()
-            .Where(tr => tr.SampleId == sampleId && !tr.IsDeleted)
+            .Include(tr => tr.Parameter)  // Eager load Parameter
+            .IgnoreQueryFilters()  // Ignore soft-delete filters to load Parameter
+            .Where(tr => tr.SampleId == sampleId && !tr.IsDeleted)  // Manually filter TestResult
             .OrderByDescending(tr => tr.TestDate);
 
         var totalCount = await query.CountAsync(ct);
@@ -78,16 +84,14 @@ public class TestResultService(
             .Take(pageSize)
             .ToListAsync(ct);
 
-        // Build parameter lookup dictionary
-        var parameterIds = items.Select(tr => tr.Measurement.ParameterId).Distinct().ToList();
-        var parameters = await context.Parameters
-            .AsNoTracking()
-            .Where(p => parameterIds.Contains(p.Id))
-            .ToDictionaryAsync(p => p.Id, p => p.Name, ct);
+        // Build parameter name dictionary from loaded navigation properties
+        var parameterDict = items
+            .Where(tr => tr.Parameter != null)
+            .ToDictionary(tr => tr.Measurement.ParameterId, tr => tr.Parameter!.Name);
 
         return new PagedResult<TestResultDto>
         {
-            Items = items.ToDtos(parameters),
+            Items = items.ToDtos(parameterDict),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -110,7 +114,7 @@ public class TestResultService(
             throw new NotFoundException($"Parameter '{dto.ParameterName}' not found");
 
         // Calculate compliance status based on parameter thresholds
-        var complianceStatus = await CalculateComplianceStatusAsync(dto.ParameterName, dto.Value, ct);
+        var complianceStatus = await complianceCalculator.CalculateComplianceAsync(dto.ParameterName, dto.Value, ct);
 
         // Use extension method to create entity with Measurement ValueObject
         var testResult = dto.ToEntity(parameter, userId, complianceStatus);
@@ -166,35 +170,5 @@ public class TestResultService(
 
         await context.SaveChangesAsync(ct);
         return true;
-    }
-
-    /// <summary>
-    /// Calculate compliance status based on WHO/Moroccan standards
-    /// </summary>
-    private async Task<ComplianceStatus> CalculateComplianceStatusAsync(string parameterName, double value, CancellationToken ct)
-    {
-        var parameter = await context.Parameters
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Name == parameterName && p.IsActive, ct);
-
-        if (parameter == null)
-            return ComplianceStatus.Warning;
-
-        // Check if value is within acceptable range
-        if (parameter.MinValue.HasValue && value < parameter.MinValue.Value)
-            return ComplianceStatus.Fail;
-
-        if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
-            return ComplianceStatus.Fail;
-
-        // Check WHO threshold
-        if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
-            return ComplianceStatus.Fail;
-
-        // Check Moroccan threshold
-        if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
-            return ComplianceStatus.Warning;
-
-        return ComplianceStatus.Pass;
     }
 }

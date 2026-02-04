@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Tests.Helpers;
+using Quater.Backend.Core.Validators;
 using Quater.Backend.Data;
 using Quater.Backend.Services;
 using Quater.Shared.Models;
@@ -34,10 +35,9 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateDbContext();
         _timeProvider = new FakeTimeProvider();
         
-        // LabService doesn't have a specific validator injected based on typical pattern, 
-        // but let's check the constructor to be sure.
-        // Assuming (QuaterDbContext context, TimeProvider timeProvider)
-        _service = new LabService(_context);
+        // Create LabService with required validator
+        var validator = new LabValidator();
+        _service = new LabService(_context, validator);
     }
 
     public async Task DisposeAsync()

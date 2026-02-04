@@ -142,10 +142,5 @@
         "write": true
       }
     }
-  },
-  "instructions": [
-    "backend/AGENTS.md",
-    "desktop/AGENTS.md",
-    "mobile/AGENTS.md"
-  ]
+  }
 }

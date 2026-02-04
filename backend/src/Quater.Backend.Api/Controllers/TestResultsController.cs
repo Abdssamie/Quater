@@ -34,7 +34,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     /// <summary>
     /// Get test results by sample ID with pagination
     /// </summary>
-    [HttpGet("sample/{sampleId}")]
+    [HttpGet("by-sample/{sampleId}")]
     [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<TestResultDto>>> GetBySampleId(
         Guid sampleId,
@@ -47,6 +47,22 @@ public class TestResultsController(ITestResultService testResultService, ILogger
 
         var result = await testResultService.GetBySampleIdAsync(sampleId, pageNumber, pageSize, ct);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get test results by sample ID with pagination (DEPRECATED - use /by-sample/{sampleId} instead)
+    /// </summary>
+    [HttpGet("sample/{sampleId}")]
+    [Obsolete("This endpoint is deprecated. Use GET /api/testresults/by-sample/{sampleId} instead.")]
+    [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<TestResultDto>>> GetBySampleIdLegacy(
+        Guid sampleId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        // Redirect to new endpoint implementation
+        return await GetBySampleId(sampleId, pageNumber, pageSize, ct);
     }
 
     /// <summary>

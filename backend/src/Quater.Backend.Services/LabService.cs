@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
@@ -9,7 +10,8 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Services;
 
 public class LabService(
-    QuaterDbContext context) : ILabService
+    QuaterDbContext context,
+    IValidator<Lab> validator) : ILabService
 {
     public async Task<LabDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -50,6 +52,7 @@ public class LabService(
             .AsNoTracking()
             .Where(l => l.IsActive && !l.IsDeleted)
             .OrderBy(l => l.Name)
+            .Take(1000)
             .ToListAsync(ct);
 
         return labs.Select(MapToDto);
@@ -71,6 +74,9 @@ public class LabService(
             IsActive = true
         };
 
+        // Validate
+        await validator.ValidateAndThrowAsync(lab, ct);
+
         context.Labs.Add(lab);
         await context.SaveChangesAsync(ct);
 
@@ -80,6 +86,14 @@ public class LabService(
     public async Task<LabDto?> UpdateAsync(Guid id, UpdateLabDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Labs.FindAsync([id], ct);
+        // TODO: [MEDIUM PRIORITY] Standardize error handling patterns across all services (Est: 4 hours)
+        // Some methods return null for not found, others throw NotFoundException.
+        // Standardize to always throw exceptions for consistency:
+        //   - Not Found → NotFoundException
+        //   - Validation Failed → ValidationException (FluentValidation)
+        //   - Duplicate → ConflictException
+        //   - Concurrency → ConflictException
+        // Most services are already consistent, but a few need updates.
         if (existing == null || existing.IsDeleted)
             return null;
 
@@ -93,6 +107,9 @@ public class LabService(
         existing.Location = dto.Location;
         existing.ContactInfo = dto.ContactInfo;
         existing.IsActive = dto.IsActive;
+
+        // Validate
+        await validator.ValidateAndThrowAsync(existing, ct);
 
         await context.SaveChangesAsync(ct);
 

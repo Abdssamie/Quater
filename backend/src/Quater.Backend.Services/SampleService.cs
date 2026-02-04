@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Shared.Enums;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
@@ -112,7 +113,18 @@ public class SampleService(
         // Validate
         await validator.ValidateAndThrowAsync(existing, ct);
 
-        await context.SaveChangesAsync(ct);
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            var exists = await context.Samples.AnyAsync(s => s.Id == id && !s.IsDeleted, ct);
+            if (!exists)
+                return null;
+            
+            throw new ConflictException("Sample was modified by another user. Please refresh and try again.");
+        }
         
         return MapToDto(existing);
     }

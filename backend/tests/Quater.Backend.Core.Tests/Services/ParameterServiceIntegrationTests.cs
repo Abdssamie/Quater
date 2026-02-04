@@ -1,7 +1,9 @@
 using FluentAssertions;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Tests.Helpers;
+using Quater.Backend.Core.Validators;
 using Quater.Backend.Data;
 using Quater.Backend.Services;
 using Quater.Shared.Models;
@@ -32,8 +34,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
         
         _context = _fixture.Container.CreateDbContext();
         _timeProvider = new FakeTimeProvider();
+        var validator = new ParameterValidator();
         
-        _service = new ParameterService(_context);
+        _service = new ParameterService(_context, validator);
     }
 
     public async Task DisposeAsync()

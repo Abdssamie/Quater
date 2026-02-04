@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
@@ -9,7 +10,8 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Services;
 
 public class ParameterService(
-    QuaterDbContext context) : IParameterService
+    QuaterDbContext context,
+    IValidator<Parameter> validator) : IParameterService
 {
     public async Task<ParameterDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -57,6 +59,7 @@ public class ParameterService(
             .AsNoTracking()
             .Where(p => p.IsActive)
             .OrderBy(p => p.Name)
+            .Take(1000)
             .ToListAsync(ct);
 
         return parameters.Select(MapToDto);
@@ -81,6 +84,9 @@ public class ParameterService(
             Description = dto.Description,
             IsActive = true
         };
+
+        // Validate
+        await validator.ValidateAndThrowAsync(parameter, ct);
 
         context.Parameters.Add(parameter);
         await context.SaveChangesAsync(ct);
@@ -108,6 +114,9 @@ public class ParameterService(
         existing.MaxValue = dto.MaxValue;
         existing.Description = dto.Description;
         existing.IsActive = dto.IsActive;
+
+        // Validate
+        await validator.ValidateAndThrowAsync(existing, ct);
 
         await context.SaveChangesAsync(ct);
 

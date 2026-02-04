@@ -102,4 +102,5 @@ public sealed class TestResult : IEntity, IAuditable, ISoftDelete, IConcurrent
 
     // Navigation properties
     public Sample Sample { get; init; } = null!;
+    public Parameter? Parameter { get; set; }
 }

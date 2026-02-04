@@ -37,7 +37,8 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new TestResultValidator(_timeProvider);
-        _service = new TestResultService(_context, validator);
+        var complianceCalculator = new ComplianceCalculator(_context);
+        _service = new TestResultService(_context, validator, complianceCalculator);
     }
 
     public async Task DisposeAsync()
@@ -142,11 +143,9 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
     public async Task UpdateAsync_ValidUpdate_UpdatesValue()
     {
         // Arrange
-        var existing = _context.TestResults.First();
-        var parameter = _context.Parameters.Find(existing.Measurement.ParameterId)!;
-        
-        // Use a value within valid range
-        var newValue = 7.0; // Safe pH value
+        var parameter = _context.Parameters.First(p => p.Name == "pH");
+        var existing = _context.TestResults.First(tr => tr.Measurement.ParameterId == parameter.Id);
+        var newValue = 7.5; // Safe pH value (pH range is 6.5-9.5)
 
         var dto = new UpdateTestResultDto
         {

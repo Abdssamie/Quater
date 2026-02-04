@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Exceptions;
 
 namespace Quater.Backend.Api.Middleware;
@@ -63,6 +64,11 @@ public class GlobalExceptionHandlerMiddleware
             ConflictException => (
                 HttpStatusCode.Conflict,
                 exception.Message,
+                null
+            ),
+            DbUpdateConcurrencyException => (
+                HttpStatusCode.Conflict,
+                "The record was modified by another user. Please refresh and try again.",
                 null
             ),
             ForbiddenException => (
