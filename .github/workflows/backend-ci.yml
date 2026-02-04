@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'shared/**'
-      - 'Dockerfile'
+      - 'docker/Dockerfile'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [ main, develop ]
@@ -22,105 +22,53 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build-and-test:
-    name: Build and Test Backend
+  docker-build-and-test:
+    name: Docker Build and Test
     runs-on: ubuntu-latest
     
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: quater_user
-          POSTGRES_PASSWORD: quater_password
-          POSTGRES_DB: quater_test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with tests
+        uses: docker/build-push-action@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          context: .
+          file: ./docker/Dockerfile
+          target: test
+          push: false
+          load: true
+          tags: quater-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore backend/Quater.Backend.sln
-
-      - name: Build
-        run: dotnet build backend/Quater.Backend.sln --configuration Release --no-restore
-
-      - name: Run tests
-        env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=quater_test_db;Username=quater_user;Password=quater_password"
-          Redis__ConnectionString: "localhost:6379,abortConnect=false"
+      - name: Extract test results from container
         run: |
-          dotnet test backend/Quater.Backend.sln \
-            --configuration Release \
-            --no-build \
-            --verbosity normal \
-            --logger "trx;LogFileName=test-results.trx" \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage
+          # Create a temporary container to extract test results
+          docker create --name test-container quater-backend:test
+          docker cp test-container:/App/backend/tests/. ./test-results/ || echo "No test results found"
+          docker rm test-container
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
-          path: ./coverage/**/*.trx
+          path: ./test-results/**/*.trx
 
-      - name: Upload code coverage
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Build final Docker image
+        uses: docker/build-push-action@v5
         with:
-          name: code-coverage
-          path: ./coverage/**/coverage.cobertura.xml
-
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        if: github.event_name == 'pull_request'
-        with:
-          filename: ./coverage/**/coverage.cobertura.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: false
-          indicators: true
-          output: both
-          thresholds: '60 80'
-
-      - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
-        with:
-          recreate: true
-          path: code-coverage-results.md
+          context: .
+          file: ./docker/Dockerfile
+          target: runtime
+          push: false
+          tags: quater-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   lint-and-format:
     name: Lint and Format Check
