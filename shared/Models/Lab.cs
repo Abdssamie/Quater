@@ -1,0 +1,60 @@
+using System.ComponentModel.DataAnnotations;
+using Quater.Shared.Interfaces;
+
+namespace Quater.Shared.Models;
+
+/// <summary>
+/// Represents a water quality lab organization.
+/// </summary>
+public sealed class Lab : IEntity, IAuditable, ISoftDelete, IConcurrent
+{
+    /// <summary>
+    /// Unique identifier (UUID)
+    /// </summary>
+    [Key]
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Lab name
+    /// </summary>
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Lab physical address
+    /// </summary>
+    [MaxLength(500)]
+    public string? Location { get; set; }
+
+    /// <summary>
+    /// Contact information (phone, email)
+    /// </summary>
+    [MaxLength(500)]
+    public string? ContactInfo { get; set; }
+
+    /// <summary>
+    /// Whether lab is active
+    /// </summary>
+    [Required]
+    public bool IsActive { get; set; } = true;
+
+    // IAuditable interface properties - Managed by AuditInterceptor
+    public DateTime CreatedAt { get; private set; }
+    public Guid CreatedBy { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
+
+    // ISoftDelete interface properties
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
+
+    // IConcurrent interface properties
+    [Timestamp]
+    public byte[] RowVersion { get; set; } = null!;
+
+    // Navigation properties
+    public ICollection<User> Users { get; init; } = [];
+    public ICollection<Sample> Samples { get; init; } = [];
+}
