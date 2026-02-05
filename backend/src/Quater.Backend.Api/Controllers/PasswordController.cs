@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
@@ -68,6 +69,7 @@ public sealed class PasswordController(
     /// </summary>
     [HttpPost("forgot")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.Email)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         if (!ModelState.IsValid)
@@ -109,6 +111,7 @@ public sealed class PasswordController(
     /// </summary>
     [HttpPost("reset")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.Email)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         if (!ModelState.IsValid)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Quater.Backend.Api.Attributes;
 using Quater.Backend.Core.Constants;
 using Quater.Shared.Models;
 using System.Security.Claims;
@@ -46,6 +47,7 @@ public sealed class AuthController(
     [HttpPost("token")]
     [AllowAnonymous]
     [Produces("application/json")]
+    [EndpointRateLimit(10, 1, RateLimitTrackBy.IpAddress)]
     public async Task<IActionResult> Token()
     {
         var request = HttpContext.GetOpenIddictServerRequest()

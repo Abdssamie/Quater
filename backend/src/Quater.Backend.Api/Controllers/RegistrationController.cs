@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
@@ -34,6 +35,7 @@ public sealed class RegistrationController(
     /// </summary>
     [HttpPost("register")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.IpAddress)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid)
