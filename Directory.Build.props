@@ -1,5 +1,13 @@
 <Project>
   <PropertyGroup>
     <Version>0.1.0-alpha</Version>
+
+    <!-- Disable only the broken default resx glob -->
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+
+    <!-- Keep normal SDK behavior -->
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultNoneItems>true</EnableDefaultNoneItems>
   </PropertyGroup>
+
 </Project>
