@@ -74,9 +74,6 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     public async Task<ActionResult<UserDto>> GetById(Guid id, CancellationToken ct = default)
     {
         var user = await userService.GetByIdAsync(id, ct);
-        if (user == null)
-            return NotFound(new { message = $"User with ID {id} not found" });
-
         return Ok(user);
     }
 
@@ -134,12 +131,6 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
             var userId = User.GetUserIdOrThrow();
 
             var updated = await userService.UpdateAsync(id, dto, userId, ct);
-            if (updated == null)
-            {
-                logger.LogWarning("Attempt to update non-existent user {UserId}", id);
-                return NotFound(new { message = $"User with ID {id} not found" });
-            }
-
             logger.LogInformation("User {UserId} updated successfully by user {UpdatedBy}", id, userId);
             return Ok(updated);
         }
@@ -150,7 +141,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         }
         catch (NotFoundException ex)
         {
-            logger.LogWarning(ex, "Lab not found when updating user {UserId}", id);
+            logger.LogWarning(ex, "Resource not found when updating user {UserId}", id);
             return NotFound(new { message = ex.Message });
         }
         catch (DbUpdateConcurrencyException ex)
@@ -169,13 +160,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await userService.DeleteAsync(id, ct);
-        if (!deleted)
-        {
-            logger.LogWarning("Attempt to delete non-existent user {UserId}", id);
-            return NotFound(new { message = $"User with ID {id} not found" });
-        }
-
+        await userService.DeleteAsync(id, ct);
         logger.LogInformation("User {UserId} deactivated successfully", id);
         return NoContent();
     }

@@ -170,10 +170,9 @@ public class ParameterServiceIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _service.DeleteAsync(parameter.Id);
+        await _service.DeleteAsync(parameter.Id);
 
-        // Assert
-        result.Should().BeTrue();
+        // Assert - No exception thrown means success
 
         // Verify soft delete
         var persisted = await _context.Parameters.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == parameter.Id);

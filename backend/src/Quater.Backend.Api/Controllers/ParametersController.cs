@@ -48,9 +48,6 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
     public async Task<ActionResult<ParameterDto>> GetById(Guid id, CancellationToken ct = default)
     {
         var parameter = await parameterService.GetByIdAsync(id, ct);
-        if (parameter == null)
-            return NotFound(new { message = $"Parameter with ID {id} not found" });
-
         return Ok(parameter);
     }
 
@@ -91,23 +88,9 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
         [FromBody] UpdateParameterDto dto,
         CancellationToken ct = default)
     {
-        try
-        {
-            var updated = await parameterService.UpdateAsync(id, dto, ct);
-            if (updated == null)
-            {
-                logger.LogWarning("Attempt to update non-existent parameter {ParameterId}", id);
-                return NotFound(new { message = $"Parameter with ID {id} not found" });
-            }
-
-            logger.LogInformation("Parameter {ParameterId} updated successfully", id);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Invalid operation when updating parameter {ParameterId}", id);
-            return BadRequest(new { message = ex.Message });
-        }
+        var updated = await parameterService.UpdateAsync(id, dto, ct);
+        logger.LogInformation("Parameter {ParameterId} updated successfully", id);
+        return Ok(updated);
     }
 
     /// <summary>
@@ -119,13 +102,7 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await parameterService.DeleteAsync(id, ct);
-        if (!deleted)
-        {
-            logger.LogWarning("Attempt to delete non-existent parameter {ParameterId}", id);
-            return NotFound(new { message = $"Parameter with ID {id} not found" });
-        }
-
+        await parameterService.DeleteAsync(id, ct);
         logger.LogInformation("Parameter {ParameterId} deleted successfully", id);
         return NoContent();
     }

@@ -76,9 +76,6 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     public async Task<ActionResult<SampleDto>> GetById(Guid id, CancellationToken ct = default)
     {
         var sample = await sampleService.GetByIdAsync(id, ct);
-        if (sample == null)
-            return NotFound(new { message = $"Sample with ID {id} not found" });
-
         return Ok(sample);
     }
 
@@ -127,12 +124,6 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
             var userId = User.GetUserIdOrThrow();
 
             var updated = await sampleService.UpdateAsync(id, dto, userId, ct);
-            if (updated == null)
-            {
-                logger.LogWarning("Attempt to update non-existent sample {SampleId}", id);
-                return NotFound(new { message = $"Sample with ID {id} not found" });
-            }
-
             logger.LogInformation("Sample {SampleId} updated successfully by user {UserId}", id, userId);
             return Ok(updated);
         }
@@ -140,11 +131,6 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
         {
             logger.LogWarning(ex, "Validation failed when updating sample {SampleId}", id);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            logger.LogWarning(ex, "Concurrency conflict when updating sample {SampleId}", id);
-            return Conflict(new { message = ex.Message });
         }
     }
 
@@ -157,13 +143,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await sampleService.DeleteAsync(id, ct);
-        if (!deleted)
-        {
-            logger.LogWarning("Attempt to delete non-existent sample {SampleId}", id);
-            return NotFound(new { message = $"Sample with ID {id} not found" });
-        }
-
+        await sampleService.DeleteAsync(id, ct);
         logger.LogInformation("Sample {SampleId} deleted successfully", id);
         return NoContent();
     }

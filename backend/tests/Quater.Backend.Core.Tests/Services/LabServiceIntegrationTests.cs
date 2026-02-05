@@ -143,10 +143,9 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _service.DeleteAsync(lab.Id);
+        await _service.DeleteAsync(lab.Id);
 
-        // Assert
-        result.Should().BeTrue();
+        // Assert - No exception thrown means success
 
         // Verify soft delete
         var persisted = await _context.Labs.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == lab.Id);
