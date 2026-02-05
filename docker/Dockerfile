@@ -4,8 +4,7 @@ ARG VERSION=0.0.0-dev
 ARG BUILD_DATE=unknown
 
 # Stage 1: Build - Restore dependencies and build the application
-# Use .NET 9 SDK to avoid .NET 10 MSBuild wildcard expansion bug in Docker
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /App
 
 # Copy solution file
