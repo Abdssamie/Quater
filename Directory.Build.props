@@ -10,4 +10,8 @@
     <EnableDefaultNoneItems>true</EnableDefaultNoneItems>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Remove="**/*.resx" />
+    <None Remove="**/*.resx" />
+  </ItemGroup>
 </Project>

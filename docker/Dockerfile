@@ -11,8 +11,7 @@ WORKDIR /App
 COPY Quater.sln ./
 
 # Copy all source code
-COPY shared/ ./shared/
-COPY backend/ ./backend/
+COPY . ./
 
 # Restore dependencies (cached layer if project files unchanged)
 RUN dotnet restore backend/Quater.Backend.sln
