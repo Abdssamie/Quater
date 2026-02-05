@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Quater.Backend.Api.Attributes;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
@@ -66,15 +67,9 @@ public sealed class AuthController : ControllerBase
     /// <summary>
     /// Register a new user account
     /// </summary>
-    // TODO: [MEDIUM PRIORITY] Add stricter rate limiting for auth endpoints (Est: 2 hours)
-    // Currently uses global rate limit (100 req/min for authenticated, 20 for anonymous).
-    // Auth endpoints should have stricter limits to prevent brute force attacks:
-    //   - Register: 3 attempts per hour per IP
-    //   - ForgotPassword: 5 attempts per 15 minutes per email
-    //   - ResetPassword: 5 attempts per 15 minutes per email
-    // Consider creating a [StrictRateLimit] attribute or using ASP.NET Core rate limiting.
     [HttpPost("register")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.IpAddress)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid)
@@ -136,6 +131,7 @@ public sealed class AuthController : ControllerBase
     [HttpPost("token")]
     [AllowAnonymous]
     [Produces("application/json")]
+    [EndpointRateLimit(10, 1, RateLimitTrackBy.IpAddress)]
     public async Task<IActionResult> Token()
     {
         var request = HttpContext.GetOpenIddictServerRequest()
@@ -458,6 +454,7 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.Email)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         if (!ModelState.IsValid)
@@ -601,6 +598,7 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     [HttpPost("reset-password")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.Email)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
         if (!ModelState.IsValid)
