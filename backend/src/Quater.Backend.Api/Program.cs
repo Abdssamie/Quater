@@ -101,7 +101,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
-    options.KnownIPNetworks.Clear();
+    // In .NET 9, KnownIPNetworks was removed. Use KnownNetworks instead.
+    options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
