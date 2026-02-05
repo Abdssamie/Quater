@@ -46,14 +46,12 @@ public class SampleTests
     {
         // Arrange
         // Note: Location ValueObject validates coordinates at construction, so invalid coordinates will throw
-        // This test now validates that the validator catches the issue
-        // TODO: Fix after data models refactoring - Sample requires Location ValueObject
-        // Need to add: Location = new Quater.Shared.ValueObjects.Location(lat, lng)
+        // This test validates that the validator catches missing location
         var sample = new Sample
         {
             CollectorName = "Jane Doe",
             LabId = Guid.NewGuid()
-            // Location is required, so missing it should fail validation
+            // Location is intentionally missing to test validation
         };
 
         // Act
@@ -69,11 +67,10 @@ public class SampleTests
     {
         // Arrange
         var futureDate = _timeProvider.GetUtcNow().AddDays(1).DateTime;
-        // TODO: Fix after data models refactoring - Sample requires Location ValueObject
-        // Need to add: Location = new Quater.Shared.ValueObjects.Location(34.0, -5.0)
         var sample = new Sample
         {
             CollectorName = "Time Traveler",
+            Location = new Quater.Shared.ValueObjects.Location(34.0, -5.0),
             CollectionDate = futureDate, // Future date
             LabId = Guid.NewGuid()
         };
