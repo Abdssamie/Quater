@@ -174,10 +174,9 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         var existing = _context.TestResults.First();
 
         // Act
-        var result = await _service.DeleteAsync(existing.Id);
+        await _service.DeleteAsync(existing.Id);
 
-        // Assert
-        result.Should().BeTrue();
+        // Assert - No exception thrown means success
 
         // Verify soft delete
         var deleted = await _context.TestResults.IgnoreQueryFilters().FirstOrDefaultAsync(tr => tr.Id == existing.Id);

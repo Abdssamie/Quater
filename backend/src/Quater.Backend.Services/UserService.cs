@@ -14,14 +14,17 @@ public class UserService(
     UserManager<User> userManager
     ) : IUserService
 {
-    public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<UserDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var user = await context.Users
             .AsNoTracking()
             .Include(u => u.Lab)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
-        return user == null ? null : MapToDto(user);
+        if (user == null)
+            throw new NotFoundException(ErrorMessages.UserNotFound);
+
+        return MapToDto(user);
     }
 
     public async Task<PagedResult<UserDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -115,11 +118,11 @@ public class UserService(
         return MapToDto(createdUser);
     }
 
-    public async Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto, Guid updatedBy, CancellationToken ct = default)
+    public async Task<UserDto> UpdateAsync(Guid id, UpdateUserDto dto, Guid updatedBy, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            return null;
+            throw new NotFoundException(ErrorMessages.UserNotFound);
 
         // Update fields if provided
         if (!string.IsNullOrEmpty(dto.UserName))
@@ -159,27 +162,35 @@ public class UserService(
         return MapToDto(updatedUser);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            return false;
+            throw new NotFoundException(ErrorMessages.UserNotFound);
 
         // Soft delete by marking as inactive
         user.IsActive = false;
 
         var result = await userManager.UpdateAsync(user);
-        return result.Succeeded;
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new BadRequestException($"{ErrorMessages.UserUpdateFailed}: {errors}");
+        }
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid id, ChangePasswordDto dto, CancellationToken ct = default)
+    public async Task ChangePasswordAsync(Guid id, ChangePasswordDto dto, CancellationToken ct = default)
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
-            return false;
+            throw new NotFoundException(ErrorMessages.UserNotFound);
 
         var result = await userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
-        return result.Succeeded;
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new BadRequestException($"Password change failed: {errors}");
+        }
     }
 
     private static UserDto MapToDto(User user) => new()

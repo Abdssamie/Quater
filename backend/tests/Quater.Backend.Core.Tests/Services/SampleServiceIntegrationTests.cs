@@ -160,10 +160,9 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         var sampleId = sample.Id;
 
         // Act
-        var result = await _service.DeleteAsync(sampleId);
+        await _service.DeleteAsync(sampleId);
 
-        // Assert
-        result.Should().BeTrue();
+        // Assert - No exception thrown means success
 
         // Verify soft delete
         var deletedSample = await _context.Samples.FindAsync(sampleId);

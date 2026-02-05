@@ -13,14 +13,17 @@ public class LabService(
     QuaterDbContext context,
     IValidator<Lab> validator) : ILabService
 {
-    public async Task<LabDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<LabDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var lab = await context.Labs
             .AsNoTracking()
             .Where(l => l.Id == id && !l.IsDeleted)
             .FirstOrDefaultAsync(ct);
 
-        return lab == null ? null : MapToDto(lab);
+        if (lab == null)
+            throw new NotFoundException(ErrorMessages.LabNotFound);
+
+        return MapToDto(lab);
     }
 
     public async Task<PagedResult<LabDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -83,19 +86,11 @@ public class LabService(
         return MapToDto(lab);
     }
 
-    public async Task<LabDto?> UpdateAsync(Guid id, UpdateLabDto dto, Guid userId, CancellationToken ct = default)
+    public async Task<LabDto> UpdateAsync(Guid id, UpdateLabDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Labs.FindAsync([id], ct);
-        // TODO: [MEDIUM PRIORITY] Standardize error handling patterns across all services (Est: 4 hours)
-        // Some methods return null for not found, others throw NotFoundException.
-        // Standardize to always throw exceptions for consistency:
-        //   - Not Found → NotFoundException
-        //   - Validation Failed → ValidationException (FluentValidation)
-        //   - Duplicate → ConflictException
-        //   - Concurrency → ConflictException
-        // Most services are already consistent, but a few need updates.
         if (existing == null || existing.IsDeleted)
-            return null;
+            throw new NotFoundException(ErrorMessages.LabNotFound);
 
         // Check for duplicate name (excluding current lab)
         var duplicateExists = await context.Labs
@@ -116,16 +111,15 @@ public class LabService(
         return MapToDto(existing);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var lab = await context.Labs.FindAsync([id], ct);
         if (lab == null || lab.IsDeleted)
-            return false;
+            throw new NotFoundException(ErrorMessages.LabNotFound);
 
         context.Labs.Remove(lab);
 
         await context.SaveChangesAsync(ct);
-        return true;
     }
 
     private static LabDto MapToDto(Lab lab) => new()

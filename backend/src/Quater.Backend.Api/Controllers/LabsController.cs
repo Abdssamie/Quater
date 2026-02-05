@@ -49,9 +49,6 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     public async Task<ActionResult<LabDto>> GetById(Guid id, CancellationToken ct = default)
     {
         var lab = await labService.GetByIdAsync(id, ct);
-        if (lab == null)
-            return NotFound(new { message = $"Lab with ID {id} not found" });
-
         return Ok(lab);
     }
 
@@ -95,25 +92,11 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
         [FromBody] UpdateLabDto dto,
         CancellationToken ct = default)
     {
-        try
-        {
-            var userId = User.GetUserIdOrThrow();
+        var userId = User.GetUserIdOrThrow();
 
-            var updated = await labService.UpdateAsync(id, dto, userId, ct);
-            if (updated == null)
-            {
-                logger.LogWarning("Attempt to update non-existent lab {LabId}", id);
-                return NotFound(new { message = $"Lab with ID {id} not found" });
-            }
-
-            logger.LogInformation("Lab {LabId} updated successfully by user {UserId}", id, userId);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Invalid operation when updating lab {LabId}", id);
-            return BadRequest(new { message = ex.Message });
-        }
+        var updated = await labService.UpdateAsync(id, dto, userId, ct);
+        logger.LogInformation("Lab {LabId} updated successfully by user {UserId}", id, userId);
+        return Ok(updated);
     }
 
     /// <summary>
@@ -125,13 +108,7 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await labService.DeleteAsync(id, ct);
-        if (!deleted)
-        {
-            logger.LogWarning("Attempt to delete non-existent lab {LabId}", id);
-            return NotFound(new { message = $"Lab with ID {id} not found" });
-        }
-
+        await labService.DeleteAsync(id, ct);
         logger.LogInformation("Lab {LabId} deleted successfully", id);
         return NoContent();
     }

@@ -13,22 +13,28 @@ public class ParameterService(
     QuaterDbContext context,
     IValidator<Parameter> validator) : IParameterService
 {
-    public async Task<ParameterDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<ParameterDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var parameter = await context.Parameters
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
-        return parameter == null ? null : MapToDto(parameter);
+        if (parameter == null)
+            throw new NotFoundException(ErrorMessages.ParameterNotFound);
+
+        return MapToDto(parameter);
     }
 
-    public async Task<ParameterDto?> GetByNameAsync(string name, CancellationToken ct = default)
+    public async Task<ParameterDto> GetByNameAsync(string name, CancellationToken ct = default)
     {
         var parameter = await context.Parameters
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Name == name, ct);
 
-        return parameter == null ? null : MapToDto(parameter);
+        if (parameter == null)
+            throw new NotFoundException(ErrorMessages.ParameterNotFound);
+
+        return MapToDto(parameter);
     }
 
     public async Task<PagedResult<ParameterDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -94,11 +100,11 @@ public class ParameterService(
         return MapToDto(parameter);
     }
 
-    public async Task<ParameterDto?> UpdateAsync(Guid id, UpdateParameterDto dto, CancellationToken ct = default)
+    public async Task<ParameterDto> UpdateAsync(Guid id, UpdateParameterDto dto, CancellationToken ct = default)
     {
         var existing = await context.Parameters.FindAsync([id], ct);
         if (existing == null)
-            return null;
+            throw new NotFoundException(ErrorMessages.ParameterNotFound);
 
         // Check for duplicate name (excluding current parameter)
         var duplicateExists = await context.Parameters
@@ -123,16 +129,15 @@ public class ParameterService(
         return MapToDto(existing);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var parameter = await context.Parameters.FindAsync([id], ct);
         if (parameter == null)
-            return false;
+            throw new NotFoundException(ErrorMessages.ParameterNotFound);
 
         context.Parameters.Remove(parameter);
 
         await context.SaveChangesAsync(ct);
-        return true;
     }
 
     private static ParameterDto MapToDto(Parameter parameter) => new()

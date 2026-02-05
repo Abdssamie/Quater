@@ -74,9 +74,6 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     public async Task<ActionResult<TestResultDto>> GetById(Guid id, CancellationToken ct = default)
     {
         var testResult = await testResultService.GetByIdAsync(id, ct);
-        if (testResult == null)
-            return NotFound(new { message = $"Test result with ID {id} not found" });
-
         return Ok(testResult);
     }
 
@@ -131,12 +128,6 @@ public class TestResultsController(ITestResultService testResultService, ILogger
             var userId = User.GetUserIdOrThrow();
 
             var updated = await testResultService.UpdateAsync(id, dto, userId, ct);
-            if (updated == null)
-            {
-                logger.LogWarning("Attempt to update non-existent test result {TestResultId}", id);
-                return NotFound(new { message = $"Test result with ID {id} not found" });
-            }
-
             logger.LogInformation("Test result {TestResultId} updated successfully by user {UserId}", id, userId);
             return Ok(updated);
         }
@@ -144,11 +135,6 @@ public class TestResultsController(ITestResultService testResultService, ILogger
         {
             logger.LogWarning(ex, "Validation failed when updating test result {TestResultId}", id);
             return BadRequest(new { message = "Validation failed", errors = ex.Errors });
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            logger.LogWarning(ex, "Concurrency conflict when updating test result {TestResultId}", id);
-            return Conflict(new { message = ex.Message });
         }
     }
 
@@ -161,13 +147,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
     {
-        var deleted = await testResultService.DeleteAsync(id, ct);
-        if (!deleted)
-        {
-            logger.LogWarning("Attempt to delete non-existent test result {TestResultId}", id);
-            return NotFound(new { message = $"Test result with ID {id} not found" });
-        }
-
+        await testResultService.DeleteAsync(id, ct);
         logger.LogInformation("Test result {TestResultId} deleted successfully", id);
         return NoContent();
     }

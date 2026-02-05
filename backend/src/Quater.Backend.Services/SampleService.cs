@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Exceptions;
 using Quater.Shared.Enums;
@@ -14,14 +15,17 @@ public class SampleService(
     QuaterDbContext context,
     IValidator<Sample> validator) : ISampleService
 {
-    public async Task<SampleDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<SampleDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var sample = await context.Samples
             .AsNoTracking()
             .Where(s => s.Id == id && !s.IsDeleted)
             .FirstOrDefaultAsync(ct);
 
-        return sample == null ? null : MapToDto(sample);
+        if (sample == null)
+            throw new NotFoundException(ErrorMessages.SampleNotFound);
+
+        return MapToDto(sample);
     }
 
     public async Task<PagedResult<SampleDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -93,11 +97,11 @@ public class SampleService(
         return MapToDto(sample);
     }
 
-    public async Task<SampleDto?> UpdateAsync(Guid id, UpdateSampleDto dto, Guid userId, CancellationToken ct = default)
+    public async Task<SampleDto> UpdateAsync(Guid id, UpdateSampleDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.Samples.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted)
-            return null;
+            throw new NotFoundException(ErrorMessages.SampleNotFound);
 
         // Note: Optimistic concurrency is now handled by RowVersion (byte[]) in the database
         // The Version field in DTO is kept for backward compatibility but not used for concurrency
@@ -121,24 +125,23 @@ public class SampleService(
         {
             var exists = await context.Samples.AnyAsync(s => s.Id == id && !s.IsDeleted, ct);
             if (!exists)
-                return null;
+                throw new NotFoundException(ErrorMessages.SampleNotFound);
 
-            throw new ConflictException("Sample was modified by another user. Please refresh and try again.");
+            throw new ConflictException(ErrorMessages.ConcurrencyConflict);
         }
 
         return MapToDto(existing);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var sample = await context.Samples.FindAsync([id], ct);
         if (sample == null || sample.IsDeleted)
-            return false;
+            throw new NotFoundException(ErrorMessages.SampleNotFound);
 
         context.Samples.Remove(sample);
 
         await context.SaveChangesAsync(ct);
-        return true;
     }
 
     private static SampleDto MapToDto(Sample sample) => new()

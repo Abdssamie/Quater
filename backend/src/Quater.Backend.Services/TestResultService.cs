@@ -16,7 +16,7 @@ public class TestResultService(
     IValidator<TestResult> validator,
     IComplianceCalculator complianceCalculator) : ITestResultService
 {
-    public async Task<TestResultDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<TestResultDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var testResult = await context.TestResults
             .AsNoTracking()
@@ -26,7 +26,7 @@ public class TestResultService(
             .FirstOrDefaultAsync(ct);
 
         if (testResult == null)
-            return null;
+            throw new NotFoundException(ErrorMessages.TestResultNotFound);
 
         // Parameter should never be null if FK integrity is maintained
         if (testResult.Parameter == null)
@@ -128,11 +128,11 @@ public class TestResultService(
         return testResult.ToDto(parameter.Name);
     }
 
-    public async Task<TestResultDto?> UpdateAsync(Guid id, UpdateTestResultDto dto, Guid userId, CancellationToken ct = default)
+    public async Task<TestResultDto> UpdateAsync(Guid id, UpdateTestResultDto dto, Guid userId, CancellationToken ct = default)
     {
         var existing = await context.TestResults.FindAsync([id], ct);
         if (existing == null || existing.IsDeleted)
-            return null;
+            throw new NotFoundException(ErrorMessages.TestResultNotFound);
 
         // Look up parameter by name to get the Parameter entity
         var parameter = await context.Parameters
@@ -160,15 +160,14 @@ public class TestResultService(
         return existing.ToDto(parameter.Name);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var testResult = await context.TestResults.FindAsync([id], ct);
         if (testResult == null || testResult.IsDeleted)
-            return false;
+            throw new NotFoundException(ErrorMessages.TestResultNotFound);
 
         context.TestResults.Remove(testResult);
 
         await context.SaveChangesAsync(ct);
-        return true;
     }
 }
