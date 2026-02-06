@@ -1,192 +1,48 @@
-# /incode-implement - Implement a Hole
+# /incode-implement - Execute & Verify (The Flesh)
 
 ## Purpose
-Guide the agent through implementing a specific hole (component marked with `@progress: 0`).
+Implement a single "Hole" (Metadata Block) following the Hybrid Protocol.
 
-> **Note:** Examples use TypeScript, but Incode works with **any programming language**. Adapt the code to your language while keeping the metadata format consistent.
-
-## When to Use
-- After identifying a ready hole with `/incode-next`
-- When explicitly asked to implement a specific component
+## The Prime Directive
+**THE 80% WALL.**
+You cannot progress past 80% without self-verifying against the `@checklist`.
 
 ## Workflow
 
-### Step 1: Verify Readiness
-Before implementing, check:
-```bash
-incode scan --format json | grep <hole-id>
-```
+### 1. SELECT
+Run `/incode-next` or `incode scan --ready` to find a valid target.
+*   Target MUST have `@progress: 0` (or <100).
+*   Target MUST have satisfied `@deps` (>90%).
 
-Verify:
-- Hole exists and has `@progress: 0`
-- All `@deps` are at `@progress: 90+` (or don't exist yet)
-- You have all required `@skills` in your toolkit
+### 2. PREPARE
+*   **Read Directive:** Understand the `@directive`.
+*   **Load Context:** Read the linked Spec file in `@context`.
+*   **Global Context:** **ALWAYS** read `specs/constitution.md`. Your code MUST adhere to the Constitution.
+*   **Load Skills:** Activate tools listed in `@skills`.
 
-### Step 2: Read the Spec
-Carefully read the `@spec` field:
-- What is the expected behavior?
-- What methods/functions are needed?
-- What edge cases should be handled?
-- What are the input/output types?
+### 3. IMPLEMENT (0% -> 80%)
+Write the code to satisfy the `@directive`.
+*   **Update Progress:** Set `@progress: 50` when basic logic is done.
+*   **Stop:** Pause at `@progress: 80`. Implementation is "Feature Complete" but unverified.
 
-### Step 3: Implement
-Write the implementation following:
-- The architecture defined in the hole (interface/signature)
-- The skills specified in `@skills` array
-- Best practices for the language/framework
-- Handle edge cases and errors
+### 4. VERIFY (80% -> 95%)
+Review your code against the `@checklist`.
+*   **Check:** "Does my code satisfy checklist item X?"
+*   **Fix:** If No, fix the code.
+*   **Advance:**
+    *   **85%**: Self-review passed.
+    *   **90%**: Linter/Types pass.
+    *   **95%**: Tests pass (if applicable).
 
-### Step 4: Update Progress
-As you implement, update `@progress` based on confidence:
-- `@progress: 50` - Basic implementation, missing edge cases
-- `@progress: 90` - Acceptable, handles main cases
-- `@progress: 95` - Production-ready, handles edge cases
-- `@progress: 100` - Complete with tests (if applicable)
+### 5. FINALIZE (100%)
+*   Only set `@progress: 100` if the User approves or CI/CD tests pass.
 
-### Step 5: Implement Tests (If Applicable)
-If the component has `@tests` reference:
-1. Find the test hole by ID
-2. Implement tests covering:
-   - Happy paths
-   - Edge cases
-   - Error handling
-3. Update test hole progress to `@progress: 100`
-
-### Step 6: Verify
-```bash
-incode scan --validate
-```
-
-Check for:
-- No validation warnings
-- All cross-references are valid
-- Progress accurately reflects confidence
-
-## Example
-
-### Before Implementation
+## Example Update
 ```typescript
 /**
- * @id: token-validator
- * @priority: high
- * @progress: 0
- * @tests: ["token-validator-tests"]
- * @spec: JWT token validation and generation utility. Generate tokens with 24h expiry. Verify tokens and return userId.
- * @skills: ["<your-language>", "jwt"]
- */
-interface TokenValidator {
-  generate(userId: string): string;
-  verify(token: string): { userId: string } | null;
-}
-```
-
-### After Implementation
-```typescript
-import jwt from 'jsonwebtoken';
-
-/**
- * @id: token-validator
- * @priority: high
+ * @id: auth-service
+ * ...
  * @progress: 95
- * @tests: ["token-validator-tests"]
- * @spec: JWT token validation and generation utility. Generate tokens with 24h expiry. Verify tokens and return userId.
- * @skills: ["<your-language>", "jwt"]
+ * @checklist: [ ... ]
  */
-class TokenValidator {
-  private secret: string;
-
-  constructor(secret: string) {
-    this.secret = secret;
-  }
-
-  generate(userId: string): string {
-    return jwt.sign({ userId }, this.secret, { expiresIn: '24h' });
-  }
-
-  verify(token: string): { userId: string } | null {
-    try {
-      const decoded = jwt.verify(token, this.secret) as { userId: string };
-      return { userId: decoded.userId };
-    } catch (error) {
-      return null;
-    }
-  }
-}
-
-export default TokenValidator;
 ```
-
-### Implement Tests
-```typescript
-/**
- * @id: token-validator-tests
- * @priority: high
- * @progress: 100
- * @deps: ["token-validator"]
- * @spec: Tests for TokenValidator - test token generation and verification
- * @skills: ["<your-language>", "<your-test-framework>"]
- */
-import { describe, it, expect } from 'vitest';
-import TokenValidator from './token-validator';
-
-describe('TokenValidator', () => {
-  const validator = new TokenValidator('test-secret');
-
-  it('should generate valid token', () => {
-    const token = validator.generate('user-123');
-    expect(token).toBeTruthy();
-    expect(typeof token).toBe('string');
-  });
-
-  it('should verify valid token', () => {
-    const token = validator.generate('user-123');
-    const result = validator.verify(token);
-    expect(result).toEqual({ userId: 'user-123' });
-  });
-
-  it('should return null for invalid token', () => {
-    const result = validator.verify('invalid-token');
-    expect(result).toBeNull();
-  });
-
-  it('should return null for expired token', () => {
-    // Test with expired token
-    const expiredToken = jwt.sign({ userId: 'user-123' }, 'test-secret', { expiresIn: '-1h' });
-    const result = validator.verify(expiredToken);
-    expect(result).toBeNull();
-  });
-});
-```
-
-## Important Rules
-
-1. **Follow the architecture** - Implement exactly what the hole defines
-2. **Use specified skills** - Follow patterns from `@skills` array
-3. **Update progress honestly** - Reflect true confidence, not wishful thinking
-4. **Handle edge cases** - Don't just implement happy paths
-5. **Write tests for business logic** - Data models/types don't need tests
-6. **Keep metadata updated** - Update `@progress` as you go
-
-## Progress Guidelines
-
-- `@progress: 0` - Hole (not started)
-- `@progress: 50` - Basic implementation, incomplete
-- `@progress: 90` - Acceptable, main functionality works
-- `@progress: 95` - Production-ready, handles edge cases and errors
-- `@progress: 100` - Complete with tests (if applicable)
-
-## Common Mistakes to Avoid
-
-❌ **Don't mark `@progress: 100` without tests** (if tests are referenced)
-❌ **Don't leave stub implementations** (e.g., throwing "not implemented" errors) and mark high progress - stubs are only for holes at `@progress: 0`
-❌ **Don't implement only happy paths** and mark as production-ready
-❌ **Don't forget to update test hole progress** after writing tests
-❌ **Don't change the interface** defined in the hole without updating dependents
-❌ **Don't worry about LSP errors in holes** - They're expected until implementation is complete
-
-## Next Steps
-
-After implementation:
-- Use `/incode-next` to find the next hole to implement
-- Use `/incode-status` to see overall project progress
-- Use `/incode-validate <id>` to verify implementation matches spec

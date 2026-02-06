@@ -217,6 +217,10 @@ public static class ServiceCollectionExtensions
                     OpenIddictConstants.Scopes.Profile,
                     OpenIddictConstants.Scopes.OfflineAccess,
                     "api");
+                
+                // Use JWT format for access tokens (instead of reference tokens)
+                // This allows the token to be self-contained and validated without database lookups
+                options.DisableAccessTokenEncryption();
 
                 // Configure certificates based on environment
                 if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))

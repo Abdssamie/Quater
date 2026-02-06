@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -653,9 +654,16 @@ public sealed class AuthControllerTests : IAsyncLifetime
 
     private sealed class TokenResponse
     {
+        [JsonPropertyName("access_token")]
         public string AccessToken { get; set; } = string.Empty;
+        
+        [JsonPropertyName("token_type")]
         public string TokenType { get; set; } = string.Empty;
+        
+        [JsonPropertyName("expires_in")]
         public int ExpiresIn { get; set; }
+        
+        [JsonPropertyName("refresh_token")]
         public string? RefreshToken { get; set; }
     }
 
