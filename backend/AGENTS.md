@@ -663,10 +663,313 @@ public async Task<IActionResult> CreateSample([FromBody] CreateSampleDto dto)
 }
 ```
 
+---
+
+## 🔐 Authentication & Security
+
+### JWT Claims Structure
+
+Our JWT tokens contain 5 claims that are issued by OpenIddict during authentication:
+
+**Standard OIDC Claims (OpenIddictConstants.Claims):**
+- **`sub` (Subject)** - User ID (Guid) - **PRIMARY USER IDENTIFIER** ⚠️
+- `name` - Username (for display purposes)
+- `email` - User email (for display purposes)
+
+**Custom Quater Claims (QuaterClaimTypes):**
+- **`identity.quater.app/role`** - User role (Admin/Technician/Viewer) - Used for authorization
+- `identity.quater.app/lab_id` - Associated lab ID (for future multi-tenancy)
+
+**Token Destinations:**
+- **Access Token**: ALL 5 claims (used for API authorization)
+- **Identity Token**: Only Subject, Name, Email (OIDC standard claims)
+
+### Reading Claims Correctly
+
+**✅ ALWAYS use OpenIddict constants for standard claims:**
+
+```csharp
+// ✅ CORRECT: Use OpenIddict constants
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+if (string.IsNullOrEmpty(userId))
+{
+    return Unauthorized(); // Fail fast - token is invalid
+}
+
+// Use the userId for business logic
+var user = await _userManager.FindByIdAsync(userId);
+```
+
+**❌ NEVER use ClaimTypes or string literals:**
+
+```csharp
+// ❌ WRONG: Using legacy ASP.NET Identity claim types
+var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // WRONG!
+
+// ❌ WRONG: Using string literals
+var userId = User.FindFirstValue("sub"); // WRONG!
+
+// ❌ DANGEROUS: Fallback pattern
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject)
+             ?? User.FindFirstValue(ClaimTypes.NameIdentifier); // DANGEROUS!
+```
+
+### Fail-Fast for Required Claims
+
+**CRITICAL SECURITY RULE**: Never add fallbacks for required claims. This hides bugs and creates security vulnerabilities.
+
+```csharp
+// ❌ DANGEROUS: Defensive fallback (NEVER DO THIS)
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+if (string.IsNullOrEmptyId))
+{
+    // Fallback to another claim type
+    userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // SECURITY RISK!
+}
+
+// ✅ CORRECT: Fail fast (ALWAYS DO THIS)
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+if (string.IsNullOrEmpty(userId))
+{
+    return Unauthorized(); // Fail immediately - token is invalid
+}
+```
+
+**Why fallbacks are dangerous:**
+
+1. **Security Vulnerability**: An attacker could craft a token with the wrong claim type to bypass authentication
+2. **Hides Configuration Bugs**: If OpenIddict stops issuing `Subject` claims, the system silently falls bactead of alerting you
+3. **Inconsistent Behavior**: Different code paths execute for different users, making debugging impossible
+4. **False Sense of Security**: Appears "defensive" but actually creates attack vectors
+
+**Real-world example from our codebase:**
+
+```csharp
+// AuthController.cs - UserInfo endpoint
+[HttpGet("userinfo")]
+[Authorize]
+public async Task<IActionResult> UserInfo()
+{
+    // ✅ CORRECT: Fail fast if Subject claim is missing
+    var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+    if (string.IsNullOrEmpty(userId))
+    {
+        return Unauthorized();
+    }
+
+    var user = serManager.FindByIdAsync(userId);
+    if (user == null)
+    {
+        return NotFound(new { error = "User not found" });
+    }
+
+    return Ok(new
+    {
+        id = user.Id,
+        email = user.Email,
+        userName = user.UserName,
+        role = user.Role.ToString(),
+        labId = user.LabId,
+        isActive = user.IsActive
+    });
+}
+```
+
+### When to Check for Null: The Security Guide
+
+**✅ DO check for null: External Inputs**
+
+```csharp
+// User input from request body - ALWAYS validate
+public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+{
+    if (string.IsNullOrEmpty(request.Email))
+    {
+        return BadRequest("Email is required");
+    }
+    
+    if (string.IsNullOrEmpty(request.Password))
+    {
+        return BadRequest("Password is required");
+    }
+    
+    // Process registration...
+}
+```
+
+**✅ DO check for null: Optional Claims**
+
+```csharp
+// Optional claim that might not exist in all tokens
+var phoneNumber = User.FindFirstValue("phone_number");
+if (!string.IsNullOrEmpty(phoneNumber))
+{
+    // Use phone number if available
+    await SendSmsNotificationAsync(phoneNumber);
+}
+```
+
+**❌ DON'T check for null: Required Claims**
+
+```csharp
+// ❌ BAD: Subject is ALWAYS required - don't add fallback
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+if (string.IsNullOrEmpty(userId))
+{
+    // Fallback logic here is WRONG - fail fast instead
+    return Unauthorized();
+}
+
+// ✅ GOOD: Fail fast if required claim is missing
+var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+if (string.IsNullOrEmpty(userId))
+{
+    return Unauthorized(); // Token is invalid
+}
+```
+
+**❌ DON'T check for null: Internal Invariants**
+
+```csharp
+// ❌ BAD: If user doesn't exist after authentication, that's a BUG
+var user = await _userManager.FindByIdAsync(userId);
+if (user == null)
+{
+    // Don't hide the bug with fallback logic or default values
+    return NotFound(); // Fail fast - this should never happen
+}
+```
+
+### Authorization with Role Claims
+
+**Use role-based authorization policies (defined in ServiceCollectionExtensions.cs):**
+
+```csharp
+// ✅ CORRECT: Use declarative authorization policies
+[Authorize(Policy = Policies.AdminOnly)]
+public async Task<IActionResult> DeleteLab(Guid id)
+{
+    await _labService.DeleteAsync(id, HttpContext.RequestAborted);
+    return NoContent();
+}
+
+[Authorize(Policy = Policies.TechnicianOrAbove)]
+public async Task<IActionResult> CreateSample([FromBody] CreateSampleDto dto)
+{
+    var sample = await _sampleService.CreateAsync(dto, HttpContext.RequestAborted);
+    return CreatedAtAction(nameof(GetById), new { id = sample.Id }, sample);
+}
+
+[Authorize(Policy = Policies.ViewerOrAbove)]
+public async Task<IActionResult> GetSamples([FromQuery] int page = 1)
+{
+    var samples = await _sampleService.GetPagedAsync(page, HttpContext.RequestAborted);
+    return Ok(samples);
+}
+```
+
+**❌ NEVER check roles manually in controllers:**
+
+```csharp
+// ❌ BAD: Manual role check in controller
+public async Task<IActionResult> DeleteLab(Guid id)
+{
+    var role ser.FindFirstValue(QuaterClaimTypes.Role);
+    if (role != Roles.Admin)
+    {
+        return Forbid();
+    }
+    
+    await _labService.DeleteAsync(id, HttpContext.RequestAborted);
+    return NoContent();
+}
+
+// ✅ GOOD: Use policy attribute
+[Authorize(Policy = Policies.AdminOnly)]
+public async Task<IActionResult> DeleteLab(Guid id)
+{
+    await _labService.DeleteAsync(id, HttpContext.RequestAborted);
+    return NoContent();
+}
+```
+
+### Logging Security Events
+
+**Always log security-related events for monitoring and auditing:**
+
+```csharp
+// Authentication failures
+_logger.LogWarning(
+    "Authentication failed for us}: {Reason}",
+    request.Email,
+    "Invalid credentials");
+
+// Authorization failures (handled by ASP.NET Core automatically, but you can add custom logging)
+_logger.LogWarning(
+    "Authorization failed: User {UserId} with role {Role} attempted to access {Resource}",
+    userId,
+    userRole,
+    resourceName);
+
+// Token validation errors
+_logger.LogWarning(
+    "Token validation failed: {Error}",
+    validationError);
+
+// Suspicious activity
+_logger.LogWarning(
+    "Rate limit exceeded for user {UserId} on endpoint {Endpoint}",
+    userId,
+    endpoint);
+```
+
+**DON'T log sensitive data``csharp
+// ❌ BAD: Logging passwords or tokens
+_logger.LogInformation("User login attempt: {Email} with password {Password}", email, password);
+_logger.LogInformation("Token issued: {Token}", accessToken);
+
+// ✅ GOOD: Log events without sensitive data
+_logger.LogInformation("User {Email} authenticated successfully", email);
+_logger.LogInformation("Token issued for user {UserId}", userId);
+```
+
+---
+
+## 🛡️ Security Best Practices Summary
+
+### Authentication DO's and DON'Ts
+
+**DO:**
+✅ Use `OpenIddictConstants.Claims.Subject` for user ID  
+✅ Fail fast when required claims are missing  
+✅ Use declarative authorization policies (`[Authorize(Policy = ...)]`)  
+✅ Log authentication and authorization failures  
+✅ Validate all external inputs  
+✅ Return generic error messages to prevent information disclosure  
+
+**DON'T:**
+❌ Use `ClaimTypes.NameIdentifier` (legacy ASP.NET Identity)  
+❌ Add fallbacks for required claims (hides bugs, creates vulnerabilities)  
+❌ Check roles manually in controllers (use policies)  
+❌ Log sensitive data (passwords, tokens, PII)  
+❌ Expose detailed error messages to clients  
+❌ Trust client-provided data without validation  
+
+### Common Security Pitfalls
+
+1. **Defensive Fallbacks**: Adding "just in case" fallbacks for required claims creates security vulnerabilities
+2. **Mixed Claim Types**: Using both `Subject` and `NameIdentifier` causes inconsistent behavior
+3. **Manual Authorization**: Checking roles in controller logic instead of using policies
+4. **Information Disclosure**: Returning detailed error messages that reveal system internals
+5. **Missing Validation**: Trusting external inputs without proper validation
+
+---
+
 ### 📋 Code Review Checklist
 
 Before submitting code, verify:
 
+**General:**
 - [ ] No generic exceptions (`InvalidOperationException`, `ArgumentException`) for business logic
 - [ ] No magic strings for status/type values (use enums)
 - [ ] No hardcoded error messages (use `ErrorMessages.cs`)
@@ -676,5 +979,15 @@ Before submitting code, verify:
 - [ ] All async methods accept `CancellationToken`
 - [ ] Nullable reference types properly annotated
 - [ ] Build succeeds with 0 errors, 0 warnings
+
+**Authentication & Security:**
+- [ ] Claims read using `OpenIddictConstants.Claims.Subject` (not `ClaimTypes.NameIdentifier`)
+- [ ] No defensive fallbacks for required claims (Subject, Role)
+- [ ] Authentication failures return `Unauthorized()` immediately (fail fast)
+- [ ] Authorization uses policies (`[Authorize(Policy = ...)]`), not manual role checks
+- [ ] Security events logged appropriately (auth failures, suspicious activity)
+- [ ] No sensitive data in logs (passwords, tokens, PII)
+- [ ] External inputs validated before use
+- [ ] Error messages don't expose system internals
 
 ---
