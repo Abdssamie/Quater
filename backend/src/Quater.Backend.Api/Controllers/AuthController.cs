@@ -14,7 +14,8 @@ namespace Quater.Backend.Api.Controllers;
 
 /// <summary>
 /// Authentication controller handling token management and user information.
-/// Uses OAuth2/OpenIddict for authentication - clients should use the /token endpoint for login.
+/// Uses OAuth2/OpenIddict for authentication.
+/// Supports authorization_code (with PKCE) and refresh_token grant types.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -30,13 +31,13 @@ public sealed class AuthController(
     private readonly IOpenIddictTokenManager _tokenManager = tokenManager;
 
     /// <summary>
-    /// OAuth2 token endpoint - handles password and refresh_token grant types.
+    /// OAuth2 token endpoint - handles authorization_code and refresh_token grant types.
     /// 
-    /// For login, use:
+    /// For authorization code exchange:
     ///   POST /api/auth/token
     ///   Content-Type: application/x-www-form-urlencoded
     ///   
-    ///   grant_type=password&amp;username=user@example.com&amp;password=secret&amp;scope=openid email profile offline_access api
+    ///   grant_type=authorization_code&amp;code=AUTH_CODE&amp;code_verifier=PKCE_VERIFIER&amp;redirect_uri=quater://oauth/callback&amp;client_id=quater-mobile
     /// 
     /// For refresh:
     ///   POST /api/auth/token
@@ -53,38 +54,47 @@ public sealed class AuthController(
         var request = HttpContext.GetOpenIddictServerRequest()
                       ?? throw new InvalidOperationException("The OpenIddict request cannot be retrieved.");
 
-        // Handle password grant type (username/password authentication)
-        if (request.IsPasswordGrantType())
+        // Handle authorization code grant type (PKCE-based - recommended)
+        if (request.IsAuthorizationCodeGrantType())
         {
-            if (request.Username == null)
-            {
-                return Forbid(
-                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                    properties: new AuthenticationProperties(new Dictionary<string, string?>
-                    {
-                        [".error"] = OpenIddictConstants.Errors.InvalidRequest,
-                        [".error_description"] = "The username is required."
-                    }));
-            }
+            // Retrieve the claims principal stored in the authorization code.
+            // OpenIddict has already validated the code, redirect_uri, and code_verifier (PKCE)
+            // before the request reaches this passthrough handler.
+            var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var user = await _userManager.FindByNameAsync(request.Username);
-            if (user == null)
+            if (result.Principal == null)
             {
-                _logger.LogWarning("Token request failed: User {Username} not found", request.Username);
+                _logger.LogWarning("Token exchange failed: Invalid authorization code");
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                     properties: new AuthenticationProperties(new Dictionary<string, string?>
                     {
                         [".error"] = OpenIddictConstants.Errors.InvalidGrant,
-                        [".error_description"] = "The username or password is invalid."
+                        [".error_description"] = "The authorization code is invalid or has expired."
                     }));
             }
 
-            // Check if user is active
+            // Retrieve the user to ensure they still exist and are active.
+            var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
+            var user = await _userManager.FindByIdAsync(userId ?? string.Empty);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Token exchange failed: User {UserId} not found", userId);
+
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
+                        [".error_description"] = "The user no longer exists."
+                    }));
+            }
+
             if (!user.IsActive)
             {
-                _logger.LogWarning("Token request failed: User {Username} is inactive", request.Username);
+                _logger.LogWarning("Token exchange failed: User {UserId} is inactive", userId);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -95,12 +105,11 @@ public sealed class AuthController(
                     }));
             }
 
-            // Check if account is locked out
             if (await _userManager.IsLockedOutAsync(user))
             {
                 var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-                _logger.LogWarning("Token request failed: User {Username} is locked out until {LockoutEnd}",
-                    request.Username, lockoutEnd);
+                _logger.LogWarning("Token exchange failed: User {UserId} is locked out until {LockoutEnd}",
+                    userId, lockoutEnd);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -112,54 +121,35 @@ public sealed class AuthController(
                     }));
             }
 
-            // Verify password
-            if (!await _userManager.CheckPasswordAsync(user, request.Password ?? string.Empty))
-            {
-                await _userManager.AccessFailedAsync(user);
-                var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
-                _logger.LogWarning(
-                    "Token request failed: Invalid password for user {Username}. Failed attempts: {FailedAttempts}",
-                    request.Username, failedAttempts);
-
-                return Forbid(
-                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                    properties: new AuthenticationProperties(new Dictionary<string, string?>
-                    {
-                        [".error"] = OpenIddictConstants.Errors.InvalidGrant,
-                        [".error_description"] = "The username or password is invalid."
-                    }));
-            }
-
-            // Reset failed login attempts on successful authentication
-            await _userManager.ResetAccessFailedCountAsync(user);
-
-            // Update last login
+            // Update last login timestamp
             user.LastLogin = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            // Create claims principal
+            // Create a fresh claims principal with current user data.
+            // This ensures the access token contains up-to-date claims even if
+            // the user's role or lab changed between authorization and token exchange.
             var claims = new List<Claim>
             {
-                new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
-                new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new Claim(QuaterClaimTypes.Role, user.Role.ToString()),
-                new Claim(QuaterClaimTypes.LabId, user.LabId.ToString())
+                new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
+                new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
+                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new(QuaterClaimTypes.Role, user.Role.ToString()),
+                new(QuaterClaimTypes.LabId, user.LabId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-            // Set scopes
-            claimsPrincipal.SetScopes(OpenIddictConstants.Scopes.OpenId, OpenIddictConstants.Scopes.Email, OpenIddictConstants.Scopes.Profile, OpenIddictConstants.Scopes.OfflineAccess, "api");
+            // Restore the scopes from the original authorization request.
+            claimsPrincipal.SetScopes(result.Principal.GetScopes());
 
-            // Set destinations for claims (which tokens they should be included in)
+            // Set destinations for claims (which tokens they should be included in).
             foreach (var claim in claimsPrincipal.Claims)
             {
                 claim.SetDestinations(GetDestinations(claim));
             }
 
-            _logger.LogInformation("User {Username} authenticated successfully via token endpoint", request.Username);
+            _logger.LogInformation("User {UserId} authenticated successfully via authorization code exchange", userId);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -303,12 +293,6 @@ public sealed class AuthController(
         var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         if (string.IsNullOrEmpty(userId))
         {
-            // Fall back to ClaimTypes.NameIdentifier if Subject claim not present
-            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        }
-
-        if (string.IsNullOrEmpty(userId))
-        {
             return Unauthorized();
         }
 
@@ -339,12 +323,6 @@ public sealed class AuthController(
     public async Task<IActionResult> UserInfo()
     {
         var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
-        if (string.IsNullOrEmpty(userId))
-        {
-            // Fall back to ClaimTypes.NameIdentifier if Subject claim not present
-            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        }
-
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();

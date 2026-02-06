@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Quater.Backend.Api.Middleware;
+using Quater.Backend.Api.Seeders;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
@@ -28,6 +29,7 @@ builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -138,6 +140,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapRazorPages();
 
 // Email queue health check endpoint
 app.MapGet("/health/email", (IEmailQueue queue) =>
@@ -166,6 +169,9 @@ if (!app.Environment.IsEnvironment("Testing"))
 
         // Seed database
         await DatabaseSeeder.SeedAsync(context, userManager);
+
+        // Seed OpenIddict client applications
+        await Quater.Backend.Api.Seeders.OpenIddictSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {

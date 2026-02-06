@@ -159,7 +159,7 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
     public async Task ClearRateLimitKeysAsync()
     {
         var db = Redis.GetDatabase();
-    var server = Redis.GetServer(Redis.GetEndPoints().First());
+        var server = Redis.GetServer(Redis.GetEndPoints().First());
         
         await foreach (var key in server.KeysAsync(pattern: "ratelimit:*"))
         {
@@ -167,6 +167,11 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
         }
         
         await foreach (var key in server.KeysAsync(pattern: "endpoint-ratelimit:*"))
+        {
+            await db.KeyDeleteAsync(key);
+        }
+        
+        await foreach (var key in server.KeysAsync(pattern: "login-ratelimit:*"))
         {
             await db.KeyDeleteAsync(key);
         }

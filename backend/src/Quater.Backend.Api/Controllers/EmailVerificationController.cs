@@ -14,7 +14,7 @@ namespace Quater.Backend.Api.Controllers;
 /// Email verification controller
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/email-verification")]
 public sealed class EmailVerificationController(
     UserManager<User> userManager,
     ILogger<EmailVerificationController> logger,

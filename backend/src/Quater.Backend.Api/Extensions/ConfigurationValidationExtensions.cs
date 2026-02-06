@@ -16,6 +16,22 @@ public static class ConfigurationValidationExtensions
             errors.Add("Database connection string 'DefaultConnection' is not configured");
 
         // OpenIddict
+        /*
+         * @id: config-validation-dpop
+         * @priority: medium
+         * @progress: 0
+         * @directive: Add validation for DPoP configuration section. Validate OpenIddict:DPoP:NonceLifetimeSeconds > 0 and OpenIddict:DPoP:AllowedClockSkewSeconds >= 0 when DPoP is enabled. Warn (don't fail) if DPoP:Enabled is false in production. Keep existing OpenIddict Issuer/Audience validation.
+         * @context: specs/oauth2-mobile-desktop-security-enhancement.md#6-5-configuration-changes
+         * @checklist: [
+         *   "Validates NonceLifetimeSeconds > 0 when DPoP enabled",
+         *   "Validates AllowedClockSkewSeconds >= 0 when DPoP enabled",
+         *   "Warns if DPoP:Enabled is false in production (non-blocking)",
+         *   "Existing Issuer/Audience validation preserved",
+         *   "Error messages follow existing pattern"
+         * ]
+         * @deps: ["dpop-options"]
+         * @skills: ["aspnetcore-configuration-validation"]
+         */
         if (string.IsNullOrEmpty(config["OpenIddict:Issuer"]))
             errors.Add("OpenIddict:Issuer is not configured");
         if (string.IsNullOrEmpty(config["OpenIddict:Audience"]))

@@ -323,6 +323,11 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
             }
         };
 
+        // Clear mock invocations before test to avoid counting invocations from other tests
+        var emailQueue = _fixture.Services.GetRequiredService<IEmailQueue>();
+        var mockEmailQueue = Mock.Get(emailQueue);
+        mockEmailQueue.Invocations.Clear();
+
         // Act
         foreach (var request in users)
         {
@@ -330,11 +335,7 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
             response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
-        // Assert
-        var emailQueue = _fixture.Services.GetRequiredService<IEmailQueue>();
-        var mockEmailQueue = Mock.Get(emailQueue);
-        
-        // Verify email queue was called for each user
+        // Assert - Verify email queue was called for each user
         mockEmailQueue.Verify(
             x => x.QueueAsync(
                 It.IsAny<EmailQueueItem>(),

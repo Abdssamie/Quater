@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using OpenIddict.Abstractions;
 using Quater.Backend.Api.Attributes;
 using StackExchange.Redis;
 
@@ -10,9 +11,9 @@ namespace Quater.Backend.Api.Middleware;
 /// Uses distributed Redis counters to support horizontal scaling.
 /// Implements atomic increment+expire using Lua script to prevent race conditions.
 /// 
-/// Global rate limits:
-/// - Authenticated users: 100 requests per minute (configurable)
-/// - Anonymous users: 20 requests per minute (configurable)
+/// Global rate limits (production defaults):
+/// - Authenticated users: 60 requests per minute (configurable)
+/// - Anonymous users: 10 requests per minute (configurable)
 /// 
 /// Per-endpoint rate limits:
 /// - Configured via [EndpointRateLimit] attribute
@@ -316,8 +317,7 @@ public class RateLimitingMiddleware
             return null;
         }
 
-        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                     ?? context.User.FindFirst("sub")?.Value;
+        var userId = context.User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value;
 
         return string.IsNullOrEmpty(userId) ? null : $"user:{userId}";
     }
@@ -384,8 +384,7 @@ public class RateLimitingMiddleware
         // Use user ID if authenticated
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                         ?? context.User.FindFirst("sub")?.Value;
+            var userId = context.User.FindFirst(OpenIddictConstants.Claims.Subject)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
                 return $"user:{userId}";
