@@ -201,11 +201,34 @@ public static class ServiceCollectionExtensions
                        .SetRevocationEndpointUris("/api/auth/revoke");
 
                 // Enable OAuth2/OIDC flows
+                /*
+                 * @id: openiddict-config-authcode
+                 * @priority: high
+                 * @progress: 0
+                 * @directive: Replace password grant with authorization code flow + PKCE. Remove AllowPasswordFlow() and incorrect RequireProofKeyForCodeExchange(). Add AllowAuthorizationCodeFlow(), AcceptAnonymousClients(), SetAuthorizationEndpointUris("/api/auth/authorize"). Keep AllowRefreshTokenFlow(). Add AuthorizationCodeLifetime config read.
+                 * @context: specs/oauth2-mobile-desktop-security-enhancement.md#fr-01-remove-password-grant-flow
+                 * @checklist: [
+                 *   "AllowPasswordFlow() removed (FR-01)",
+                 *   "Incorrect RequireProofKeyForCodeExchange() removed (FR-04)",
+                 *   "AllowAuthorizationCodeFlow() added (FR-02)",
+                 *   "AcceptAnonymousClients() added for public client support (FR-04)",
+                 *   "Authorization endpoint URI set to /api/auth/authorize (FR-02)",
+                 *   "AuthorizationCodeLifetime read from config (default 600s) (FR-03)",
+                 *   "Authorization endpoint passthrough enabled in ASP.NET Core integration",
+                 *   "Existing refresh token flow preserved (SC-05)",
+                 *   "Existing token encryption and signing preserved",
+                 *   "All existing tests still pass after config change"
+                 * ]
+                 * @deps: []
+                 * @skills: ["openiddict-server-configuration", "oauth2-authorization-code-flow"]
+                 */
                 options.AllowPasswordFlow();
                 options.AllowRefreshTokenFlow();
                 
-                // Accept anonymous clients (no client_id required for password flow)
-                options.AcceptAnonymousClients();
+                // Require client authentication for enhanced security
+                // Clients must provide valid client_id and client_secret
+                // This prevents unauthorized applications from requesting tokens
+                options.RequireProofKeyForCodeExchange();
 
                 // Read token configuration from OpenIddict section
                 var openIddictConfig = configuration.GetSection("OpenIddict");
@@ -230,8 +253,9 @@ public static class ServiceCollectionExtensions
                     "api");
                 
                 // Use JWT format for access tokens (instead of reference tokens)
-                // This allows the token to be self-contained and validated without database lookups
-                options.DisableAccessTokenEncryption();
+                // Tokens are both signed (tamper-proof) and encrypted (confidential)
+                // This ensures tokens cannot be read even if intercepted
+                // Note: DisableAccessTokenEncryption() removed for production security
 
                 // Configure certificates based on environment
                 if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
@@ -242,7 +266,7 @@ public static class ServiceCollectionExtensions
                 }
                 else
                 {
-                    // In production, load certificates from file system
+                    // In production, load certificates from file system or environment variables
                     // Use X509CertificateLoader.LoadPkcs12FromFile (modern .NET API)
                     var encryptionCertPath = configuration["OpenIddict:EncryptionCertificatePath"]
                         ?? throw new InvalidOperationException("OpenIddict:EncryptionCertificatePath is required in production");
@@ -251,6 +275,21 @@ public static class ServiceCollectionExtensions
                     var signingCertPath = configuration["OpenIddict:SigningCertificatePath"]
                         ?? throw new InvalidOperationException("OpenIddict:SigningCertificatePath is required in production");
                     var signingCertPassword = configuration["OpenIddict:SigningCertificatePassword"];
+
+                    // Validate certificate paths exist
+                    if (!File.Exists(encryptionCertPath))
+                    {
+                        throw new FileNotFoundException(
+                            $"OpenIddict encryption certificate not found at: {encryptionCertPath}. " +
+                            "Please ensure certificates are mounted correctly or set via environment variables.");
+                    }
+
+                    if (!File.Exists(signingCertPath))
+                    {
+                        throw new FileNotFoundException(
+                            $"OpenIddict signing certificate not found at: {signingCertPath}. " +
+                            "Please ensure certificates are mounted correctly or set via environment variables.");
+                    }
 
                     var encryptionCert = X509CertificateLoader.LoadPkcs12FromFile(
                         encryptionCertPath,

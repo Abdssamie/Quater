@@ -44,12 +44,6 @@ public sealed class PasswordController(
         var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         if (string.IsNullOrEmpty(userId))
         {
-            // Fall back to ClaimTypes.NameIdentifier if Subject claim not present
-            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        }
-
-        if (string.IsNullOrEmpty(userId))
-        {
             return Unauthorized();
         }
 

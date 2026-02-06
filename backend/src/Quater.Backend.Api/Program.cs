@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Quater.Backend.Api.Middleware;
+using Quater.Backend.Api.Seeders;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
@@ -166,6 +167,9 @@ if (!app.Environment.IsEnvironment("Testing"))
 
         // Seed database
         await DatabaseSeeder.SeedAsync(context, userManager);
+
+        // Seed OpenIddict client applications
+        await Quater.Backend.Api.Seeders.OpenIddictSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {

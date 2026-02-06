@@ -991,3 +991,357 @@ Before submitting code, verify:
 - [ ] Error messages don't expose system internals
 
 ---
+
+## 🚦 Rate Limiting Best Practices
+
+### Current Configuration
+
+**Production Defaults** (as of latest update):
+- **Authenticated users**: 60 requests per minute (1 req/second)
+- **Anonymous users**: 10 requests per minute (0.17 req/second)
+- **Window**: 60 seconds (sliding window)
+
+**Development Defaults**:
+- **Authenticated users**: 100 requests per minute (for testing)
+- **Anonymous users**: 20 requests per minute (for testing)
+
+### When to Adjust Rate Limits
+
+**Increase limits if:**
+- ✅ Users frequently hit rate limits during normal usage
+- ✅ Mobile apps need to sync large datasets
+- ✅ Bulk operations are common (e.g., importing samples)
+- ✅ Real-time features require frequent polling
+- ✅ Load testing shows limits are too restrictive
+
+**Decrease limits if:**
+- ⚠️ Experiencing abuse or DDoS attacks
+- ⚠️ Server resources are constrained
+- ⚠️ Cost optimization is needed (reduce Redis/API load)
+
+### Monitoring Rate Limiting
+
+**Key Metrics to Track:**
+1. **Rate limit hit rate**: % of requests that exceed limits
+2. **429 response count**: Number of rate limit rejections
+3. **Redis performance**: Latency and throughput
+4. **User complaints**: Feedback about rate limiting
+
+**Recommended Monitoring**:
+```csharp
+// Log rate limit exceeded events
+_logger.LogWarning(
+    "Rate limit exceeded for user {UserId} on endpoint {Endpoint}. Count: {Count}/{Max}",
+    userId,
+    endpoint,
+    currentCount,
+    limit);
+```
+
+### Per-Endpoint Rate Limiting
+
+Use `[EndpointRateLimit]` attribute for sensitive endpoints:
+
+```csharp
+// Example: Limit password reset requests
+[HttpPost("forgot-password")]
+[EndpointRateLimit(requests: 3, windowMinutes: 60, trackBy: RateLimitTrackBy.Email)]
+public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+{
+    // Implementation
+}
+
+// Example: Limit bulk operations
+[HttpPost("bulk-import")]
+[Authorize(Policy = Policies.TechnicianOrAbove)]
+[EndpointRateLimit(requests: 5, windowMinutes: 60, trackBy: RateLimitTrackBy.UserId)]
+public async Task<IActionResult> BulkImport([FromBody] BulkImportRequest request)
+{
+    // Implementation
+}
+```
+
+### Rate Limiting Strategy by Deployment Size
+
+| Deployment Size | Authenticated | Anonymous | Notes |
+|----------------|---------------|-----------|--
+| **Small** (< 50 users) | 60/min | 10/min | Current defaults |
+| **Medium** (50-500 users) | 100/min | 20/min | Increase for active usage |
+| **Large** (500+ users) | 200/min | 30/min | Scale with user base |
+| **Enterprise** (1000+ users) | 300/min | 50/min | Consider tiered limits |
+
+### Redis Configuration for Rate Limiting
+
+**Single Instance** (current setup):
+```yaml
+redis:
+  image: redis:7-alpine
+  command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+  volumes:
+    - redis_data:/data
+```
+
+**Persistence Options**:
+- **RDB (Snapshot)**: Point-in-time backups, looverhead
+- **AOF (Append-Only File)**: More durable, logs every write (current setup)
+
+**When Redis is Down**:
+- Middleware **fails open** (allows requests)
+- Logged as error for monitoring
+- Prevents Redis outages from taking down API
+
+### Configuration via Environment Variables
+
+Override rate limits without code changes:
+
+```bash
+# In .env or docker-compose.yml
+RATELIMITING_AUTHENTICATED_LIMIT=100
+RATELIMITING_ANONYMOUS_LIMIT=20
+RATELIMITING_WINDOW_SECONDS=60
+```
+
+### Security Considerations
+
+1. **IP-based rate limiting** (anonymous users):
+   - Can be bypassed with VPNs/proxies
+   - Use for basic protection only
+   - Consider additional security measures (CAPTCHA, etc.)
+
+2. **User-based rate limiting** (authenticated users):
+   - More accurate tracking
+   - Prevents abuse from compromised accounts
+   - Combine with account lockout policies
+
+3. **Endpoint-specific limits**:
+   - Protect sensitive operations (password reset, email verification)
+   - Prevent brute force attacks
+   - Track by email for pre-authentication endpoints
+
+### Troubleshooting Rate Limiting
+
+**Issue**: Users hitting rate limits during normal usage
+- **Solution**: Increase limits or optimize client-side caching
+
+**Issue**: Redis connection errors
+- **Solution**: Check Redis health, increase connection timeout, verify network
+
+**Issue**: Rate limiting not working
+- **Solution**: Verify Redis is running, check middleware order in Program.cs
+
+**Issue**: Different limits for different user tiers
+- **Solution**: Implement custom rate limiting logic based on user role/subscription
+
+---
+
+## 🔐 OpenIddict Certificate Management
+
+### Overview
+
+OpenIddict requires two X.509 certificates for production:
+1. **Encryption Certificate**: Encrypts access tokens (confidentiality)
+2. **Signing Certificate**: Signs tokens (integrity and authenticity)
+
+**Security Model**:
+- Tokens are **signed** (tamper-proof) AND **encrypted** (confidential)
+- Even if intercepted, tokens cannot be read or modified
+- Separate certificates provide security isolation
+
+### Certificate Generation
+
+#### Development (Self-Signed Certificates)
+
+Use the provided script to generate self-signed certificates:
+
+```bash
+cd backend
+./scripts/generate-openiddict-certs.sh development
+```
+
+**Output**:
+- `certs/encryption.pfx` (no password)
+- `certs/signing.pfx` (no password)
+
+**Configuration** (appsettings.Development.json):
+```json
+{
+  "OpenIddict": {
+    "EncryptionCertificatePath": "/path/to/certs/encryption.pfx",
+    "SigningCertificatePath": "/path/to/certs/signing.pfx",
+    "EncryptionCertificatePassword": "",
+    "SigningCertificatePassword": ""
+  }
+}
+```
+
+#### Production (CA-Signed Certificates)
+
+**Step 1: Generate Certificate Signing Requests (CSRs)**
+
+```bash
+cd backend
+./scripts/generate-openiddict-certs.sh production
+```
+
+**Output**:
+- `certs/encryption.csr` - Submit to your CA
+- `certs/signing.csr` - Submit to your CA
+- `certs/encryption-key.pem` - Keep secure!
+- `certs/signing-key.pem` - Keep secure!
+
+**Step 2: Submit CSRs to Certificate Authority**
+
+Submit the CSR files to your CA (e.g., Let's Encrypt, DigiCert, internal CA).
+
+**Step 3: Create PFX Files**
+
+Once you receive signed certificates from your CA:
+
+```bash
+# Create encryption PFX with password
+openssl pkcs12 -export -out encryption.pfx \
+  -inkey certs/encryption-key.pem \
+  -in encryption-cert.pem \
+  -passout pass:YOUR_STRONG_PASSWORD
+
+# Create signing PFX with password
+openssl pkcs12 -export -out signing.pfx \inkey certs/signing-key.pem \
+  -in signing-cert.pem \
+  -passout pass:YOUR_STRONG_PASSWORD
+```
+
+**Step 4: Store in Infisical**
+
+```bash
+# Store certificate paths
+infisical secrets set OPENIDDICT_ENCRYPTION_CERT_PATH /app/certs/encryption.pfx
+infisical secrets set OPENIDDICT_SIGNING_CERT_PATH /app/certs/signing.pfx
+
+# Store passwords securely
+infisical secrets set OPENIDDICT_ENCRYPTION_CERT_PASSWORD YOUR_STRONG_PASSWORD
+infisical secrets set OPENIDDICT_SIGNING_CERT_PASSWORD YOUR_STRONG_PASSWORD
+```
+
+### Docker Deployment
+
+**Mount certificates as read-only volume
+
+```yaml
+services:
+  backend:
+    image: quater-backend:latest
+    volumes:
+      - ./certs:/app/certs:ro  # Read-only mount
+    environment:
+      - OPENIDDICT_ENCRYPTION_CERT_PATH=/app/certs/encryption.pfx
+      - OPENIDDICT_SIGNING_CERT_PATH=/app/certs/signing.pfx
+      - OPENIDDICT_ENCRYPTION_CERT_PASSWORD=${OPENIDDICT_ENCRYPTION_CERT_PASSWORD}
+      - OPENIDDICT_SIGNING_CERT_PASSWORD=${OPENIDDICT_SIGNING_CERT_PASSWORD}
+```
+
+**With Infisical injection**:
+
+```bash
+# Run with Infisical
+infisical run --env=production -- docker-compose up -d
+```
+
+### Certificate Rotation
+
+**When to rotate certificates**:
+- ✅ Before expiration (recommended: 30 days before)
+- ✅ If private key is compromised
+- ✅ As part of regular security maintenance (annually)
+- ✅ When changing certificate authority
+
+**Rotation procedure**:
+
+1. **Generate new certificates** (keep old ones active)
+2. **Add new certificates** to OpenIddict configuration
+3. **Deploy updated configuration** (zero-downtime)
+4. **Wait for old tokens to expire** (default: 1 hour for access tokens)
+5. **Remove old certificates** from configuration
+
+**Zero-downtime rotation**:
+```csharp
+// OpenIddict supports multiple certificates simultaneously
+options.AddEncryptionCertificate(oldEncryptionCert)
+       .AddEncryptionCertificate(newEncryptionCert)  // Add new cert
+       .AddSigningCertificate(oldSigningCert)
+       .AddSigningCertificate(newSigningCert);       // Add new cert
+```
+
+### Security Best Practices
+
+**DO**:
+- ✅ Use separate certificates for encryption and signing
+- ✅ Store certificates in secure secrets manager (Infisical, Azure Key Vault, AWS Secrets Manager)
+- ✅ Use strong passwords for PFX files (min 16 characters)
+- ✅ Mount certificates as read-only in Docker
+- ✅ Rotate certificates before expiration
+- ✅ Keep private keys secure and never commit to version control
+- ✅ Use CA-signed certificates in production
+- ✅ Monitor certificate expiration dates
+
+**DON'T**:
+- ❌ Use self-signed certificates in production
+- ❌ Commit certificates or private keys to version control
+- ❌ Share certificates between environments
+- ❌ Use the same certificate for encryption and signing
+- ❌ Store certificates in application code
+- ❌ Use weak or no passwords for PFX files in production
+- ❌ Ignore certificate expiration warnings
+
+### Troubleshooting
+
+**Issue**: "Certificate not found" error on startup
+- **Solution**: Verify certificate paths in environment variables
+- **Solution**: Check file permissions (container user must have read access)
+- **Solution**: Ensure certificates are mounted correctly in Docker
+
+**Issue**: "Invalid password" error
+- **Solution**: Verify password in environment variables matches PFX password
+- **Solution**: Check for special characters that need escaping in shell
+
+**Issue**: "Certificate has expired"
+- **Solution**: Generate new certificates and rotate immediately
+- **Solution**: Set up monitoring for certificate expiration
+
+**Issue**: Tokens cannot be decrypted after deployment
+- **Solution**: Ensure encryption certificate hasn't changed
+- **Solution**: Keep old certificate active during rotation period
+
+### Certificate Validation
+
+**Verify certificate details**:
+
+```bash
+# View certificate information
+openssl pkcs12 -in encryption.pfx -nokeys -info
+
+# Check certificate expiration
+openssl pkcs12 -in encryption.pfx -nokeys | openssl x509 -noout -dates
+
+# Verify certificate chain
+openssl pkcs12 -in encryption.pfx -nokeys | openssl x509 -noout -text
+```
+
+### Monitoring
+
+**Add certificate expiration monitoring**:
+
+```csharp
+// Log certificate expiration on startup
+var encryptionCert = X509CertificateLoader.LoadPkcs12FromFile(encryptionCertPath, password);
+var daysUntilExpiration = (encryptionCert.NotAfter - DateTime.UtcNow).TotalDays;
+
+if (daysUntilExpiration < 30)
+{
+    _logger.LogWarning(
+        "Encryption certificate expires in {Days} days on {ExpirationDate}. Rotation recommended.",
+        (int)daysUntilExpiration,
+        encryptionCert.NotAfter);
+}
+```
+
+---

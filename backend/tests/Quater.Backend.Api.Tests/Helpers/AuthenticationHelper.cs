@@ -7,6 +7,26 @@ namespace Quater.Backend.Api.Tests.Helpers;
 /// <summary>
 /// Helper methods for authentication in integration tests.
 /// </summary>
+/*
+ * @id: auth-helper-authcode
+ * @priority: medium
+ * @progress: 0
+ * @directive: Add GetAuthTokenViaAuthCodeFlowAsync method. Generate PKCE code_verifier (43-128 chars, base64url random bytes) and code_challenge (SHA-256 of verifier, base64url encoded). Send GET to /api/auth/authorize with required params (authenticated via cookie). Extract authorization code from redirect response. Exchange code for tokens via POST /api/auth/token with grant_type=authorization_code, code, code_verifier, redirect_uri, client_id. Add helper to generate DPoP proofs for tests. Keep existing GetAuthTokenAsync for backward compatibility during migration.
+ * @context: specs/oauth2-mobile-desktop-security-enhancement.md#9-testing-strategy
+ * @checklist: [
+ *   "GetAuthTokenViaAuthCodeFlowAsync method added",
+ *   "PKCE code_verifier generation (43-128 chars, base64url) (FR-03)",
+ *   "PKCE code_challenge generation (SHA-256, base64url) (FR-03)",
+ *   "Sends authorize request with all required params (FR-02)",
+ *   "Extracts authorization code from redirect (FR-02)",
+ *   "Exchanges code for tokens with code_verifier (FR-06)",
+ *   "GenerateDPoPProof helper for DPoP-bound token tests (FR-09)",
+ *   "Existing GetAuthTokenAsync preserved for migration tests (SC-05)",
+ *   "AddDPoPHeader extension method for HttpClient"
+ * ]
+ * @deps: ["authorization-controller", "openiddict-config-authcode"]
+ * @skills: ["oauth2-pkce-client", "integration-test-helpers"]
+ */
 public static class AuthenticationHelper
 {
     /// <summary>

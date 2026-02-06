@@ -8,8 +8,8 @@ namespace Quater.Backend.Services;
 
 /**
  * @id: audit-log-service
- * @priority: high
- * @progress: 85
+ * @priority: medium
+ * @progress: 95
  * @deps: ["audit-log-service-interface", "audit-log-dto", "audit-log-mapping-extensions"]
  * @tests: ["audit-log-service-tests"]
  * @spec: Service implementation for querying audit logs with filtering by entity type, user, date range, action type
