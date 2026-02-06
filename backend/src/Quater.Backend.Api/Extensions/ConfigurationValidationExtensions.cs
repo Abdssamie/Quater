@@ -33,8 +33,8 @@ public static class ConfigurationValidationExtensions
         if (string.IsNullOrEmpty(config["Email:FrontendUrl"]))
             errors.Add("Email:FrontendUrl is not configured");
 
-        // CORS (only in production)
-        if (!app.Environment.IsDevelopment())
+        // CORS (only in production - skip for Development and Testing)
+        if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
         {
             var corsOrigins = config.GetSection("Cors:AllowedOrigins").Get<string[]>();
             if (corsOrigins == null || corsOrigins.Length == 0)

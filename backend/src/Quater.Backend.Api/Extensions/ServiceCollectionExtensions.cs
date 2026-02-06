@@ -41,9 +41,9 @@ public static class ServiceCollectionExtensions
                 // If not configured, use environment-specific defaults
                 if (allowedOrigins == null || allowedOrigins.Length == 0)
                 {
-                    if (environment.IsDevelopment())
+                    if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
                     {
-                        // Allow localhost in development
+                        // Allow localhost in development and testing
                         allowedOrigins = ["http://localhost:5000", "http://localhost:5173"];
                     }
                     else
@@ -56,7 +56,7 @@ public static class ServiceCollectionExtensions
                 }
 
                 // In production, validate that all origins use HTTPS
-                if (!environment.IsDevelopment())
+                if (!environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
                 {
                     var httpOrigins = allowedOrigins.Where(o => o.StartsWith("http://", StringComparison.OrdinalIgnoreCase)).ToArray();
                     if (httpOrigins.Length != 0)
@@ -93,7 +93,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds database services including EF Core interceptors and DbContext.
     /// </summary>
-    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         // Register EF Core Interceptors
         services.AddScoped<SoftDeleteInterceptor>();
@@ -114,10 +114,6 @@ public static class ServiceCollectionExtensions
         // Add DbContext with interceptors
         services.AddDbContext<QuaterDbContext>((sp, options) =>
         {
-            var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
-            var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
-            var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
-
             var connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
                     "Database connection string 'DefaultConnection' is not configured. " +
@@ -128,8 +124,16 @@ public static class ServiceCollectionExtensions
             // Register the entity sets needed by OpenIddict.
             options.UseOpenIddict();
 
-            // Add interceptors
-            options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+            // Only add interceptors in non-test environments
+            // In test environments, interceptors can cause FK violations when creating test data
+            if (!environment.IsEnvironment("Testing"))
+            {
+                var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
+                var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
+                var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
+                
+                options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+            }
         });
 
         return services;
@@ -206,9 +210,9 @@ public static class ServiceCollectionExtensions
                 options.RegisterScopes("api", "offline_access");
 
                 // Configure certificates based on environment
-                if (environment.IsDevelopment())
+                if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
                 {
-                    // Use development certificates in development only
+                    // Use development certificates in development and testing environments
                     options.AddDevelopmentEncryptionCertificate()
                            .AddDevelopmentSigningCertificate();
                 }
@@ -246,9 +250,9 @@ public static class ServiceCollectionExtensions
                 // Note: Revocation endpoint is handled automatically by OpenIddict when
                 // SetRevocationEndpointUris is configured - no passthrough needed
 
-                // Only disable transport security in development (allows HTTP)
+                // Only disable transport security in development and testing (allows HTTP)
                 // In production, HTTPS is required for OAuth2 security
-                if (environment.IsDevelopment())
+                if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
                 {
                     aspNetCoreBuilder.DisableTransportSecurityRequirement();
                 }

@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -11,7 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Backend.Core", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Backend.Data", "src\Quater.Backend.Data\Quater.Backend.Data.csproj", "{1AB8EC8B-6608-4E26-93F3-E1A04AC3426B}"
 EndProject
-
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Backend.Core.Tests", "tests\Quater.Backend.Core.Tests\Quater.Backend.Core.Tests.csproj", "{E09AF4D5-F41A-497B-8D3F-C68060F2A9DF}"
@@ -21,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Shared", "..\shared\Quater.Shared.csproj", "{244493AF-A8AA-476E-BC23-E89A4482773D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Backend.Infrastructure.Email", "src\Quater.Backend.Infrastructure.Email\Quater.Backend.Infrastructure.Email.csproj", "{0F3D3A80-E8B3-4F14-9C6E-048F21992470}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Backend.Api.Tests", "tests\Quater.Backend.Api.Tests\Quater.Backend.Api.Tests.csproj", "{21BC9955-D043-496C-A34C-DF53A18736D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,7 +69,6 @@ Global
 		{1AB8EC8B-6608-4E26-93F3-E1A04AC3426B}.Release|x64.Build.0 = Release|Any CPU
 		{1AB8EC8B-6608-4E26-93F3-E1A04AC3426B}.Release|x86.ActiveCfg = Release|Any CPU
 		{1AB8EC8B-6608-4E26-93F3-E1A04AC3426B}.Release|x86.Build.0 = Release|Any CPU
-
 		{E09AF4D5-F41A-497B-8D3F-C68060F2A9DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E09AF4D5-F41A-497B-8D3F-C68060F2A9DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E09AF4D5-F41A-497B-8D3F-C68060F2A9DF}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -117,6 +117,18 @@ Global
 		{0F3D3A80-E8B3-4F14-9C6E-048F21992470}.Release|x64.Build.0 = Release|Any CPU
 		{0F3D3A80-E8B3-4F14-9C6E-048F21992470}.Release|x86.ActiveCfg = Release|Any CPU
 		{0F3D3A80-E8B3-4F14-9C6E-048F21992470}.Release|x86.Build.0 = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|x64.Build.0 = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Debug|x86.Build.0 = Debug|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|x64.ActiveCfg = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|x64.Build.0 = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|x86.ActiveCfg = Release|Any CPU
+		{21BC9955-D043-496C-A34C-DF53A18736D6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -125,9 +137,9 @@ Global
 		{86AD8624-1173-41C7-B163-2C14461DFD43} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{4AACC9A2-D8F0-4061-9686-196A3D612DAB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1AB8EC8B-6608-4E26-93F3-E1A04AC3426B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-
 		{E09AF4D5-F41A-497B-8D3F-C68060F2A9DF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{F80ABC40-FB17-403C-B8DC-7482566449F6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{0F3D3A80-E8B3-4F14-9C6E-048F21992470} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{21BC9955-D043-496C-A34C-DF53A18736D6} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

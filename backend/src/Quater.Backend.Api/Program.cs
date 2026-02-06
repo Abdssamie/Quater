@@ -98,7 +98,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 // Register services using extension methods
 builder.Services.AddInfrastructureServices(builder.Configuration, builder.Environment);
-builder.Services.AddDatabaseServices(builder.Configuration);
+builder.Services.AddDatabaseServices(builder.Configuration, builder.Environment);
 builder.Services.AddAuthenticationServices(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationServices();
 
