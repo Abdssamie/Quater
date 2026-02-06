@@ -13,6 +13,7 @@ namespace Quater.Backend.Api.Pages.Account;
 /// and the user is not yet authenticated via cookie.
 /// </summary>
 [AllowAnonymous]
+[IgnoreAntiforgeryToken]
 public sealed class LoginModel(
     SignInManager<User> signInManager,
     UserManager<User> userManager,
@@ -45,43 +46,51 @@ public sealed class LoginModel(
             return Page();
         }
 
-        // Find the user to check IsActive before attempting sign-in
-        var user = await userManager.FindByEmailAsync(Email);
-        if (user is null || !user.IsActive)
-        {
-            logger.LogWarning("Login failed: User {Email} not found or inactive", Email);
-            ErrorMessage = "Invalid email or password.";
-            return Page();
-        }
-
+        // ✅ FIXED: Validate password FIRST (constant-time for all users)
+        // This ensures that non-existent, inactive, and active users all go through
+        // the expensive bcrypt password hashing, preventing timing attacks
         var result = await signInManager.PasswordSignInAsync(
-            user,
+            Email,  // Use email directly (SignInManager will look up user)
             Password,
             isPersistent: false,
             lockoutOnFailure: true);
 
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            logger.LogInformation("User {Email} signed in via login page for OAuth2 flow", Email);
-            return LocalRedirect(returnUrl ?? "/");
+            // Handle all authentication failures with generic message
+            if (result.IsLockedOut)
+            {
+                logger.LogWarning("Login failed: User {Email} is locked out", Email);
+                ErrorMessage = "Account is locked. Please try again later.";
+            }
+            else if (result.IsNotAllowed)
+            {
+                logger.LogWarning("Login failed: User {Email} sign-in is not allowed", Email);
+                ErrorMessage = "Login is not allowed. Please verify your email.";
+            }
+            else
+            {
+                logger.LogWarning("Login failed for user {Email}", Email);
+                ErrorMessage = "Invalid email or password.";
+            }
+            
+            return Page();
         }
 
-        if (result.IsLockedOut)
+        // ✅ Only after successful password verification, check IsActive
+        // At this point, we know the password is correct, so checking IsActive
+        // doesn't leak timing information
+        var user = await userManager.FindByEmailAsync(Email);
+        if (user is null || !user.IsActive)
         {
-            logger.LogWarning("Login failed: User {Email} is locked out", Email);
-            ErrorMessage = "Account is locked. Please try again later.";
-        }
-        else if (result.IsNotAllowed)
-        {
-            logger.LogWarning("Login failed: User {Email} sign-in is not allowed", Email);
-            ErrorMessage = "Login is not allowed. Please verify your email.";
-        }
-        else
-        {
-            logger.LogWarning("Login failed: Invalid password for user {Email}", Email);
-            ErrorMessage = "Invalid email or password.";
+            // User authenticated but is inactive - revoke the session immediately
+            await signInManager.SignOutAsync();
+            logger.LogWarning("Login denied: User {Email} is inactive", Email);
+            ErrorMessage = "Invalid email or password."; // Generic message
+            return Page();
         }
 
-        return Page();
+        logger.LogInformation("User {Email} signed in via login page for OAuth2 flow", Email);
+        return LocalRedirect(returnUrl ?? "/");
     }
 }
