@@ -463,7 +463,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             IsActive = true
         };
 
-        var result = await userManager.CreateAsync(user, "Test@123456");
+        var result = await userManager.CreateAsync(user, "Test@123456789");
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(

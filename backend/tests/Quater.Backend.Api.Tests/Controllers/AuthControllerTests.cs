@@ -24,7 +24,7 @@ public sealed class AuthControllerTests : IAsyncLifetime
 {
     private readonly ApiTestFixture _fixture;
     private readonly HttpClient _client;
-    private const string TestPassword = "Test123!@#";
+    private const string TestPassword = "Test123!@#456";
     private const string TestEmail = "test@example.com";
     private const string InactiveUserEmail = "inactive@example.com";
     private const string LockedUserEmail = "locked@example.com";

@@ -78,7 +78,14 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
                 // Rate Limiting
                 ["RateLimiting:AuthenticatedLimit"] = "1000",
                 ["RateLimiting:AnonymousLimit"] = "1000",
-                ["RateLimiting:WindowSeconds"] = "60"
+                ["RateLimiting:WindowSeconds"] = "60",
+                
+                // Identity Password Settings (relaxed for testing)
+                ["Identity:Password:RequireDigit"] = "true",
+                ["Identity:Password:RequireLowercase"] = "true",
+                ["Identity:Password:RequireUppercase"] = "true",
+                ["Identity:Password:RequireNonAlphanumeric"] = "true",
+                ["Identity:Password:RequiredLength"] = "12"
             });
         });
 

@@ -2,6 +2,7 @@ using System.Security.Cryptography.X509Certificates;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
@@ -191,6 +192,9 @@ public static class ServiceCollectionExtensions
                 // Enable OAuth2/OIDC flows
                 options.AllowPasswordFlow();
                 options.AllowRefreshTokenFlow();
+                
+                // Accept anonymous clients (no client_id required for password flow)
+                options.AcceptAnonymousClients();
 
                 // Read token configuration from OpenIddict section
                 var openIddictConfig = configuration.GetSection("OpenIddict");
@@ -207,7 +211,12 @@ public static class ServiceCollectionExtensions
                 // The leeway allows for concurrent requests during token refresh
                 options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(refreshTokenLeewaySeconds));
                 // Register scopes
-                options.RegisterScopes("api", "offline_access");
+                options.RegisterScopes(
+                    OpenIddictConstants.Scopes.OpenId,
+                    OpenIddictConstants.Scopes.Email,
+                    OpenIddictConstants.Scopes.Profile,
+                    OpenIddictConstants.Scopes.OfflineAccess,
+                    "api");
 
                 // Configure certificates based on environment
                 if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))

@@ -151,9 +151,10 @@ app.MapGet("/health/email", (IEmailQueue queue) =>
     });
 }).RequireAuthorization();
 
-// Apply migrations and seed database on startup
-using (var scope = app.Services.CreateScope())
+// Apply migrations and seed database on startup (skip in Testing environment)
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     try
     {
