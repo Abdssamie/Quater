@@ -10,6 +10,7 @@ All Phase 1 security fix plans (Plans 1-4) have been **completed and merged** in
 2. ✅ **Registration Security Fix** - Privilege escalation fix (completed)
 3. ✅ **Claim Type Fixes** - OAuth2/OIDC standards compliance (completed)
 4. ✅ **Authorization Infrastructure Fixes** - Fallback policy + error handling (completed)
+5. ✅ **Soft Delete Refactor** - Delegate soft delete logic to SoftDeleteInterceptor (completed)
 
 **Archived plans:** See `archive/` directory for completed implementation plans.
 
