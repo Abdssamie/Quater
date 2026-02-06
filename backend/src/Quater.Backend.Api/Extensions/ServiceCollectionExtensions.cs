@@ -366,7 +366,12 @@ public static class ServiceCollectionExtensions
             // Endpoints without [Authorize] attribute will require authentication
             // Endpoints must explicitly use [AllowAnonymous] to be public
             // This is a defense-in-depth security measure to prevent accidental exposure
-            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            // 
+            // IMPORTANT: Accept authentication from BOTH cookie (Razor Pages) and Bearer token (API) schemes
+            // This allows the OAuth2 login page to work correctly while still protecting API endpoints
+            options.FallbackPolicy = new AuthorizationPolicyBuilder(
+                    IdentityConstants.ApplicationScheme,  // Cookie authentication for Razor Pages
+                    OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)  // Bearer tokens for API
                 .RequireAuthenticatedUser()
                 .Build();
         });
