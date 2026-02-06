@@ -8,27 +8,6 @@ namespace Quater.Backend.Api.Seeders;
 /// </summary>
 public static class OpenIddictSeeder
 {
-    /*
-     * @id: openiddict-seeder-public
-     * @priority: high
-     * @progress: 100
-     * @directive: Update OpenIddict seeder to configure public client for authorization code flow with PKCE. Change ClientType from Confidential to Public. Remove ClientSecret. Add authorization endpoint permission. Replace password grant permission with authorization code grant. Add PKCE requirement via Requirements.Features.ProofKeyForCodeExchange. Add redirect URIs for mobile (quater://oauth/callback) and desktop (http://127.0.0.1/callback). Keep refresh token and scope permissions.
-     * @context: specs/oauth2-mobile-desktop-security-enhancement.md#fr-07-update-openiddictseeder
-     * @checklist: [
-     *   "ClientType changed to OpenIddictConstants.ClientTypes.Public (FR-07)",
-     *   "ClientSecret removed (public clients have no secret) (FR-04)",
-     *   "Auto-generated secret logic removed (FR-04)",
-     *   "Permissions.Endpoints.Authorization added (FR-07)",
-     *   "Permissions.GrantTypes.Password replaced with GrantTypes.AuthorizationCode (FR-07)",
-     *   "Requirements.Features.ProofKeyForCodeExchange added (FR-07)",
-     *   "Redirect URIs configured for mobile deep link (FR-07)",
-     *   "Redirect URIs configured for desktop loopback (FR-07)",
-     *   "Existing scope permissions preserved (FR-07)",
-     *   "Refresh token permission preserved (SC-05)"
-     * ]
-     * @deps: ["openiddict-config-authcode"]
-     * @skills: ["openiddict-application-descriptor"]
-     */
     /// <summary>
     /// Seeds the default OpenIddict client application for mobile/desktop apps.
     /// Uses authorization code flow with PKCE (public client, no client secret).
