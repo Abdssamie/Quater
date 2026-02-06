@@ -83,8 +83,21 @@ public sealed class AuthorizationController(
         }
 
         // User is authenticated - look up the user to get current claims.
-        var user = await _userManager.GetUserAsync(result.Principal)
-            ?? throw new InvalidOperationException("The authenticated user could not be found.");
+        var user = await _userManager.GetUserAsync(result.Principal);
+        if (user is null)
+        {
+            _logger.LogError(
+                "Authenticated user could not be found in database. Principal: {Principal}",
+                result.Principal.Identity?.Name);
+            
+            return Forbid(
+                authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                properties: new AuthenticationProperties(new Dictionary<string, string?>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.ServerError,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "An internal error occurred during authentication."
+                }));
+        }
 
         // Verify the user account is still active.
         if (!user.IsActive)

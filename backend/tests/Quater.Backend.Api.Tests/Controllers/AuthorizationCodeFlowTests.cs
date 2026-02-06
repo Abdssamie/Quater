@@ -31,6 +31,7 @@ using System.Text.Json.Serialization;
 using System.Web;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using Quater.Backend.Api.Tests.Fixtures;
@@ -588,6 +589,75 @@ public sealed class AuthorizationCodeFlowTests : IAsyncLifetime
         var error = queryParams["error"];
         error.Should().Be(OpenIddictConstants.Errors.AccessDenied,
             "inactive users should be denied with access_denied error");
+    }
+
+    #endregion
+
+    #region User Not Found Tests
+
+    /// <summary>
+    /// Verifies that when an authenticated user is deleted from the database after login
+    /// but before authorization, the authorize endpoint returns a proper OAuth2 error
+    /// instead of throwing an exception.
+    /// This is an edge case where the user's cookie is still valid but the user record
+    /// no longer exists in the database.
+    /// </summary>
+    [Fact]
+    public async Task Authorize_UserNotFoundInDatabase_ReturnsOAuthError()
+    {
+        // Arrange - Create a temporary user, log in, then delete from database
+        using var scope = _fixture.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var context = scope.ServiceProvider.GetRequiredService<QuaterDbContext>();
+
+        // Create a temporary user
+        var tempEmail = "temp-deleted-user@example.com";
+        var lab = await context.Labs.FirstAsync();
+        var tempUser = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = tempEmail,
+            Email = tempEmail,
+            EmailConfirmed = true,
+            Role = UserRole.Technician,
+            LabId = lab.Id,
+            IsActive = true
+        };
+        var result = await userManager.CreateAsync(tempUser, TestPassword);
+        result.Succeeded.Should().BeTrue("test user creation should succeed");
+
+        // Login to get cookies
+        var (client, _) = await AuthenticationHelper.LoginViaCookieAsync(
+            _fixture, tempEmail, TestPassword);
+        using var _ = client;
+
+        // Delete the user from the database (simulating edge case)
+        var userToDelete = await userManager.FindByEmailAsync(tempEmail);
+        await userManager.DeleteAsync(userToDelete!);
+
+        var codeVerifier = AuthenticationHelper.GenerateCodeVerifier();
+        var codeChallenge = AuthenticationHelper.ComputeCodeChallenge(codeVerifier);
+        var state = Guid.NewGuid().ToString("N");
+        var authorizeQuery = AuthenticationHelper.BuildAuthorizeQuery(
+            DefaultClientId, DefaultRedirectUri, DefaultScope, codeChallenge, state);
+
+        // Act - Attempt to authorize with valid cookies but deleted user
+        var authorizeResponse = await client.GetAsync($"/api/auth/authorize?{authorizeQuery}");
+
+        // Assert - Should redirect with server_error, not throw exception
+        authorizeResponse.StatusCode.Should().Be(HttpStatusCode.Redirect,
+            "should return OAuth2 error redirect instead of throwing exception");
+        
+        var redirectUri = authorizeResponse.Headers.Location;
+        redirectUri.Should().NotBeNull();
+
+        var queryParams = HttpUtility.ParseQueryString(redirectUri!.Query);
+        var error = queryParams["error"];
+        error.Should().Be(OpenIddictConstants.Errors.ServerError,
+            "authenticated user not found in database should return server_error");
+        
+        var errorDescription = queryParams["error_description"];
+        errorDescription.Should().NotBeNullOrEmpty("error_description should be provided");
     }
 
     #endregion
