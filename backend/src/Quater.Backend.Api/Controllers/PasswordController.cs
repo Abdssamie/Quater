@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
 using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
 using Quater.Backend.Core.Interfaces;
@@ -40,7 +41,13 @@ public sealed class PasswordController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+        if (string.IsNullOrEmpty(userId))
+        {
+            // Fall back to ClaimTypes.NameIdentifier if Subject claim not present
+            userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();

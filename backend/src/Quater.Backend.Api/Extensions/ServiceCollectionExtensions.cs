@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
@@ -174,6 +175,16 @@ public static class ServiceCollectionExtensions
         })
             .AddEntityFrameworkStores<QuaterDbContext>()
             .AddDefaultTokenProviders();
+
+        // Configure authentication to use OpenIddict validation for Bearer tokens
+        // This sets the default authentication scheme so [Authorize] attributes work with JWT tokens
+        // Without this, AddIdentity() sets cookies as the default, causing Bearer token auth to fail
+        services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+        });
 
         // Configure OpenIddict for OAuth2/OIDC authentication
         services.AddOpenIddict()
