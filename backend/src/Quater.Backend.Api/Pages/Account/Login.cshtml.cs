@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Quater.Shared.Models;
+using StackExchange.Redis;
 
 namespace Quater.Backend.Api.Pages.Account;
 
@@ -17,8 +18,12 @@ namespace Quater.Backend.Api.Pages.Account;
 public sealed class LoginModel(
     SignInManager<User> signInManager,
     UserManager<User> userManager,
-    ILogger<LoginModel> logger) : PageModel
+    ILogger<LoginModel> logger,
+    IConnectionMultiplexer redis) : PageModel
 {
+    private const int MaxLoginAttempts = 5;
+    private const int WindowMinutes = 15;
+
     [BindProperty]
     [Required(ErrorMessage = "Email is required.")]
     [EmailAddress(ErrorMessage = "Invalid email format.")]
@@ -46,14 +51,40 @@ public sealed class LoginModel(
             return Page();
         }
 
+        // ✅ Rate limiting check BEFORE password verification to prevent brute force
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var rateLimitKey = $"login-ratelimit:{clientIp}";
+        var db = redis.GetDatabase();
+
+        var attempts = await db.StringIncrementAsync(rateLimitKey);
+        
+        // Set expiration on first attempt
+        if (attempts == 1)
+        {
+            await db.KeyExpireAsync(rateLimitKey, TimeSpan.FromMinutes(WindowMinutes));
+        }
+
+        if (attempts > MaxLoginAttempts)
+        {
+            logger.LogWarning(
+                "Rate limit exceeded for IP {ClientIp}. Attempts: {Attempts}/{Max}",
+                clientIp,
+                attempts,
+                MaxLoginAttempts);
+            
+            ErrorMessage = "Too many login attempts. Please try again in 15 minutes.";
+            return Page();
+        }
+
         // ✅ FIXED: Validate password FIRST (constant-time for all users)
         // This ensures that non-existent, inactive, and active users all go through
         // the expensive bcrypt password hashing, preventing timing attacks
+        // Note: lockoutOnFailure is false because we use Redis-based rate limiting instead
         var result = await signInManager.PasswordSignInAsync(
             Email,  // Use email directly (SignInManager will look up user)
             Password,
             isPersistent: false,
-            lockoutOnFailure: true);
+            lockoutOnFailure: false);
 
         if (!result.Succeeded)
         {
@@ -77,7 +108,7 @@ public sealed class LoginModel(
             return Page();
         }
 
-        // ✅ Only after successful password verification, check IsActive
+        // ✅ Only accessful password verification, check IsActive
         // At this point, we know the password is correct, so checking IsActive
         // doesn't leak timing information
         var user = await userManager.FindByEmailAsync(Email);

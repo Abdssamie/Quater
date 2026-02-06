@@ -144,6 +144,49 @@ public sealed class LoginPageTests : IAsyncLifetime
         response.StatusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Login_ExceedsRateLimit_ReturnsError()
+    {
+        // Arrange
+        var testUser = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "ratelimit@test.com",
+            Email = "ratelimit@test.com",
+            EmailConfirmed = true,
+            Role = UserRole.Viewer,
+            LabId = _testLab.Id,
+            IsActive = true
+        };
+
+        await CreateUserAsync(testUser, "Password123!");
+
+        // Act - Attempt login 6 times with wrong password
+        var responses = new List<HttpResponseMessage>();
+        for (int i = 0; i < 6; i++)
+        {
+            var response = await _client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = "ratelimit@test.com",
+                ["Password"] = "WrongPassword!"
+            }));
+            responses.Add(response);
+        }
+
+        // Assert - First 5 should return normal error, 6th should be rate limited
+        for (int i = 0; i < 5; i++)
+        {
+            responses[i].StatusCode.Should().Be(HttpStatusCode.OK);
+            var content = await responses[i].Content.ReadAsStringAsync();
+            content.Should().Contain("Invalid email or password");
+        }
+
+        // 6th attempt should be rate limited
+        responses[5].StatusCode.Should().Be(HttpStatusCode.OK);
+        var rateLimitContent = await responses[5].Content.ReadAsStringAsync();
+        rateLimitContent.Should().Contain("Too many login attempts. Please try again in 15 minutes.");
+    }
+
     #region Helper Methods
 
     /// <summary>
