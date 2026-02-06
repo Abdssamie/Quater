@@ -1,7 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Extensions;
@@ -47,22 +46,6 @@ public class TestResultsController(ITestResultService testResultService, ILogger
 
         var result = await testResultService.GetBySampleIdAsync(sampleId, pageNumber, pageSize, ct);
         return Ok(result);
-    }
-
-    /// <summary>
-    /// Get test results by sample ID with pagination (DEPRECATED - use /by-sample/{sampleId} instead)
-    /// </summary>
-    [HttpGet("sample/{sampleId}")]
-    [Obsolete("This endpoint is deprecated. Use GET /api/testresults/by-sample/{sampleId} instead.")]
-    [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<TestResultDto>>> GetBySampleIdLegacy(
-        Guid sampleId,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 50,
-        CancellationToken ct = default)
-    {
-        // Redirect to new endpoint implementation
-        return await GetBySampleId(sampleId, pageNumber, pageSize, ct);
     }
 
     /// <summary>

@@ -215,27 +215,6 @@ public static class ServiceCollectionExtensions
                        .SetRevocationEndpointUris("/api/auth/revoke");
 
                 // Enable OAuth2/OIDC flows
-                /*
-                 * @id: openiddict-config-authcode
-                 * @priority: high
-                 * @progress: 100
-                 * @directive: Replace password grant with authorization code flow + PKCE. Remove AllowPasswordFlow() and incorrect RequireProofKeyForCodeExchange(). Add AllowAuthorizationCodeFlow(), AcceptAnonymousClients(), SetAuthorizationEndpointUris("/api/auth/authorize"). Keep AllowRefreshTokenFlow(). Add AuthorizationCodeLifetime config read.
-                 * @context: specs/oauth2-mobile-desktop-security-enhancement.md#fr-01-remove-password-grant-flow
-                 * @checklist: [
-                 *   "AllowPasswordFlow() removed (FR-01)",
-                 *   "Incorrect RequireProofKeyForCodeExchange() removed (FR-04)",
-                 *   "AllowAuthorizationCodeFlow() added (FR-02)",
-                 *   "AcceptAnonymousClients() added for public client support (FR-04)",
-                 *   "Authorization endpoint URI set to /api/auth/authorize (FR-02)",
-                 *   "AuthorizationCodeLifetime read from config (default 600s) (FR-03)",
-                 *   "Authorization endpoint passthrough enabled in ASP.NET Core integration",
-                 *   "Existing refresh token flow preserved (SC-05)",
-                 *   "Existing token encryption and signing preserved",
-                 *   "All existing tests still pass after config change"
-                 * ]
-                 * @deps: []
-                 * @skills: ["openiddict-server-configuration", "oauth2-authorization-code-flow"]
-                 */
                 options.AllowAuthorizationCodeFlow();
                 options.AllowRefreshTokenFlow();
 

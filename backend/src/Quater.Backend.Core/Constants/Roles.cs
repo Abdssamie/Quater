@@ -13,14 +13,4 @@ public static class Roles
     /// Gets all available roles.
     /// </summary>
     public static readonly string[] All = [Admin, Technician, Viewer];
-
-    /// <summary>
-    /// Gets roles that can modify data (Admin and Technician).
-    /// </summary>
-    public static readonly string[] CanModify = [Admin, Technician];
-
-    /// <summary>
-    /// Gets roles that can only view data (all roles).
-    /// </summary>
-    public static readonly string[] CanView = [Admin, Technician, Viewer];
 }

@@ -58,3 +58,17 @@ bld/
 ## Certificates (staging/production)
 certs/
 .env.staging
+
+## Log files
+**/logs/
+
+## SQLite databases
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+## Tool-specific local state
+.beads/
+
+## Docker environment
+docker/.env
