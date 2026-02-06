@@ -176,6 +176,18 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<QuaterDbContext>()
             .AddDefaultTokenProviders();
 
+        // Configure Identity application cookie for OAuth2 authorization code flow.
+        // When the AuthorizationController challenges with IdentityConstants.ApplicationScheme,
+        // unauthenticated users are redirected to the login page in the system browser.
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = environment.IsDevelopment() || environment.IsEnvironment("Testing")
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+        });
+
         // Configure authentication to use OpenIddict validation for Bearer tokens
         // This sets the default authentication scheme so [Authorize] attributes work with JWT tokens
         // Without this, AddIdentity() sets cookies as the default, causing Bearer token auth to fail
@@ -195,8 +207,9 @@ public static class ServiceCollectionExtensions
             })
             .AddServer(options =>
             {
-                // Configure token endpoints
-                options.SetTokenEndpointUris("/api/auth/token")
+                // Configure endpoints
+                options.SetAuthorizationEndpointUris("/api/auth/authorize")
+                       .SetTokenEndpointUris("/api/auth/token")
                        .SetUserinfoEndpointUris("/api/auth/userinfo")
                        .SetRevocationEndpointUris("/api/auth/revoke");
 
@@ -204,7 +217,7 @@ public static class ServiceCollectionExtensions
                 /*
                  * @id: openiddict-config-authcode
                  * @priority: high
-                 * @progress: 0
+                 * @progress: 100
                  * @directive: Replace password grant with authorization code flow + PKCE. Remove AllowPasswordFlow() and incorrect RequireProofKeyForCodeExchange(). Add AllowAuthorizationCodeFlow(), AcceptAnonymousClients(), SetAuthorizationEndpointUris("/api/auth/authorize"). Keep AllowRefreshTokenFlow(). Add AuthorizationCodeLifetime config read.
                  * @context: specs/oauth2-mobile-desktop-security-enhancement.md#fr-01-remove-password-grant-flow
                  * @checklist: [
@@ -222,23 +235,24 @@ public static class ServiceCollectionExtensions
                  * @deps: []
                  * @skills: ["openiddict-server-configuration", "oauth2-authorization-code-flow"]
                  */
-                options.AllowPasswordFlow();
+                options.AllowAuthorizationCodeFlow();
                 options.AllowRefreshTokenFlow();
-                
-                // Require client authentication for enhanced security
-                // Clients must provide valid client_id and client_secret
-                // This prevents unauthorized applications from requesting tokens
-                options.RequireProofKeyForCodeExchange();
+
+                // Accept anonymous clients (public clients like desktop/mobile apps)
+                // Public clients use PKCE instead of client secrets for security
+                options.AcceptAnonymousClients();
 
                 // Read token configuration from OpenIddict section
                 var openIddictConfig = configuration.GetSection("OpenIddict");
                 var accessTokenLifetimeSeconds = openIddictConfig.GetValue("AccessTokenLifetime", 3600);
                 var refreshTokenLifetimeSeconds = openIddictConfig.GetValue("RefreshTokenLifetime", 604800);
                 var refreshTokenLeewaySeconds = openIddictConfig.GetValue("RefreshTokenReuseLeewaySeconds", 30);
+                var authorizationCodeLifetimeSeconds = openIddictConfig.GetValue("AuthorizationCodeLifetime", 600);
 
                 // Configure token lifetimes
                 options.SetAccessTokenLifetime(TimeSpan.FromSeconds(accessTokenLifetimeSeconds));
                 options.SetRefreshTokenLifetime(TimeSpan.FromSeconds(refreshTokenLifetimeSeconds));
+                options.SetAuthorizationCodeLifetime(TimeSpan.FromSeconds(authorizationCodeLifetimeSeconds));
 
                 // Enable refresh token rotation (security best practice - RFC 6819)
                 // When a refresh token is used, a new one is issued and the old one is invalidated
@@ -307,6 +321,7 @@ public static class ServiceCollectionExtensions
 
                 // Enable ASP.NET Core integration
                 var aspNetCoreBuilder = options.UseAspNetCore()
+                       .EnableAuthorizationEndpointPassthrough()
                        .EnableTokenEndpointPassthrough()
                        .EnableUserinfoEndpointPassthrough();
 

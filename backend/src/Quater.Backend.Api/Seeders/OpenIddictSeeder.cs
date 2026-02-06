@@ -1,3 +1,4 @@
+using System;
 using OpenIddict.Abstractions;
 
 namespace Quater.Backend.Api.Seeders;
@@ -10,7 +11,7 @@ public static class OpenIddictSeeder
     /*
      * @id: openiddict-seeder-public
      * @priority: high
-     * @progress: 0
+     * @progress: 100
      * @directive: Update OpenIddict seeder to configure public client for authorization code flow with PKCE. Change ClientType from Confidential to Public. Remove ClientSecret. Add authorization endpoint permission. Replace password grant permission with authorization code grant. Add PKCE requirement via Requirements.Features.ProofKeyForCodeExchange. Add redirect URIs for mobile (quater://oauth/callback) and desktop (http://127.0.0.1/callback). Keep refresh token and scope permissions.
      * @context: specs/oauth2-mobile-desktop-security-enhancement.md#fr-07-update-openiddictseeder
      * @checklist: [
@@ -30,6 +31,7 @@ public static class OpenIddictSeeder
      */
     /// <summary>
     /// Seeds the default OpenIddict client application for mobile/desktop apps.
+    /// Uses authorization code flow with PKCE (public client, no client secret).
     /// </summary>
     public static async Task SeedAsync(IServiceProvider serviceProvider)
     {
@@ -37,7 +39,6 @@ public static class OpenIddictSeeder
 
         // Get client configuration from environment variables
         var clientId = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_ID") ?? "quater-mobile-client";
-        var clientSecret = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_SECRET");
 
         // Check if client already exists
         var existingClient = await manager.FindByClientIdAsync(clientId);
@@ -46,52 +47,37 @@ public static class OpenIddictSeeder
             return; // Client already exists
         }
 
-        // Generate secure client secret if not provided
-        if (string.IsNullOrEmpty(clientSecret))
-        {
-            clientSecret = GenerateSecureClientSecret();
-            Console.WriteLine("=".PadRight(80, '='));
-            Console.WriteLine("IMPORTANT: OpenIddict client credentials generated!");
-            Console.WriteLine($"Client ID: {clientId}");
-            Console.WriteLine($"Client Secret: {clientSecret}");
-            Console.WriteLine("Store these credentials securely in Infisical or your secrets manager.");
-            Console.WriteLine("Set OPENIDDICT_CLIENT_ID and OPENIDDICT_CLIENT_SECRET environment variables.");
-            Console.WriteLine("=".PadRight(80, '='));
-        }
-
-        // Create OpenIddict application descriptor
+        // Create OpenIddict application descriptor for public client with authorization code + PKCE
         var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
-            ClientSecret = clientSecret,
             DisplayName = "Quater Mobile/Desktop Client",
-            ClientType = OpenIddictConstants.ClientTypes.Confidential,
+            ClientType = OpenIddictConstants.ClientTypes.Public,
             ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+            RedirectUris =
+            {
+                new Uri("quater://oauth/callback"),       // Mobile deep link
+                new Uri("http://127.0.0.1/callback")      // Desktop loopback
+            },
             Permissions =
             {
+                OpenIddictConstants.Permissions.Endpoints.Authorization,
                 OpenIddictConstants.Permissions.Endpoints.Token,
                 OpenIddictConstants.Permissions.Endpoints.Revocation,
-                OpenIddictConstants.Permissions.GrantTypes.Password,
+                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                 OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                OpenIddictConstants.Permissions.ResponseTypes.Code,
                 OpenIddictConstants.Permissions.Scopes.Email,
                 OpenIddictConstants.Permissions.Scopes.Profile,
                 OpenIddictConstants.Permissions.Prefixes.Scope + "api",
                 OpenIddictConstants.Permissions.Prefixes.Scope + "offline_access"
+            },
+            Requirements =
+            {
+                OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
             }
         };
 
         await manager.CreateAsync(descriptor);
-    }
-
-    /// <summary>
-    /// Generates a secure random client secret (64 characters).
-    /// </summary>
-    private static string GenerateSecureClientSecret()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-        var random = new Random();
-        return new string(Enumerable.Range(0, 64)
-            .Select(_ => chars[random.Next(chars.Length)])
-            .ToArray());
     }
 }

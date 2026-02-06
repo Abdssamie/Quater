@@ -76,34 +76,39 @@ public sealed class PasswordController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        // Start timing to ensure consistent response time regardless of email existence
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
         var user = await _userManager.FindByEmailAsync(request.Email);
 
-        // Always return success to prevent email enumeration
-        if (user == null || !user.IsActive)
+        if (user != null && user.IsActive)
         {
-            return Ok(new { message = "If the email exists, a password reset link has been sent" });
-        }
-
-        try
-        {
-            await AuthHelpers.SendPasswordResetEmailAsync(
-                user,
-                _userManager,
-                _emailQueue,
-                _emailTemplateService,
-                _emailSettings);
-            _logger.LogInformation("Password reset email sent to {Email}", request.Email);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send password reset email to {Email}", request.Email);
-            // Don't reveal the error to prevent information disclosure
+            try
+            {
+                await AuthHelpers.SendPasswordResetEmailAsync(
+                    user,
+                    _userManager,
+                    _emailQueue,
+                    _emailTemplateService,
+                    _emailSettings);
+                _logger.LogInformation("Password reset email sent to {Email}", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", request.Email);
+                // Don't reveal the error to prevent information disclosure
+            }
         }
 
         // Add constant-time delay to prevent timing attack vulnerability
         // This ensures response time is consistent regardless of whether email exists
-        await Task.Delay(TimeSpan.FromMilliseconds(200));
-        
+        var elapsed = stopwatch.ElapsedMilliseconds;
+        var remainingDelay = 200 - (int)elapsed;
+        if (remainingDelay > 0)
+        {
+            await Task.Delay(remainingDelay);
+        }
+
         return Ok(new { message = "If the email exists, a password reset link has been sent" });
     }
 

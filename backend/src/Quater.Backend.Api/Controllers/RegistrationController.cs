@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Data;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -22,13 +24,15 @@ public sealed class RegistrationController(
     ILogger<RegistrationController> logger,
     IEmailQueue emailQueue,
     IEmailTemplateService emailTemplateService,
-    IOptions<EmailSettings> emailSettings) : ControllerBase
+    IOptions<EmailSettings> emailSettings,
+    QuaterDbContext context) : ControllerBase
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly ILogger<RegistrationController> _logger = logger;
     private readonly IEmailQueue _emailQueue = emailQueue;
     private readonly IEmailTemplateService _emailTemplateService = emailTemplateService;
     private readonly EmailSettings _emailSettings = emailSettings.Value;
+    private readonly QuaterDbContext _context = context;
 
     /// <summary>
     /// Register a new user account
@@ -40,6 +44,18 @@ public sealed class RegistrationController(
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+
+        // Validate LabId exists
+        if (request.LabId == Guid.Empty)
+        {
+            return BadRequest(new { errors = new Dictionary<string, string[]> { ["LabId"] = ["Lab ID is required"] } });
+        }
+
+        var labExists = await _context.Labs.AsNoTracking().AnyAsync(l => l.Id == request.LabId && !l.IsDeleted);
+        if (!labExists)
+        {
+            return BadRequest(new { errors = new[] { $"Lab with ID '{request.LabId}' does not exist." } });
+        }
 
         var user = new User
         {
