@@ -8,6 +8,7 @@ using Quater.Backend.Data;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Quater.Backend.Api.Tests.Pages;
 
@@ -20,12 +21,14 @@ public sealed class LoginPageTests : IAsyncLifetime
 {
     private readonly ApiTestFixture _fixture;
     private readonly HttpClient _client;
+    private readonly ITestOutputHelper _output;
     private Lab _testLab = null!;
 
-    public LoginPageTests(ApiTestFixture fixture)
+    public LoginPageTests(ApiTestFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
         _client = _fixture.CreateClient();
+        _output = output;
     }
 
     public async Task InitializeAsync()
@@ -173,15 +176,24 @@ public sealed class LoginPageTests : IAsyncLifetime
             responses.Add(response);
         }
 
-        // Assert - First 5 should return normal error, 6th should be rate limited
-        for (int i = 0; i < 5; i++)
+        // Assert - Defense in depth: Both Identity lockout and rate limiting are active
+        // First 2 attempts should return normal error
+        for (int i = 0; i < 2; i++)
         {
             responses[i].StatusCode.Should().Be(HttpStatusCode.OK);
             var content = await responses[i].Content.ReadAsStringAsync();
             content.Should().Contain("Invalid email or password");
         }
 
-        // 6th attempt should be rate limited
+        // Attempts 3-5 should show account lockout
+        for (int i = 2; i < 5; i++)
+        {
+            responses[i].StatusCode.Should().Be(HttpStatusCode.OK);
+            var content = await responses[i].Content.ReadAsStringAsync();
+            content.Should().Contain("Account is locked. Please try again later.");
+        }
+
+        // 6th attempt should be rate limited (rate limit check happens BEFORE password verification)
         responses[5].StatusCode.Should().Be(HttpStatusCode.OK);
         var rateLimitContent = await responses[5].Content.ReadAsStringAsync();
         rateLimitContent.Should().Contain("Too many login attempts. Please try again in 15 minutes.");

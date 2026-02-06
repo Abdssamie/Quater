@@ -79,12 +79,12 @@ public sealed class LoginModel(
         // ✅ FIXED: Validate password FIRST (constant-time for all users)
         // This ensures that non-existent, inactive, and active users all go through
         // the expensive bcrypt password hashing, preventing timing attacks
-        // Note: lockoutOnFailure is false because we use Redis-based rate limiting instead
+        // Note: lockoutOnFailure is true for defense in depth (user-based lockout + IP-based rate limiting)
         var result = await signInManager.PasswordSignInAsync(
             Email,  // Use email directly (SignInManager will look up user)
             Password,
             isPersistent: false,
-            lockoutOnFailure: false);
+            lockoutOnFailure: true);
 
         if (!result.Succeeded)
         {
@@ -108,7 +108,7 @@ public sealed class LoginModel(
             return Page();
         }
 
-        // ✅ Only accessful password verification, check IsActive
+        // ✅ Only after successful password verification, check IsActive
         // At this point, we know the password is correct, so checking IsActive
         // doesn't leak timing information
         var user = await userManager.FindByEmailAsync(Email);
