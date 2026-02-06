@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
@@ -360,6 +361,14 @@ public static class ServiceCollectionExtensions
                 policy.RequireAssertion(context =>
                     context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role &&
                         (c.Value == Roles.Admin || c.Value == Roles.Technician || c.Value == Roles.Viewer))));
+
+            // Fallback policy: require authentication by default
+            // Endpoints without [Authorize] attribute will require authentication
+            // Endpoints must explicitly use [AllowAnonymous] to be public
+            // This is a defense-in-depth security measure to prevent accidental exposure
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
         });
 
         return services;

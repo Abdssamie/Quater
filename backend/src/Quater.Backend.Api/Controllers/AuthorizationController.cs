@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
@@ -51,6 +52,7 @@ public sealed class AuthorizationController(
     /// </returns>
     [HttpGet("authorize")]
     [HttpPost("authorize")]
+    [AllowAnonymous] // Uses cookie-based authentication, not Bearer tokens
     public async Task<IActionResult> Authorize()
     {
         // Retrieve the OpenIddict server request.
