@@ -76,11 +76,16 @@ namespace Quater.Backend.Data.Migrations
     );
 ");
 
-            // Create RLS policy for TestResults (inherits from Samples)
+            // Create RLS policy for TestResults (inherits lab isolation from Samples RLS)
+            // The EXISTS subquery automatically applies the Samples RLS policy, ensuring
+            // users only see TestResults for Samples they have access to
             migrationBuilder.Sql(@"
     CREATE POLICY lab_isolation_policy ON ""TestResults""
     USING (
-        ""SampleId"" IN (SELECT ""Id"" FROM ""Samples"")
+        EXISTS (
+            SELECT 1 FROM ""Samples"" 
+            WHERE ""Samples"".""Id"" = ""TestResults"".""SampleId""
+        )
     );
 ");
         }
