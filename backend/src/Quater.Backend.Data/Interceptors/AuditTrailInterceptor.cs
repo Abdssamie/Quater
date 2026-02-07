@@ -5,7 +5,6 @@ using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 using Quater.Shared.Models;
 using System.Text.Json;
-using Quater.Backend.Core.Constants;
 
 namespace Quater.Backend.Data.Interceptors;
 

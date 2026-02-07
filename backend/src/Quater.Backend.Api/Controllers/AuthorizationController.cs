@@ -89,7 +89,7 @@ public sealed class AuthorizationController(
             _logger.LogError(
                 "Authenticated user could not be found in database. Principal: {Principal}",
                 result.Principal.Identity?.Name);
-            
+
             return Forbid(
                 authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                 properties: new AuthenticationProperties(new Dictionary<string, string?>

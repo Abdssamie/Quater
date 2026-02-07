@@ -134,7 +134,7 @@ public static class ServiceCollectionExtensions
                 var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
                 var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
                 var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
-                
+
                 options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
             }
         });
@@ -245,7 +245,7 @@ public static class ServiceCollectionExtensions
                     OpenIddictConstants.Scopes.Profile,
                     OpenIddictConstants.Scopes.OfflineAccess,
                     "api");
-                
+
                 // Use JWT format for access tokens (instead of reference tokens)
                 // Tokens are both signed (tamper-proof) and encrypted (confidential)
                 // This ensures tokens cannot be read even if intercepted
@@ -364,9 +364,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         // Register FluentValidation
-        services.AddValidatorsFromAssemblyContaining<Quater.Backend.Core.Validators.SampleValidator>();
-        services.AddScoped<IValidator<Lab>, Quater.Backend.Core.Validators.LabValidator>();
-        services.AddScoped<IValidator<Parameter>, Quater.Backend.Core.Validators.ParameterValidator>();
+        services.AddValidatorsFromAssemblyContaining<Core.Validators.SampleValidator>();
+        services.AddScoped<IValidator<Lab>, Core.Validators.LabValidator>();
+        services.AddScoped<IValidator<Parameter>, Core.Validators.ParameterValidator>();
 
         // Register Services
         services.AddScoped<ISampleService, SampleService>();

@@ -30,12 +30,8 @@ public class CurrentUserService : ICurrentUserService
             return SystemUser.GetId();
         }
 
-        if (Guid.TryParse(userIdString, out var userId))
-        {
-            return userId;
-        }
-
-        // Fallback to system user if parsing fails
-        return SystemUser.GetId();
+        return Guid.TryParse(userIdString, out var userId) ? userId :
+            // Fallback to system user if parsing fails
+            SystemUser.GetId();
     }
 }

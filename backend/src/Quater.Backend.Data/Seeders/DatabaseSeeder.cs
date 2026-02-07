@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Constants;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 
@@ -20,11 +21,11 @@ public static class DatabaseSeeder
         // Ensure database is created
         await context.Database.EnsureCreatedAsync();
 
-        // Seed Parameters
-        await SeedParametersAsync(context);
-
         // Seed Admin User
         await SeedAdminUserAsync(context, userManager);
+        
+        // Seed Parameters
+        await SeedParametersAsync(context);
     }
 
     /// <summary>
@@ -40,7 +41,7 @@ public static class DatabaseSeeder
 
         var parameters = new List<Parameter>
         {
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "pH",
@@ -48,9 +49,9 @@ public static class DatabaseSeeder
                 Description = "Measure of acidity or alkalinity of water",
                 MinValue = 6.5,
                 MaxValue = 8.5,
-                IsActive = true
+                IsActive = true,
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Turbidity",
@@ -60,7 +61,7 @@ public static class DatabaseSeeder
                 MaxValue = 5,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Total Dissolved Solids",
@@ -70,7 +71,7 @@ public static class DatabaseSeeder
                 MaxValue = 500,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Chlorine Residual",
@@ -80,7 +81,7 @@ public static class DatabaseSeeder
                 MaxValue = 5.0,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Fluoride",
@@ -90,7 +91,7 @@ public static class DatabaseSeeder
                 MaxValue = 1.5,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Nitrate",
@@ -100,7 +101,7 @@ public static class DatabaseSeeder
                 MaxValue = 50,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Arsenic",
@@ -110,7 +111,7 @@ public static class DatabaseSeeder
                 MaxValue = 10,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Lead",
@@ -120,7 +121,7 @@ public static class DatabaseSeeder
                 MaxValue = 10,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "E. coli",
@@ -130,7 +131,7 @@ public static class DatabaseSeeder
                 MaxValue = 0,
                 IsActive = true
             },
-            new Parameter
+            new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Total Coliform",
@@ -152,7 +153,8 @@ public static class DatabaseSeeder
     private static async Task SeedAdminUserAsync(QuaterDbContext context, UserManager<User> userManager)
     {
         // Check if admin user already exists
-        var adminUser = await userManager.FindByEmailAsync("admin@quater.local");
+        var systemUserId = SystemUser.GetId();
+        var adminUser = await userManager.FindByIdAsync(systemUserId.ToString());
         if (adminUser != null)
         {
             return; // Admin already exists
@@ -165,16 +167,15 @@ public static class DatabaseSeeder
             Name = "Default Laboratory",
             Location = "Main Office",
             ContactInfo = "admin@quater.local",
-            IsActive = true
+            IsActive = true,
         };
 
         await context.Labs.AddAsync(defaultLab);
-        await context.SaveChangesAsync();
 
         // Create admin user
         var admin = new User
         {
-            Id = Guid.NewGuid(),
+            Id = systemUserId,
             UserName = "admin@quater.local",
             Email = "admin@quater.local",
             EmailConfirmed = true,
@@ -192,7 +193,7 @@ public static class DatabaseSeeder
             adminPassword = GenerateSecurePassword();
             Console.WriteLine("=".PadRight(80, '='));
             Console.WriteLine("IMPORTANT: Default admin password generated!");
-            Console.WriteLine($"Email: admin@quater.local");
+            Console.WriteLine("Email: admin@quater.local");
             Console.WriteLine($"Password: {adminPassword}");
             Console.WriteLine("Please change this password immediately after first login.");
             Console.WriteLine("Set ADMIN_DEFAULT_PASSWORD environment variable to use a custom password.");
@@ -228,12 +229,12 @@ public static class DatabaseSeeder
 
         // Fill the rest with random characters from all sets
         var allChars = uppercase + lowercase + digits + special;
-        for (int i = 4; i < password.Length; i++)
+        for (var i = 4; i < password.Length; i++)
         {
             password[i] = allChars[random.Next(allChars.Length)];
         }
 
         // Shuffle the password to avoid predictable patterns
-        return new string(password.OrderBy(x => random.Next()).ToArray());
+        return new string(password.OrderBy(_ => random.Next()).ToArray());
     }
 }

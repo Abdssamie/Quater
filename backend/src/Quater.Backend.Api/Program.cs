@@ -1,21 +1,16 @@
-using System.Security.Cryptography.X509Certificates;
 using Asp.Versioning;
-using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Quater.Backend.Api.Extensions;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Api.Seeders;
-using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Data;
+using Quater.Backend.Data.Seeders;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Models;
-using Quater.Backend.Data;
-using Quater.Backend.Data.Interceptors;
-using Quater.Backend.Data.Seeders;
-using Quater.Backend.Services;
-using Quater.Backend.Api.Extensions;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -171,7 +166,7 @@ if (!app.Environment.IsEnvironment("Testing"))
         await DatabaseSeeder.SeedAsync(context, userManager);
 
         // Seed OpenIddict client applications
-        await Quater.Backend.Api.Seeders.OpenIddictSeeder.SeedAsync(services);
+        await OpenIddictSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {

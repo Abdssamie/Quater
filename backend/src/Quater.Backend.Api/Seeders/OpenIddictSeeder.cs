@@ -1,4 +1,3 @@
-using System;
 using OpenIddict.Abstractions;
 
 namespace Quater.Backend.Api.Seeders;

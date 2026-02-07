@@ -57,7 +57,7 @@ public sealed class LoginModel(
         var db = redis.GetDatabase();
 
         var attempts = await db.StringIncrementAsync(rateLimitKey);
-        
+
         // Set expiration on first attempt
         if (attempts == 1)
         {
@@ -71,7 +71,7 @@ public sealed class LoginModel(
                 clientIp,
                 attempts,
                 MaxLoginAttempts);
-            
+
             ErrorMessage = "Too many login attempts. Please try again in 15 minutes.";
             return Page();
         }
@@ -104,7 +104,7 @@ public sealed class LoginModel(
                 logger.LogWarning("Login failed for user {Email}", Email);
                 ErrorMessage = "Invalid email or password.";
             }
-            
+
             return Page();
         }
 
