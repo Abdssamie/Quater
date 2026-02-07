@@ -180,4 +180,24 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
             await db.KeyDeleteAsync(key);
         }
     }
+
+    /// <summary>
+    /// Sets the lab context for the current test request.
+    /// </summary>
+    /// <param name="labId">The lab ID to set.</param>
+    /// <param name="role">The user role within the lab.</param>
+    public void SetLabContext(Guid labId, Quater.Shared.Enums.UserRole role)
+    {
+        var labContext = Services.GetRequiredService<ILabContextAccessor>();
+        labContext.SetContext(labId, role);
+    }
+
+    /// <summary>
+    /// Sets the current test request as a system administrator (bypasses lab checks).
+    /// </summary>
+    public void SetSystemAdmin()
+    {
+        var labContext = Services.GetRequiredService<ILabContextAccessor>();
+        labContext.SetSystemAdmin();
+    }
 }
