@@ -14,18 +14,18 @@ public static class UserMappingExtensions
     /// </summary>
     public static UserDto ToDto(this User user)
     {
-        // COMPATIBILITY: Map to the first lab found for legacy DTO support
-        // TODO: Update UserDto to support multiple labs
-        var primaryLab = user.UserLabs?.FirstOrDefault();
-
         return new UserDto
         {
             Id = user.Id,
             UserName = user.UserName,
             Email = user.Email,
-            Role = primaryLab?.Role ?? UserRole.Viewer, // Fallback if no lab assigned
-            LabId = primaryLab?.LabId ?? Guid.Empty,    // Fallback if no lab assigned
-            LabName = primaryLab?.Lab?.Name,            // Requires .Include(u => u.UserLabs).ThenInclude(ul => ul.Lab)
+            Labs = user.UserLabs?.Select(ul => new UserLabDto
+            {
+                LabId = ul.LabId,
+                LabName = ul.Lab?.Name ?? string.Empty,
+                Role = ul.Role,
+                AssignedAt = ul.AssignedAt
+            }).ToList() ?? [],
             LastLogin = user.LastLogin,
             IsActive = user.IsActive,
         };

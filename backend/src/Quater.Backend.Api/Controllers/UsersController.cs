@@ -94,9 +94,10 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
             var userId = User.GetUserIdOrThrow();
 
             var created = await userService.CreateAsync(dto, userId, ct);
+            var primaryLab = created.Labs.FirstOrDefault();
             logger.LogInformation(
-                "User created successfully with ID {UserId}, Username: {UserName}, Role: {Role} by user {CreatedBy}",
-                created.Id, created.UserName, created.Role, userId);
+                "User created successfully with ID {UserId}, Username: {UserName}, Role: {Role}, LabId: {LabId} by user {CreatedBy}",
+                created.Id, created.UserName, primaryLab?.Role, primaryLab?.LabId, userId);
 
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }

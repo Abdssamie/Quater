@@ -11,16 +11,14 @@ public class UserDto
     public Guid Id { get; set; }
     public string? UserName { get; set; }
     public string? Email { get; set; }
-    public UserRole Role { get; set; }
-    public Guid LabId { get; set; }
-    public string? LabName { get; set; }
-    public DateTime CreatedDate { get; set; }
+    
+    /// <summary>
+    /// All labs the user belongs to with their respective roles.
+    /// </summary>
+    public List<UserLabDto> Labs { get; set; } = [];
+    
     public DateTime? LastLogin { get; set; }
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public Guid CreatedBy { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public Guid? UpdatedBy { get; set; }
 }
 
 /// <summary>
