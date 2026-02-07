@@ -377,6 +377,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
         services.AddScoped<IAuditLogService, AuditLogService>();
 
+        // Register Lab Context Accessor (scoped per request)
+        services.AddScoped<ILabContextAccessor, LabContextAccessor>();
+
         return services;
     }
 }

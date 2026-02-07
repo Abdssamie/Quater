@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
-using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Shared.Models;
@@ -11,18 +10,6 @@ namespace Quater.Shared.Models;
 /// </summary>
 public class User : IdentityUser<Guid>, IConcurrent
 {
-    /// <summary>
-    /// User role for access control
-    /// </summary>
-    [Required]
-    public UserRole Role { get; set; }
-
-    /// <summary>
-    /// Foreign key to Lab
-    /// </summary>
-    [Required]
-    public Guid LabId { get; set; }
-
     /// <summary>
     /// UTC timestamp of last login
     /// </summary>
@@ -39,7 +26,7 @@ public class User : IdentityUser<Guid>, IConcurrent
     public byte[] RowVersion { get; set; } = null!;
 
     // Navigation properties
-    public Lab Lab { get; init; } = null!;
-    public ICollection<AuditLog> AuditLogs { get; init; } = new List<AuditLog>();
-    public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = new List<AuditLogArchive>();
+    public ICollection<UserLab> UserLabs { get; init; } = [];
+    public ICollection<AuditLog> AuditLogs { get; init; } = [];
+    public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = [];
 }

@@ -61,9 +61,15 @@ public sealed class RegistrationController(
         {
             UserName = request.Email,
             Email = request.Email,
-            Role = request.Role,
-            LabId = request.LabId,
             IsActive = true,
+            UserLabs =
+            [
+                new UserLab
+                {
+                    LabId = request.LabId,
+                    Role = request.Role
+                }
+            ]
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -96,7 +102,7 @@ public sealed class RegistrationController(
             message = "User registered successfully. Please check your email to verify your account.",
             userId = user.Id,
             email = user.Email,
-            role = user.Role.ToString()
+            role = request.Role.ToString()
         });
     }
 }

@@ -17,15 +17,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnType("uuid")
             .ValueGeneratedOnAdd();
 
-        // Enum stored as string for compatibility with SQLite desktop app
-        // UserRole.Admin -> "Admin", UserRole.Technician -> "Technician"
-        entity.Property(e => e.Role)
-            .IsRequired()
-            .HasConversion<string>();
-
-        entity.Property(e => e.LabId)
-            .IsRequired();
-
         entity.Property(e => e.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
@@ -40,12 +31,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         entity.HasIndex(e => e.Email)
             .IsUnique()
             .HasDatabaseName("IX_Users_Email");
-
-        entity.HasIndex(e => e.LabId)
-            .HasDatabaseName("IX_Users_LabId");
-
-        entity.HasIndex(e => e.Role)
-            .HasDatabaseName("IX_Users_Role");
 
         // Relationships
         entity.HasMany(e => e.AuditLogs)

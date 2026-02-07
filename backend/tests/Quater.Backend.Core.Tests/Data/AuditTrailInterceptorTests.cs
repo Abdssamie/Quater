@@ -473,8 +473,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             Email = "testuser123@example.com",
             NormalizedEmail = "TESTUSER123@EXAMPLE.COM",
             EmailConfirmed = true,
-            Role = UserRole.Technician,
-            LabId = labId,
+            UserLabs = [ new UserLab { LabId = labId, Role = UserRole.Technician } ],
             IsActive = true,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             SecurityStamp = Guid.NewGuid().ToString()
@@ -561,8 +560,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             Email = "test@example.com",
             NormalizedEmail = "TEST@EXAMPLE.COM",
             EmailConfirmed = true,
-            Role = UserRole.Technician,
-            LabId = labId,
+            UserLabs = [ new UserLab { LabId = labId, Role = UserRole.Technician } ],
             IsActive = true,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             SecurityStamp = Guid.NewGuid().ToString()

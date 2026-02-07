@@ -132,6 +132,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
+app.UseLabContext();
 app.UseAuthorization();
 
 app.MapControllers();

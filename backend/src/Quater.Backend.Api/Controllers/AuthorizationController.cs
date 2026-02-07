@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Core.Constants;
 using Quater.Shared.Models;
+using Quater.Shared.Enums;
 using System.Security.Claims;
 using Microsoft.AspNetCore;
 
@@ -83,7 +85,12 @@ public sealed class AuthorizationController(
         }
 
         // User is authenticated - look up the user to get current claims.
-        var user = await _userManager.GetUserAsync(result.Principal);
+        // We need to load UserLabs to get role/lab info
+        var userId = _userManager.GetUserId(result.Principal);
+        var user = await _userManager.Users
+            .Include(u => u.UserLabs)
+            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
         if (user is null)
         {
             _logger.LogError(
@@ -115,6 +122,11 @@ public sealed class AuthorizationController(
                 }));
         }
 
+        // Get primary lab for legacy compatibility
+        var primaryLab = user.UserLabs.FirstOrDefault();
+        var role = primaryLab?.Role ?? UserRole.Viewer;
+        var labId = primaryLab?.LabId ?? Guid.Empty;
+
         // Create claims principal with all required claims.
         // This follows the same pattern as AuthController.Token for consistency.
         var claims = new List<Claim>
@@ -122,8 +134,8 @@ public sealed class AuthorizationController(
             new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
             new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
             new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-            new(QuaterClaimTypes.Role, user.Role.ToString()),
-            new(QuaterClaimTypes.LabId, user.LabId.ToString())
+            new(QuaterClaimTypes.Role, role.ToString()),
+            new(QuaterClaimTypes.LabId, labId.ToString())
         };
 
         var identity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

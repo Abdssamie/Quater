@@ -191,8 +191,7 @@ public class TestDbContextFactory : IAsyncLifetime
             Email = "system@quater.app",
             NormalizedEmail = "SYSTEM@QUATER.APP",
             EmailConfirmed = true,
-            Role = UserRole.Admin,
-            LabId = systemLab.Id,
+            UserLabs = [ new UserLab { LabId = systemLab.Id, Role = UserRole.Admin } ],
             IsActive = true,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             SecurityStamp = Guid.NewGuid().ToString()

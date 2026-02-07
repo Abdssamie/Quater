@@ -53,8 +53,7 @@ public sealed class LoginPageTests : IAsyncLifetime
             UserName = "active@test.com",
             Email = "active@test.com",
             EmailConfirmed = true,
-            Role = UserRole.Viewer,
-            LabId = _testLab.Id,
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
             IsActive = true
         };
 
@@ -98,8 +97,7 @@ public sealed class LoginPageTests : IAsyncLifetime
             UserName = "inactive@test.com",
             Email = "inactive@test.com",
             EmailConfirmed = true,
-            Role = UserRole.Viewer,
-            LabId = _testLab.Id,
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
             IsActive = false
         };
 
@@ -128,8 +126,7 @@ public sealed class LoginPageTests : IAsyncLifetime
             UserName = "active@test.com",
             Email = "active@test.com",
             EmailConfirmed = true,
-            Role = UserRole.Viewer,
-            LabId = _testLab.Id,
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
             IsActive = true
         };
 
@@ -157,9 +154,9 @@ public sealed class LoginPageTests : IAsyncLifetime
             UserName = "ratelimit@test.com",
             Email = "ratelimit@test.com",
             EmailConfirmed = true,
-            Role = UserRole.Viewer,
-            LabId = _testLab.Id,
-            IsActive = true
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
+            IsActive = true,
+            LockoutEnabled = true
         };
 
         await CreateUserAsync(testUser, "Password123!");

@@ -21,6 +21,7 @@ public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<Sample> Samples { get; set; } = null!;
     public DbSet<TestResult> TestResults { get; set; } = null!;
     public DbSet<Parameter> Parameters { get; set; } = null!;
+    public DbSet<UserLab> UserLabs { get; set; } = null!;
 
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
@@ -50,6 +51,18 @@ public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<UserLab>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.LabId });
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserLabs)
+                .HasForeignKey(e => e.UserId);
+            entity.HasOne(e => e.Lab)
+                .WithMany(l => l.UserLabs)
+                .HasForeignKey(e => e.LabId);
+            entity.Property(e => e.Role).HasConversion<string>();
+        });
 
         // Apply all entity configurations from the current assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(QuaterDbContext).Assembly);

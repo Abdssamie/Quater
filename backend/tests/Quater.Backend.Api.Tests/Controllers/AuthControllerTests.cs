@@ -94,8 +94,7 @@ public sealed class AuthControllerTests : IAsyncLifetime
             UserName = TestEmail,
             Email = TestEmail,
             EmailConfirmed = true,
-            Role = UserRole.Technician,
-            LabId = lab.Id,
+            UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Technician } ],
             IsActive = true
         };
         var result = await userManager.CreateAsync(activeUser, TestPassword);
@@ -111,8 +110,7 @@ public sealed class AuthControllerTests : IAsyncLifetime
             UserName = InactiveUserEmail,
             Email = InactiveUserEmail,
             EmailConfirmed = true,
-            Role = UserRole.Viewer,
-            LabId = lab.Id,
+            UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Viewer } ],
             IsActive = false
         };
         result = await userManager.CreateAsync(inactiveUser, TestPassword);
@@ -128,8 +126,7 @@ public sealed class AuthControllerTests : IAsyncLifetime
             UserName = LockedUserEmail,
             Email = LockedUserEmail,
             EmailConfirmed = true,
-            Role = UserRole.Admin,
-            LabId = lab.Id,
+            UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Admin } ],
             IsActive = true
         };
         result = await userManager.CreateAsync(lockedUser, TestPassword);

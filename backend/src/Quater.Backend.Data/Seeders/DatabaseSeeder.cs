@@ -179,9 +179,15 @@ public static class DatabaseSeeder
             UserName = "admin@quater.local",
             Email = "admin@quater.local",
             EmailConfirmed = true,
-            Role = UserRole.Admin,
-            LabId = defaultLab.Id,
             IsActive = true,
+            UserLabs =
+            [
+                new UserLab
+                {
+                    LabId = defaultLab.Id,
+                    Role = UserRole.Admin
+                }
+            ]
         };
 
         // Get admin password from environment variable or generate a secure random one

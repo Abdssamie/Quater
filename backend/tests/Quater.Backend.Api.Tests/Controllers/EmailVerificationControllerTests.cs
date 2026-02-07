@@ -458,8 +458,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             UserName = $"testuser{Guid.NewGuid()}@example.com",
             Email = $"testuser{Guid.NewGuid()}@example.com",
             EmailConfirmed = false,
-            Role = UserRole.Technician,
-            LabId = lab.Id,
+            UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Technician } ],
             IsActive = true
         };
 

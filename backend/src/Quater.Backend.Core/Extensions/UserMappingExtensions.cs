@@ -1,5 +1,6 @@
 using Quater.Backend.Core.DTOs;
 using Quater.Shared.Models;
+using Quater.Shared.Enums;
 
 namespace Quater.Backend.Core.Extensions;
 
@@ -13,14 +14,18 @@ public static class UserMappingExtensions
     /// </summary>
     public static UserDto ToDto(this User user)
     {
+        // COMPATIBILITY: Map to the first lab found for legacy DTO support
+        // TODO: Update UserDto to support multiple labs
+        var primaryLab = user.UserLabs?.FirstOrDefault();
+
         return new UserDto
         {
             Id = user.Id,
             UserName = user.UserName,
             Email = user.Email,
-            Role = user.Role,
-            LabId = user.LabId,
-            LabName = user.Lab.Name,
+            Role = primaryLab?.Role ?? UserRole.Viewer, // Fallback if no lab assigned
+            LabId = primaryLab?.LabId ?? Guid.Empty,    // Fallback if no lab assigned
+            LabName = primaryLab?.Lab?.Name,            // Requires .Include(u => u.UserLabs).ThenInclude(ul => ul.Lab)
             LastLogin = user.LastLogin,
             IsActive = user.IsActive,
         };
@@ -31,13 +36,12 @@ public static class UserMappingExtensions
     /// </summary>
     public static User ToEntity(this CreateUserDto dto, Guid createdBy)
     {
+        // Note: Role and LabId from DTO must be handled separately by creating a UserLab entity
         return new User
         {
             Id = Guid.NewGuid(),
             UserName = dto.UserName,
             Email = dto.Email,
-            Role = dto.Role,
-            LabId = dto.LabId,
             IsActive = true,
         };
     }
@@ -53,12 +57,8 @@ public static class UserMappingExtensions
         if (dto.Email != null)
             user.Email = dto.Email;
 
-        if (dto.Role.HasValue)
-            user.Role = dto.Role.Value;
-
-        if (dto.LabId.HasValue)
-            user.LabId = dto.LabId.Value;
-
+        // Note: Role and LabId updates must be handled via UserLab management
+        
         if (dto.IsActive.HasValue)
             user.IsActive = dto.IsActive.Value;
     }
