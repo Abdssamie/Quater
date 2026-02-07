@@ -129,21 +129,14 @@ public sealed class AuthController(
             user.LastLogin = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            // Get primary lab for legacy compatibility
-            var primaryLab = user.UserLabs.FirstOrDefault();
-            var role = primaryLab?.Role ?? UserRole.Viewer;
-            var labId = primaryLab?.LabId ?? Guid.Empty;
-
             // Create a fresh claims principal with current user data.
-            // This ensures the access token contains up-to-date claims even if
-            // the user's role or lab changed between authorization and token exchange.
+            // Role and lab context are now determined per-request via middleware
+            // based on the X-Lab-Id header and UserLab table.
             var claims = new List<Claim>
             {
                 new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new(QuaterClaimTypes.Role, role.ToString()),
-                new(QuaterClaimTypes.LabId, labId.ToString())
+                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -232,19 +225,14 @@ public sealed class AuthController(
                     }));
             }
 
-            // Get primary lab for legacy compatibility
-            var primaryLab = user.UserLabs.FirstOrDefault();
-            var role = primaryLab?.Role ?? UserRole.Viewer;
-            var labId = primaryLab?.LabId ?? Guid.Empty;
-
-            // Create a new claims principal with updated claims
+            // Create a new claims principal with updated claims.
+            // Role and lab context are now determined per-request via middleware
+            // based on the X-Lab-Id header and UserLab table.
             var claims = new List<Claim>
             {
                 new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new Claim(QuaterClaimTypes.Role, role.ToString()),
-                new Claim(QuaterClaimTypes.LabId, labId.ToString())
+                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
