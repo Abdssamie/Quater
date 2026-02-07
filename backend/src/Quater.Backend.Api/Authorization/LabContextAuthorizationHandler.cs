@@ -34,21 +34,15 @@ public class LabContextAuthorizationHandler(ILabContextAccessor labContext)
         // If no lab context is set, fail with message
         if (!labContext.CurrentRole.HasValue)
         {
+            // TODO: Add Sentry logging for authorization failures (security auditing)
+            // Example: _logger.LogWarning("Authorization failed: No lab context provided for user {UserId}", userId);
             context.Fail(new AuthorizationFailureReason(this, ErrorMessages.LabContextRequired));
             return Task.CompletedTask;
         }
 
         // Check if user's role in current lab meets minimum requirement
-        var hasRequiredRole = requirement.MinimumRole switch
-        {
-            UserRole.Viewer => labContext.CurrentRole == UserRole.Viewer ||
-                               labContext.CurrentRole == UserRole.Technician ||
-                               labContext.CurrentRole == UserRole.Admin,
-            UserRole.Technician => labContext.CurrentRole == UserRole.Technician ||
-                                   labContext.CurrentRole == UserRole.Admin,
-            UserRole.Admin => labContext.CurrentRole == UserRole.Admin,
-            _ => false
-        };
+        // Uses explicit enum values: Viewer (1) < Technician (2) < Admin (3)
+        var hasRequiredRole = (int)labContext.CurrentRole.Value >= (int)requirement.MinimumRole;
 
         if (hasRequiredRole)
         {
@@ -56,6 +50,9 @@ public class LabContextAuthorizationHandler(ILabContextAccessor labContext)
         }
         else
         {
+            // TODO: Add Sentry logging for authorization failures (security auditing)
+            // Example: _logger.LogWarning("Authorization failed: User requires {RequiredRole} but has {CurrentRole} in lab {LabId}",
+            //     requirement.MinimumRole, labContext.CurrentRole, labContext.CurrentLabId);
             context.Fail(new AuthorizationFailureReason(this, ErrorMessages.InsufficientLabPermissions));
         }
 

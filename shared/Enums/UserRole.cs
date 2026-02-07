@@ -2,21 +2,23 @@ namespace Quater.Shared.Enums;
 
 /// <summary>
 /// User roles for role-based access control.
+/// Explicit numeric values define the role hierarchy: Viewer (1) &lt; Technician (2) &lt; Admin (3).
+/// Higher numeric values indicate higher privileges.
 /// </summary>
 public enum UserRole
 {
     /// <summary>
-    /// Administrator with full system access
+    /// Read-only viewer with no edit permissions (lowest privilege level)
     /// </summary>
-    Admin,
+    Viewer = 1,
 
     /// <summary>
-    /// Lab technician who can create/edit samples and test results
+    /// Lab technician who can create/edit samples and test results (medium privilege level)
     /// </summary>
-    Technician,
+    Technician = 2,
 
     /// <summary>
-    /// Read-only viewer with no edit permissions
+    /// Administrator with full system access (highest privilege level)
     /// </summary>
-    Viewer
+    Admin = 3
 }

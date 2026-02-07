@@ -166,8 +166,9 @@ public class TestDbContextFactory : IAsyncLifetime
 
     private async Task SeedSystemUserAsync(QuaterDbContext context)
     {
-        // Check if System user already exists
-        var systemUserId = SystemUser.GetId();
+        // For tests, use a hardcoded system admin ID
+        // In production, this comes from SYSTEM_ADMIN_USER_ID environment variable
+        var systemUserId = new Guid("eb4b0ebc-7a02-43ca-a858-656bd7e4357f");
         var systemUserExists = await context.Users.AnyAsync(u => u.Id == systemUserId);
         if (systemUserExists) return;
 

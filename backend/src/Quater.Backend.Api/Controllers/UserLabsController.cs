@@ -7,6 +7,14 @@ using Quater.Shared.Enums;
 
 namespace Quater.Backend.Api.Controllers;
 
+// TODO: Implement user invitation feature
+// - Generate secure invitation tokens with pre-assigned roles
+// - Send invitation emails with registration links
+// - Validate tokens during user registration
+// - Expire tokens after use or timeout
+// - Track invitation status (pending, accepted, expired)
+// This will replace the removed self-registration endpoint with a secure invite-only system.
+
 [ApiController]
 [Route("api/users/{userId}/labs")]
 [Authorize(Policy = Policies.AdminOnly)]
