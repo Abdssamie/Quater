@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Enums;
 
@@ -30,10 +31,10 @@ public class LabContextAuthorizationHandler(ILabContextAccessor labContext)
             return Task.CompletedTask;
         }
 
-        // If no lab context is set, fail (user must provide X-Lab-Id header)
+        // If no lab context is set, fail with message
         if (!labContext.CurrentRole.HasValue)
         {
-            context.Fail();
+            context.Fail(new AuthorizationFailureReason(this, ErrorMessages.LabContextRequired));
             return Task.CompletedTask;
         }
 
@@ -55,7 +56,7 @@ public class LabContextAuthorizationHandler(ILabContextAccessor labContext)
         }
         else
         {
-            context.Fail();
+            context.Fail(new AuthorizationFailureReason(this, ErrorMessages.InsufficientLabPermissions));
         }
 
         return Task.CompletedTask;
