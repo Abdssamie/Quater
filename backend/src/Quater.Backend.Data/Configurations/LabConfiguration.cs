@@ -66,11 +66,6 @@ public class LabConfiguration : IEntityTypeConfiguration<Lab>
             .HasDatabaseName("IX_Labs_IsDeleted");
 
         // Relationships
-        entity.HasMany(e => e.Users)
-            .WithOne(e => e.Lab)
-            .HasForeignKey(e => e.LabId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         entity.HasMany(e => e.Samples)
             .WithOne(e => e.Lab)
             .HasForeignKey(e => e.LabId)

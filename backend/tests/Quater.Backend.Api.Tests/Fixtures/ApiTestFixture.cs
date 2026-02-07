@@ -85,7 +85,11 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
                 ["Identity:Password:RequireLowercase"] = "true",
                 ["Identity:Password:RequireUppercase"] = "true",
                 ["Identity:Password:RequireNonAlphanumeric"] = "true",
-                ["Identity:Password:RequiredLength"] = "12"
+                ["Identity:Password:RequiredLength"] = "12",
+                
+                // Identity Lockout Settings (strict for testing)
+                ["Identity:Lockout:MaxFailedAccessAttempts"] = "3",
+                ["Identity:Lockout:DefaultLockoutTimeSpan"] = "00:15:00"
             });
         });
 

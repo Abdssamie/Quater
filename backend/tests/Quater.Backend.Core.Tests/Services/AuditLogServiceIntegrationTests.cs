@@ -56,8 +56,8 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
 
         var users = new List<User>
         {
-            new() { Id = userId1, UserName = "user1", Email = "user1@example.com", SecurityStamp = "stamp1", LabId = lab.Id },
-            new() { Id = userId2, UserName = "user2", Email = "user2@example.com", SecurityStamp = "stamp2", LabId = lab.Id }
+            new() { Id = userId1, UserName = "user1", Email = "user1@example.com", SecurityStamp = "stamp1", UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Technician } ] },
+            new() { Id = userId2, UserName = "user2", Email = "user2@example.com", SecurityStamp = "stamp2", UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Technician } ] }
         };
         _context.Users.AddRange(users);
         await _context.SaveChangesAsync();

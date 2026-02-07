@@ -520,8 +520,7 @@ public sealed class PasswordControllerTests(ApiTestFixture fixture) : IAsyncLife
             UserName = email,
             Email = email,
             EmailConfirmed = true,
-            LabId = lab.Id,
-            Role = UserRole.Admin,
+            UserLabs = [ new UserLab { LabId = lab.Id, Role = UserRole.Admin } ],
             IsActive = isActive
         };
 

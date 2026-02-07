@@ -66,8 +66,10 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
         var user = await GetUserByEmailAsync(request.Email);
         user.Should().NotBeNull();
         user!.Email.Should().Be(request.Email);
-        user.Role.Should().Be(UserRole.Technician);
-        user.LabId.Should().Be(lab.Id);
+        var userLab = user.UserLabs.FirstOrDefault();
+        userLab.Should().NotBeNull();
+        userLab!.Role.Should().Be(UserRole.Technician);
+        userLab.LabId.Should().Be(lab.Id);
         user.IsActive.Should().BeTrue();
         user.EmailConfirmed.Should().BeFalse(); // Email not confirmed yet
 
@@ -296,7 +298,7 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
 
             var user = await GetUserByEmailAsync(request.Email);
             user.Should().NotBeNull();
-            user!.Role.Should().Be(role);
+            user!.UserLabs.FirstOrDefault()!.Role.Should().Be(role);
         }
     }
 
@@ -380,8 +382,7 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
         {
             UserName = email,
             Email = email,
-            Role = role,
-            LabId = labId,
+            UserLabs = [ new UserLab { LabId = labId, Role = role } ],
             IsActive = true
         };
 
@@ -403,6 +404,7 @@ public sealed class RegistrationControllerTests(ApiTestFixture fixture) : IAsync
         var context = scope.ServiceProvider.GetRequiredService<QuaterDbContext>();
 
         return await context.Users
+            .Include(u => u.UserLabs)
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 

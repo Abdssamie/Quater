@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Exceptions;
+using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Models;
 using Quater.Backend.Data;
+using Quater.Shared.Enums;
 
 namespace Quater.Backend.Services;
 
@@ -18,20 +20,22 @@ public class UserService(
     {
         var user = await context.Users
             .AsNoTracking()
-            .Include(u => u.Lab)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
         if (user == null)
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
-        return MapToDto(user);
+        return user.ToDto();
     }
 
     public async Task<PagedResult<UserDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
     {
         var query = context.Users
             .AsNoTracking()
-            .Include(u => u.Lab)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .OrderBy(u => u.UserName);
 
         var totalCount = await query.CountAsync(ct);
@@ -43,7 +47,7 @@ public class UserService(
 
         return new PagedResult<UserDto>
         {
-            Items = items.Select(MapToDto),
+            Items = items.Select(u => u.ToDto()),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -54,8 +58,9 @@ public class UserService(
     {
         var query = context.Users
             .AsNoTracking()
-            .Include(u => u.Lab)
-            .Where(u => u.LabId == labId)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
+            .Where(u => u.UserLabs.Any(ul => ul.LabId == labId))
             .OrderBy(u => u.UserName);
 
         var totalCount = await query.CountAsync(ct);
@@ -67,7 +72,7 @@ public class UserService(
 
         return new PagedResult<UserDto>
         {
-            Items = items.Select(MapToDto),
+            Items = items.Select(u => u.ToDto()),
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -78,13 +83,14 @@ public class UserService(
     {
         var users = await context.Users
             .AsNoTracking()
-            .Include(u => u.Lab)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .Where(u => u.IsActive)
             .OrderBy(u => u.UserName)
             .Take(1000)
             .ToListAsync(ct);
 
-        return users.Select(MapToDto);
+        return users.Select(u => u.ToDto());
     }
 
     public async Task<UserDto> CreateAsync(CreateUserDto dto, Guid createdBy, CancellationToken ct = default)
@@ -98,9 +104,15 @@ public class UserService(
         {
             UserName = dto.UserName,
             Email = dto.Email,
-            Role = dto.Role,
-            LabId = dto.LabId,
             IsActive = true,
+            UserLabs = 
+            [
+                new UserLab 
+                { 
+                    LabId = dto.LabId,
+                    Role = dto.Role
+                }
+            ]
         };
 
         var result = await userManager.CreateAsync(user, dto.Password);
@@ -112,15 +124,20 @@ public class UserService(
 
         // Reload user with Lab navigation property
         var createdUser = await context.Users
-            .Include(u => u.Lab)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .FirstAsync(u => u.Id == user.Id, ct);
 
-        return MapToDto(createdUser);
+        return createdUser.ToDto();
     }
 
     public async Task<UserDto> UpdateAsync(Guid id, UpdateUserDto dto, Guid updatedBy, CancellationToken ct = default)
     {
-        var user = await userManager.FindByIdAsync(id.ToString());
+        // Load with UserLabs to handle role/lab updates
+        var user = await context.Users
+            .Include(u => u.UserLabs)
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
         if (user == null)
             throw new NotFoundException(ErrorMessages.UserNotFound);
 
@@ -130,18 +147,48 @@ public class UserService(
 
         if (!string.IsNullOrEmpty(dto.Email))
             user.Email = dto.Email;
+        
+        // Handle Role and Lab updates (Legacy single-lab support)
+        var userLab = user.UserLabs.FirstOrDefault();
 
-        if (dto.Role.HasValue)
-            user.Role = dto.Role.Value;
-
+        // 1. If LabId is changing
         if (dto.LabId.HasValue)
         {
-            // Verify lab exists
+             // Verify lab exists
             var labExists = await context.Labs.AnyAsync(l => l.Id == dto.LabId.Value && !l.IsDeleted, ct);
             if (!labExists)
                 throw new NotFoundException(ErrorMessages.LabNotFound);
-
-            user.LabId = dto.LabId.Value;
+                
+            if (userLab != null)
+            {
+                // If switching labs, remove old and add new
+                if (userLab.LabId != dto.LabId.Value)
+                {
+                    // Keep the role unless explicitly changed
+                    var role = dto.Role ?? userLab.Role;
+                    context.UserLabs.Remove(userLab);
+                    user.UserLabs.Add(new UserLab { LabId = dto.LabId.Value, Role = role });
+                }
+                else if (dto.Role.HasValue)
+                {
+                    // Same lab, just update role
+                    userLab.Role = dto.Role.Value;
+                }
+            }
+            else
+            {
+                // No existing lab, add new one
+                user.UserLabs.Add(new UserLab 
+                { 
+                    LabId = dto.LabId.Value, 
+                    Role = dto.Role ?? UserRole.Viewer // Default if not provided
+                });
+            }
+        }
+        else if (dto.Role.HasValue && userLab != null)
+        {
+            // Only updating role on existing lab
+            userLab.Role = dto.Role.Value;
         }
 
         if (dto.IsActive.HasValue)
@@ -156,10 +203,11 @@ public class UserService(
 
         // Reload user with Lab navigation property
         var updatedUser = await context.Users
-            .Include(u => u.Lab)
+            .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .FirstAsync(u => u.Id == user.Id, ct);
 
-        return MapToDto(updatedUser);
+        return updatedUser.ToDto();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
@@ -192,16 +240,4 @@ public class UserService(
             throw new BadRequestException($"Password change failed: {errors}");
         }
     }
-
-    private static UserDto MapToDto(User user) => new()
-    {
-        Id = user.Id,
-        UserName = user.UserName,
-        Email = user.Email,
-        Role = user.Role,
-        LabId = user.LabId,
-        LabName = user.Lab?.Name ?? "Unknown",
-        LastLogin = user.LastLogin,
-        IsActive = user.IsActive,
-    };
 }

@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Api.Attributes;
 using Quater.Backend.Core.Constants;
 using Quater.Shared.Models;
+using Quater.Shared.Enums;
 using System.Security.Claims;
 using Microsoft.AspNetCore;
 
@@ -77,7 +79,9 @@ public sealed class AuthController(
 
             // Retrieve the user to ensure they still exist and are active.
             var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
-            var user = await _userManager.FindByIdAsync(userId ?? string.Empty);
+            var user = await _userManager.Users
+                .Include(u => u.UserLabs)
+                .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
             if (user == null)
             {
@@ -125,6 +129,11 @@ public sealed class AuthController(
             user.LastLogin = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
+            // Get primary lab for legacy compatibility
+            var primaryLab = user.UserLabs.FirstOrDefault();
+            var role = primaryLab?.Role ?? UserRole.Viewer;
+            var labId = primaryLab?.LabId ?? Guid.Empty;
+
             // Create a fresh claims principal with current user data.
             // This ensures the access token contains up-to-date claims even if
             // the user's role or lab changed between authorization and token exchange.
@@ -133,8 +142,8 @@ public sealed class AuthController(
                 new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
                 new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new(QuaterClaimTypes.Role, user.Role.ToString()),
-                new(QuaterClaimTypes.LabId, user.LabId.ToString())
+                new(QuaterClaimTypes.Role, role.ToString()),
+                new(QuaterClaimTypes.LabId, labId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -175,7 +184,9 @@ public sealed class AuthController(
 
             // Retrieve the user profile corresponding to the refresh token
             var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
-            var user = await _userManager.FindByIdAsync(userId ?? string.Empty);
+            var user = await _userManager.Users
+                .Include(u => u.UserLabs)
+                .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
             if (user == null)
             {
@@ -221,14 +232,19 @@ public sealed class AuthController(
                     }));
             }
 
+            // Get primary lab for legacy compatibility
+            var primaryLab = user.UserLabs.FirstOrDefault();
+            var role = primaryLab?.Role ?? UserRole.Viewer;
+            var labId = primaryLab?.LabId ?? Guid.Empty;
+
             // Create a new claims principal with updated claims
             var claims = new List<Claim>
             {
                 new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
                 new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
-                new Claim(QuaterClaimTypes.Role, user.Role.ToString()),
-                new Claim(QuaterClaimTypes.LabId, user.LabId.ToString())
+                new Claim(QuaterClaimTypes.Role, role.ToString()),
+                new Claim(QuaterClaimTypes.LabId, labId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -328,19 +344,25 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.Users
+            .Include(u => u.UserLabs)
+            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
         if (user == null)
         {
             return NotFound(new { error = "User not found" });
         }
+
+        // Get primary lab for legacy compatibility
+        var primaryLab = user.UserLabs.FirstOrDefault();
 
         return Ok(new
         {
             id = user.Id,
             email = user.Email,
             userName = user.UserName,
-            role = user.Role.ToString(),
-            labId = user.LabId,
+            role = (primaryLab?.Role ?? UserRole.Viewer).ToString(),
+            labId = primaryLab?.LabId ?? Guid.Empty,
             isActive = user.IsActive,
             lastLogin = user.LastLogin
         });
