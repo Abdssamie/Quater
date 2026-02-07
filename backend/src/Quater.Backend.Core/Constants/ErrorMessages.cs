@@ -27,5 +27,6 @@ public static class ErrorMessages
     public const string UserNotFound = "User not found.";
     public const string UserCreationFailed = "Failed to create user.";
     public const string UserUpdateFailed = "Failed to update user.";
+    public const string UserNotLabMember = "User is not a member of the requested lab.";
 }
 

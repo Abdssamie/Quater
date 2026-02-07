@@ -25,6 +25,9 @@ public sealed class LabContextAccessor : ILabContextAccessor
     /// <param name="role">The user's role within the lab.</param>
     public void SetContext(Guid labId, UserRole role)
     {
+        if (labId == Guid.Empty)
+            throw new ArgumentException("Lab ID cannot be empty", nameof(labId));
+        
         CurrentLabId = labId;
         CurrentRole = role;
     }

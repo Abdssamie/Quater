@@ -1,7 +1,8 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
 using Quater.Shared.Models;
@@ -25,8 +26,7 @@ public sealed class LabContextMiddleware(
     public async Task InvokeAsync(
         HttpContext context,
         ILabContextAccessor labContext,
-        QuaterDbContext db,
-        UserManager<User> userManager)
+        QuaterDbContext db)
     {
         var labIdHeader = context.Request.Headers["X-Lab-Id"].ToString();
         var userId = context.User.FindFirstValue(OpenIddictConstants.Claims.Subject);
@@ -38,30 +38,36 @@ public sealed class LabContextMiddleware(
         {
             // Check UserLab table for membership and role
             var userLab = await db.UserLabs
+                .Include(ul => ul.Lab)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(ul => ul.UserId == userGuid && ul.LabId == labId, context.RequestAborted);
+                .FirstOrDefaultAsync(ul => 
+                    ul.UserId == userGuid && 
+                    ul.LabId == labId && 
+                    !ul.Lab.IsDeleted, 
+                    context.RequestAborted);
 
-            if (userLab != null)
-            {
-                labContext.SetContext(labId, userLab.Role);
-                _logger.LogDebug(
-                    "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
-                    userGuid,
-                    labId,
-                    userLab.Role);
-            }
-            else
+            if (userLab is null)
             {
                 _logger.LogWarning(
                     "User {UserId} attempted to access Lab {LabId} without membership",
                     userGuid,
                     labId);
-                context.Response.StatusCode = 403;
-                await context.Response.WriteAsJsonAsync(
-                    new { error = "User is not a member of the requested lab" },
-                    context.RequestAborted);
-                return;
+                throw new ForbiddenException(ErrorMessages.UserNotLabMember);
             }
+
+            labContext.SetContext(labId, userLab.Role);
+            
+            // Set PostgreSQL session variables for RLS policies
+            await db.Database.ExecuteSqlRawAsync(
+                "SELECT set_config('app.current_lab_id', {0}, true)",
+                labId.ToString(),
+                context.RequestAborted);
+            
+            _logger.LogDebug(
+                "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
+                userGuid,
+                labId,
+                userLab.Role);
         }
 
         await _next(context);

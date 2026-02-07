@@ -137,7 +137,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
-app.UseMiddleware<LabContextMiddleware>();
+app.UseLabContext();
 app.UseAuthorization();
 
 app.MapControllers();
