@@ -321,25 +321,18 @@ public static class ServiceCollectionExtensions
                 options.UseAspNetCore();
             });
 
-        // Configure role-based authorization policies
+        // Configure lab-context-aware authorization policies
         services.AddAuthorization(options =>
         {
-            // AdminOnly policy - requires Admin role
+            // Lab-context-aware policies - check user's role in the current lab
             options.AddPolicy(Policies.AdminOnly, policy =>
-                policy.RequireAssertion(context =>
-                    context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role && c.Value == Roles.Admin)));
+                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Admin)));
 
-            // TechnicianOrAbove policy - requires Technician or Admin role
             options.AddPolicy(Policies.TechnicianOrAbove, policy =>
-                policy.RequireAssertion(context =>
-                    context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role &&
-                        (c.Value == Roles.Admin || c.Value == Roles.Technician))));
+                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Technician)));
 
-            // ViewerOrAbove policy - requires any authenticated user (Viewer, Technician, or Admin)
             options.AddPolicy(Policies.ViewerOrAbove, policy =>
-                policy.RequireAssertion(context =>
-                    context.User.HasClaim(c => c.Type == QuaterClaimTypes.Role &&
-                        (c.Value == Roles.Admin || c.Value == Roles.Technician || c.Value == Roles.Viewer))));
+                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Viewer)));
 
             // Fallback policy: require authentication by default
             // Endpoints without [Authorize] attribute will require authentication
@@ -354,6 +347,9 @@ public static class ServiceCollectionExtensions
                 .RequireAuthenticatedUser()
                 .Build();
         });
+
+        // Register authorization handler
+        services.AddScoped<IAuthorizationHandler, Api.Authorization.LabContextAuthorizationHandler>();
 
         return services;
     }

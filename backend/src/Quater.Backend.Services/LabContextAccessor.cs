@@ -19,6 +19,11 @@ public sealed class LabContextAccessor : ILabContextAccessor
     public UserRole? CurrentRole { get; private set; }
 
     /// <summary>
+    /// Gets whether the current user is a system admin (bypasses RLS).
+    /// </summary>
+    public bool IsSystemAdmin { get; private set; }
+
+    /// <summary>
     /// Sets the lab context for the current request.
     /// </summary>
     /// <param name="labId">The lab ID.</param>
@@ -30,5 +35,16 @@ public sealed class LabContextAccessor : ILabContextAccessor
         
         CurrentLabId = labId;
         CurrentRole = role;
+    }
+
+    /// <summary>
+    /// Marks the current user as a system admin (bypasses RLS).
+    /// </summary>
+    public void SetSystemAdmin()
+    {
+        if (IsSystemAdmin || CurrentLabId.HasValue)
+            throw new InvalidOperationException("Lab context has already been set for this request.");
+        
+        IsSystemAdmin = true;
     }
 }

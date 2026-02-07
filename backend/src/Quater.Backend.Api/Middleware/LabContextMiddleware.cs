@@ -28,46 +28,60 @@ public sealed class LabContextMiddleware(
         ILabContextAccessor labContext,
         QuaterDbContext db)
     {
-        var labIdHeader = context.Request.Headers["X-Lab-Id"].ToString();
         var userId = context.User.FindFirstValue(OpenIddictConstants.Claims.Subject);
 
-        if (!string.IsNullOrEmpty(labIdHeader)
-            && Guid.TryParse(labIdHeader, out var labId)
-            && !string.IsNullOrEmpty(userId)
-            && Guid.TryParse(userId, out var userGuid))
+        // Detect system admin — bypasses lab membership check and RLS
+        if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
         {
-            // Check UserLab table for membership and role
-            var userLab = await db.UserLabs
-                .Include(ul => ul.Lab)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(ul => 
-                    ul.UserId == userGuid && 
-                    ul.LabId == labId && 
-                    !ul.Lab.IsDeleted, 
-                    context.RequestAborted);
-
-            if (userLab is null)
+            if (userGuid == SystemUser.GetId())
             {
-                _logger.LogWarning(
-                    "User {UserId} attempted to access Lab {LabId} without membership",
-                    userGuid,
-                    labId);
-                throw new ForbiddenException(ErrorMessages.UserNotLabMember);
+                labContext.SetSystemAdmin();
+
+                _logger.LogDebug(
+                    "System admin detected: UserId={UserId} — RLS bypass enabled",
+                    userGuid);
+
+                await _next(context);
+                return;
             }
 
-            labContext.SetContext(labId, userLab.Role);
-            
-            // Set PostgreSQL session variables for RLS policies
-            await db.Database.ExecuteSqlRawAsync(
-                "SELECT set_config('app.current_lab_id', {0}, true)",
-                labId.ToString(),
-                context.RequestAborted);
-            
-            _logger.LogDebug(
-                "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
-                userGuid,
-                labId,
-                userLab.Role);
+            var labIdHeader = context.Request.Headers["X-Lab-Id"].ToString();
+
+            if (!string.IsNullOrEmpty(labIdHeader) && Guid.TryParse(labIdHeader, out var labId))
+            {
+                // Check UserLab table for membership and role
+                var userLab = await db.UserLabs
+                    .Include(ul => ul.Lab)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(ul => 
+                        ul.UserId == userGuid && 
+                        ul.LabId == labId && 
+                        !ul.Lab.IsDeleted, 
+                        context.RequestAborted);
+
+                if (userLab is null)
+                {
+                    _logger.LogWarning(
+                        "User {UserId} attempted to access Lab {LabId} without membership",
+                        userGuid,
+                        labId);
+                    throw new ForbiddenException(ErrorMessages.UserNotLabMember);
+                }
+
+                labContext.SetContext(labId, userLab.Role);
+                
+                // Set PostgreSQL session variables for RLS policies
+                await db.Database.ExecuteSqlRawAsync(
+                    "SELECT set_config('app.current_lab_id', {0}, true)",
+                    labId.ToString(),
+                    context.RequestAborted);
+                
+                _logger.LogDebug(
+                    "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
+                    userGuid,
+                    labId,
+                    userLab.Role);
+            }
         }
 
         await _next(context);
