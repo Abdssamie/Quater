@@ -12,6 +12,7 @@ services:
       # All env vars come from Dokploy/Infisical
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Staging}
       - ASPNETCORE_URLS=http://+:8080
+      - SYSTEM_ADMIN_USER_ID=${SYSTEM_ADMIN_USER_ID}
       - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
       - Jwt__SecretKey=${Jwt__SecretKey}
       - Jwt__Issuer=${Jwt__Issuer}
