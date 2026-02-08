@@ -70,5 +70,8 @@ certs/
 ## Tool-specific local state
 .beads/
 
+## Git worktrees
+.worktrees/
+
 ## Docker environment
 docker/.env
