@@ -1,6 +1,11 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using OpenIddict.Abstractions;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
+using Quater.Backend.Data;
 using Quater.Shared.Enums;
 
 namespace Quater.Backend.Api.Authorization;
@@ -15,47 +20,119 @@ public class LabContextRoleRequirement(UserRole minimumRole) : IAuthorizationReq
 
 /// <summary>
 /// Authorization handler that validates user role in the current lab context.
-/// Uses ILabContextAccessor to get the user's role in the lab specified by X-Lab-Id header.
+/// Creates temporary DbContext to validate membership and update ILabContextAccessor with actual role.
 /// </summary>
-public class LabContextAuthorizationHandler(ILabContextAccessor labContext)
-    : AuthorizationHandler<LabContextRoleRequirement>
+public class LabContextAuthorizationHandler : AuthorizationHandler<LabContextRoleRequirement>
 {
-    protected override Task HandleRequirementAsync(
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<LabContextAuthorizationHandler> _logger;
+
+    public LabContextAuthorizationHandler(
+        IHttpContextAccessor httpContextAccessor,
+        IConfiguration configuration,
+        ILogger<LabContextAuthorizationHandler> logger)
+    {
+        _httpContextAccessor = httpContextAccessor;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         LabContextRoleRequirement requirement)
     {
+        // Get ILabContextAccessor from HttpContext.RequestServices
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext == null)
+        {
+            _logger.LogWarning("Authorization failed: HttpContext is null");
+            context.Fail(new AuthorizationFailureReason(this, "HttpContext is not available"));
+            return;
+        }
+
+        var labContext = httpContext.RequestServices.GetRequiredService<ILabContextAccessor>();
+
         // System admins bypass all lab-specific authorization
         if (labContext.IsSystemAdmin)
         {
+            _logger.LogDebug("Authorization succeeded: System admin bypass");
             context.Succeed(requirement);
-            return Task.CompletedTask;
+            return;
         }
 
         // If no lab context is set, fail with message
-        if (!labContext.CurrentRole.HasValue)
+        if (!labContext.CurrentLabId.HasValue)
         {
-            // TODO: Add Sentry logging for authorization failures (security auditing)
-            // Example: _logger.LogWarning("Authorization failed: No lab context provided for user {UserId}", userId);
+            _logger.LogWarning("Authorization failed: No lab context provided");
             context.Fail(new AuthorizationFailureReason(this, ErrorMessages.LabContextRequired));
-            return Task.CompletedTask;
+            return;
         }
 
-        // Check if user's role in current lab meets minimum requirement
-        // Uses explicit enum values: Viewer (1) < Technician (2) < Admin (3)
-        var hasRequiredRole = (int)labContext.CurrentRole.Value >= (int)requirement.MinimumRole;
+        // Get user ID from claims
+        var userId = httpContext.User.FindFirstValue(OpenIddictConstants.Claims.Subject);
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+        {
+            _logger.LogWarning("Authorization failed: Invalid or missing user ID in claims");
+            context.Fail(new AuthorizationFailureReason(this, "Invalid user ID"));
+            return;
+        }
+
+        // Create temporary DbContext manually using connection string from IConfiguration
+        var connectionString = _configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            _logger.LogError("Authorization failed: Connection string not found");
+            context.Fail(new AuthorizationFailureReason(this, "Database configuration error"));
+            return;
+        }
+
+        var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>();
+        optionsBuilder.UseNpgsql(connectionString);
+
+        await using var dbContext = new QuaterDbContext(optionsBuilder.Options);
+
+        // Query UserLabs table to validate membership and get actual role
+        var userLab = await dbContext.UserLabs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ul => ul.UserId == userGuid && ul.LabId == labContext.CurrentLabId.Value);
+
+        // If not a member, log warning and fail
+        if (userLab == null)
+        {
+            _logger.LogWarning(
+                "Authorization failed: User {UserId} is not a member of lab {LabId}",
+                userGuid,
+                labContext.CurrentLabId.Value);
+            context.Fail(new AuthorizationFailureReason(this, ErrorMessages.UserNotLabMember));
+            return;
+        }
+
+        // Update ILabContextAccessor with actual role from database
+        labContext.SetContext(labContext.CurrentLabId.Value, userLab.Role);
+
+        // Check if user's role meets requirement (userLab.Role >= requirement.MinimumRole)
+        var hasRequiredRole = (int)userLab.Role >= (int)requirement.MinimumRole;
 
         if (hasRequiredRole)
         {
+            _logger.LogDebug(
+                "Authorization succeeded: User {UserId} has role {Role} in lab {LabId}, required {RequiredRole}",
+                userGuid,
+                userLab.Role,
+                labContext.CurrentLabId.Value,
+                requirement.MinimumRole);
             context.Succeed(requirement);
         }
         else
         {
-            // TODO: Add Sentry logging for authorization failures (security auditing)
-            // Example: _logger.LogWarning("Authorization failed: User requires {RequiredRole} but has {CurrentRole} in lab {LabId}",
-            //     requirement.MinimumRole, labContext.CurrentRole, labContext.CurrentLabId);
+            _logger.LogWarning(
+                "Authorization failed: User {UserId} has role {Role} in lab {LabId}, but requires {RequiredRole}",
+                userGuid,
+                userLab.Role,
+                labContext.CurrentLabId.Value,
+                requirement.MinimumRole);
             context.Fail(new AuthorizationFailureReason(this, ErrorMessages.InsufficientLabPermissions));
         }
-
-        return Task.CompletedTask;
     }
 }
