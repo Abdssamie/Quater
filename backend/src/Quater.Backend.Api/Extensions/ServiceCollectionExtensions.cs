@@ -8,6 +8,7 @@ using OpenIddict.Validation.AspNetCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
+using Quater.Backend.Data.Constants;
 using Quater.Backend.Data.Interceptors;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Backend.Services;
@@ -96,7 +97,8 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds database services including EF Core interceptors and DbContext.
     /// </summary>
-    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         // Register EF Core Interceptors
         services.AddScoped<SoftDeleteInterceptor>();
@@ -113,41 +115,71 @@ public static class ServiceCollectionExtensions
             var ipAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
             return new AuditTrailInterceptor(currentUserService, ipAddress);
         });
-        services.AddScoped<RlsSessionInterceptor>();
 
-        // Add DbContext with interceptors
-        services.AddDbContext<QuaterDbContext>((sp, options) =>
+        // Add DbContext with factory pattern for RLS session variable management
+        services.AddScoped<QuaterDbContext>(serviceProvider =>
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection")
+            var labContextAccessor = serviceProvider.GetRequiredService<ILabContextAccessor>();
+            var config = serviceProvider.GetRequiredService<IConfiguration>();
+
+            var connectionString = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
                     "Database connection string 'DefaultConnection' is not configured. " +
                     "Please set the following environment variables: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD");
 
-            options.UseNpgsql(connectionString);
+            // Create DbContextOptionsBuilder manually
+            var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>();
+            optionsBuilder.UseNpgsql(connectionString);
 
-            // Register the entity sets needed by OpenIddict.
-            options.UseOpenIddict();
+            // Register the entity sets needed by OpenIddict
+            optionsBuilder.UseOpenIddict();
 
-            // Only add interceptors in non-test environments
-            // In test environments, interceptors can cause FK violations when creating test data
-            if (!environment.IsEnvironment("Testing"))
+            // Add interceptors
+            var softDeleteInterceptor = serviceProvider.GetRequiredService<SoftDeleteInterceptor>();
+            var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
+            var auditTrailInterceptor = serviceProvider.GetRequiredService<AuditTrailInterceptor>();
+
+            optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+
+            // Create the DbContext instance
+            var context = new QuaterDbContext(optionsBuilder.Options);
+
+            // Set RLS session variables immediately based on lab context
+            // Only execute SQL if there's an actual context (system admin or lab context)
+            // If no context is set, skip SQL execution (this is normal during initialization)
+            if (labContextAccessor is { IsSystemAdmin: false, CurrentLabId: null }) return context;
+            try
             {
-                var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
-                var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
-                var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
-                var rlsSessionInterceptor = sp.GetRequiredService<RlsSessionInterceptor>();
-
-                options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor, rlsSessionInterceptor);
+                if (labContextAccessor.IsSystemAdmin)
+                {
+                    // System admin: bypass RLS
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
+                }
+                else if (labContextAccessor.CurrentLabId.HasValue)
+                {
+                    // Lab context exists: set lab ID and clear system admin flag
+                    var labId = labContextAccessor.CurrentLabId.Value;
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
+                }
             }
-        });
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
+                    ex);
+            }
 
-        return services;
+            return context;
+        });
     }
 
     /// <summary>
     /// Adds authentication services including ASP.NET Core Identity, OpenIddict, and authorization policies.
     /// </summary>
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static void AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         // Configure ASP.NET Core Identity with lockout settings
         services.AddIdentity<User, IdentityRole<Guid>>(options =>
@@ -328,13 +360,13 @@ public static class ServiceCollectionExtensions
         {
             // Lab-context-aware policies - check user's role in the current lab
             options.AddPolicy(Policies.AdminOnly, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Admin)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Admin)));
 
             options.AddPolicy(Policies.TechnicianOrAbove, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Technician)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Technician)));
 
             options.AddPolicy(Policies.ViewerOrAbove, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Viewer)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Viewer)));
 
             // Fallback policy: require authentication by default
             // Endpoints without [Authorize] attribute will require authentication
@@ -351,15 +383,13 @@ public static class ServiceCollectionExtensions
         });
 
         // Register authorization handler
-        services.AddScoped<IAuthorizationHandler, Api.Authorization.LabContextAuthorizationHandler>();
-
-        return services;
+        services.AddScoped<IAuthorizationHandler, Authorization.LabContextAuthorizationHandler>();
     }
 
     /// <summary>
     /// Adds application services including business logic services and FluentValidation validators.
     /// </summary>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static void AddApplicationServices(this IServiceCollection services)
     {
         // Register FluentValidation
         services.AddValidatorsFromAssemblyContaining<Core.Validators.SampleValidator>();
@@ -378,7 +408,5 @@ public static class ServiceCollectionExtensions
 
         // Register Lab Context Accessor (scoped per request)
         services.AddScoped<ILabContextAccessor, LabContextAccessor>();
-
-        return services;
     }
 }

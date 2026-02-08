@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text.Json;
 using OpenIddict.Abstractions;
 using Quater.Backend.Api.Attributes;
@@ -193,7 +192,7 @@ public class RateLimitingMiddleware
     /// </summary>
     private async Task ApplyEndpointRateLimitAsync(HttpContext context, EndpointRateLimitAttribute rateLimitConfig)
     {
-        string? trackingIdentifier = null;
+        string? trackingIdentifier;
 
         try
         {

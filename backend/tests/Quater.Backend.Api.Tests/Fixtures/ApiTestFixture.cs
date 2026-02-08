@@ -98,11 +98,19 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
         builder.ConfigureTestServices(services =>
         {
             // Replace PostgreSQL with test container
+            // Remove the factory registration and DbContextOptions
+            services.RemoveAll<QuaterDbContext>();
             services.RemoveAll<DbContextOptions<QuaterDbContext>>();
+            
+            // Re-register DbContext with test container connection (matches production pattern)
             services.AddDbContext<QuaterDbContext>(options =>
             {
                 // Use test container connection string
                 options.UseNpgsql(_postgresContainer.GetConnectionString());
+                
+                // Register OpenIddict entities (required for authentication)
+                options.UseOpenIddict();
+                
                 // Disable interceptors for tests to avoid audit trail issues
                 // Interceptors will be tested separately in integration tests
             });

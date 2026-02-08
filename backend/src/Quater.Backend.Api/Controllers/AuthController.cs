@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Api.Attributes;
-using Quater.Backend.Core.Constants;
 using Quater.Shared.Models;
 using Quater.Shared.Enums;
 using System.Security.Claims;
@@ -27,11 +26,6 @@ public sealed class AuthController(
     ILogger<AuthController> logger,
     IOpenIddictTokenManager tokenManager) : ControllerBase
 {
-    private readonly UserManager<User> _userManager = userManager;
-    private readonly SignInManager<User> _signInManager = signInManager;
-    private readonly ILogger<AuthController> _logger = logger;
-    private readonly IOpenIddictTokenManager _tokenManager = tokenManager;
-
     /// <summary>
     /// OAuth2 token endpoint - handles authorization_code and refresh_token grant types.
     /// 
@@ -66,7 +60,7 @@ public sealed class AuthController(
 
             if (result.Principal == null)
             {
-                _logger.LogWarning("Token exchange failed: Invalid authorization code");
+                logger.LogWarning("Token exchange failed: Invalid authorization code");
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -79,13 +73,13 @@ public sealed class AuthController(
 
             // Retrieve the user to ensure they still exist and are active.
             var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
-            var user = await _userManager.Users
+            var user = await userManager.Users
                 .Include(u => u.UserLabs)
                 .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
             if (user == null)
             {
-                _logger.LogWarning("Token exchange failed: User {UserId} not found", userId);
+                logger.LogWarning("Token exchange failed: User {UserId} not found", userId);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -98,7 +92,7 @@ public sealed class AuthController(
 
             if (!user.IsActive)
             {
-                _logger.LogWarning("Token exchange failed: User {UserId} is inactive", userId);
+                logger.LogWarning("Token exchange failed: User {UserId} is inactive", userId);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -109,10 +103,10 @@ public sealed class AuthController(
                     }));
             }
 
-            if (await _userManager.IsLockedOutAsync(user))
+            if (await userManager.IsLockedOutAsync(user))
             {
-                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-                _logger.LogWarning("Token exchange failed: User {UserId} is locked out until {LockoutEnd}",
+                var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
+                logger.LogWarning("Token exchange failed: User {UserId} is locked out until {LockoutEnd}",
                     userId, lockoutEnd);
 
                 return Forbid(
@@ -127,7 +121,7 @@ public sealed class AuthController(
 
             // Update last login timestamp
             user.LastLogin = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             // Create a fresh claims principal with current user data.
             // Role and lab context are now determined per-request via middleware
@@ -151,7 +145,7 @@ public sealed class AuthController(
                 claim.SetDestinations(GetDestinations(claim));
             }
 
-            _logger.LogInformation("User {UserId} authenticated successfully via authorization code exchange", userId);
+            logger.LogInformation("User {UserId} authenticated successfully via authorization code exchange", userId);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -164,7 +158,7 @@ public sealed class AuthController(
 
             if (result.Principal == null)
             {
-                _logger.LogWarning("Token refresh failed: Invalid refresh token");
+                logger.LogWarning("Token refresh failed: Invalid refresh token");
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -177,13 +171,13 @@ public sealed class AuthController(
 
             // Retrieve the user profile corresponding to the refresh token
             var userId = result.Principal.GetClaim(OpenIddictConstants.Claims.Subject);
-            var user = await _userManager.Users
+            var user = await userManager.Users
                 .Include(u => u.UserLabs)
                 .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
             if (user == null)
             {
-                _logger.LogWarning("Token refresh failed: User {UserId} not found", userId);
+                logger.LogWarning("Token refresh failed: User {UserId} not found", userId);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -197,7 +191,7 @@ public sealed class AuthController(
             // Ensure the user is still active
             if (!user.IsActive)
             {
-                _logger.LogWarning("Token refresh failed: User {UserId} is inactive", userId);
+                logger.LogWarning("Token refresh failed: User {UserId} is inactive", userId);
 
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -209,10 +203,10 @@ public sealed class AuthController(
             }
 
             // Check if account is locked out
-            if (await _userManager.IsLockedOutAsync(user))
+            if (await userManager.IsLockedOutAsync(user))
             {
-                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
-                _logger.LogWarning("Token refresh failed: User {UserId} is locked out until {LockoutEnd}", userId,
+                var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
+                logger.LogWarning("Token refresh failed: User {UserId} is locked out until {LockoutEnd}", userId,
                     lockoutEnd);
 
                 return Forbid(
@@ -230,9 +224,9 @@ public sealed class AuthController(
             // based on the X-Lab-Id header and UserLab table.
             var claims = new List<Claim>
             {
-                new Claim(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
-                new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new Claim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
+                new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
+                new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
+                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -247,13 +241,13 @@ public sealed class AuthController(
                 claim.SetDestinations(GetDestinations(claim));
             }
 
-            _logger.LogInformation("User {UserId} refreshed token successfully", userId);
+            logger.LogInformation("User {UserId} refreshed token successfully", userId);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         // Unsupported grant type
-        _logger.LogWarning("Token request failed: Unsupported grant type {GrantType}", request.GrantType);
+        logger.LogWarning("Token request failed: Unsupported grant type {GrantType}", request.GrantType);
 
         return Forbid(
             authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -302,15 +296,15 @@ public sealed class AuthController(
 
         // Revoke all tokens for this user
         var tokensRevoked = 0;
-        await foreach (var token in _tokenManager.FindBySubjectAsync(userId))
+        await foreach (var token in tokenManager.FindBySubjectAsync(userId))
         {
-            await _tokenManager.TryRevokeAsync(token);
+            await tokenManager.TryRevokeAsync(token);
             tokensRevoked++;
         }
 
-        await _signInManager.SignOutAsync();
+        await signInManager.SignOutAsync();
 
-        _logger.LogInformation("User {UserId} logged out successfully. Revoked {TokenCount} tokens",
+        logger.LogInformation("User {UserId} logged out successfully. Revoked {TokenCount} tokens",
             userId, tokensRevoked);
 
         return Ok(new { message = "Logged out successfully", tokensRevoked });
@@ -332,7 +326,7 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var user = await _userManager.Users
+        var user = await userManager.Users
             .Include(u => u.UserLabs)
             .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
