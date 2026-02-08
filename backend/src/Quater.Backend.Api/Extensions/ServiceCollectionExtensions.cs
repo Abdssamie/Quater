@@ -97,7 +97,8 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds database services including EF Core interceptors and DbContext.
     /// </summary>
-    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         // Register EF Core Interceptors
         services.AddScoped<SoftDeleteInterceptor>();
@@ -146,42 +147,39 @@ public static class ServiceCollectionExtensions
             // Set RLS session variables immediately based on lab context
             // Only execute SQL if there's an actual context (system admin or lab context)
             // If no context is set, skip SQL execution (this is normal during initialization)
-            if (labContextAccessor.IsSystemAdmin || labContextAccessor.CurrentLabId.HasValue)
+            if (labContextAccessor is { IsSystemAdmin: false, CurrentLabId: null }) return context;
+            try
             {
-                try
+                if (labContextAccessor.IsSystemAdmin)
                 {
-                    if (labContextAccessor.IsSystemAdmin)
-                    {
-                        // System admin: bypass RLS
-                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
-                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
-                    }
-                    else if (labContextAccessor.CurrentLabId.HasValue)
-                    {
-                        // Lab context exists: set lab ID and clear system admin flag
-                        var labId = labContextAccessor.CurrentLabId.Value;
-                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
-                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
-                    }
+                    // System admin: bypass RLS
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
                 }
-                catch (Exception ex)
+                else if (labContextAccessor.CurrentLabId.HasValue)
                 {
-                    throw new InvalidOperationException(
-                        "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
-                        ex);
+                    // Lab context exists: set lab ID and clear system admin flag
+                    var labId = labContextAccessor.CurrentLabId.Value;
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
+                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
+                    ex);
             }
 
             return context;
         });
-
-        return services;
     }
 
     /// <summary>
     /// Adds authentication services including ASP.NET Core Identity, OpenIddict, and authorization policies.
     /// </summary>
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static void AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         // Configure ASP.NET Core Identity with lockout settings
         services.AddIdentity<User, IdentityRole<Guid>>(options =>
@@ -362,13 +360,13 @@ public static class ServiceCollectionExtensions
         {
             // Lab-context-aware policies - check user's role in the current lab
             options.AddPolicy(Policies.AdminOnly, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Admin)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Admin)));
 
             options.AddPolicy(Policies.TechnicianOrAbove, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Technician)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Technician)));
 
             options.AddPolicy(Policies.ViewerOrAbove, policy =>
-                policy.Requirements.Add(new Api.Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Viewer)));
+                policy.Requirements.Add(new Authorization.LabContextRoleRequirement(Shared.Enums.UserRole.Viewer)));
 
             // Fallback policy: require authentication by default
             // Endpoints without [Authorize] attribute will require authentication
@@ -385,15 +383,13 @@ public static class ServiceCollectionExtensions
         });
 
         // Register authorization handler
-        services.AddScoped<IAuthorizationHandler, Api.Authorization.LabContextAuthorizationHandler>();
-
-        return services;
+        services.AddScoped<IAuthorizationHandler, Authorization.LabContextAuthorizationHandler>();
     }
 
     /// <summary>
     /// Adds application services including business logic services and FluentValidation validators.
     /// </summary>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static void AddApplicationServices(this IServiceCollection services)
     {
         // Register FluentValidation
         services.AddValidatorsFromAssemblyContaining<Core.Validators.SampleValidator>();
@@ -412,7 +408,5 @@ public static class ServiceCollectionExtensions
 
         // Register Lab Context Accessor (scoped per request)
         services.AddScoped<ILabContextAccessor, LabContextAccessor>();
-
-        return services;
     }
 }
