@@ -5,7 +5,6 @@ using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
-using Quater.Shared.Models;
 
 namespace Quater.Backend.Api.Middleware;
 
@@ -17,9 +16,6 @@ public sealed class LabContextMiddleware(
     RequestDelegate next,
     ILogger<LabContextMiddleware> logger)
 {
-    private readonly RequestDelegate _next = next;
-    private readonly ILogger<LabContextMiddleware> _logger = logger;
-
     /// <summary>
     /// Processes the HTTP request and sets the lab context if X-Lab-Id header is present.
     /// </summary>
@@ -37,11 +33,11 @@ public sealed class LabContextMiddleware(
             {
                 labContext.SetSystemAdmin();
 
-                _logger.LogDebug(
+                logger.LogDebug(
                     "System admin detected: UserId={UserId} — RLS bypass enabled",
                     userGuid);
 
-                await _next(context);
+                await next(context);
                 return;
             }
 
@@ -61,7 +57,7 @@ public sealed class LabContextMiddleware(
 
                 if (userLab is null)
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "User {UserId} attempted to access Lab {LabId} without membership",
                         userGuid,
                         labId);
@@ -70,10 +66,7 @@ public sealed class LabContextMiddleware(
 
                 labContext.SetContext(labId, userLab.Role);
                 
-                // NOTE: PostgreSQL session variables for RLS (app.current_lab_id, app.is_system_admin)
-                // are set by RlsSessionInterceptor on every connection open, not here.
-                
-                _logger.LogDebug(
+                logger.LogDebug(
                     "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
                     userGuid,
                     labId,
@@ -81,7 +74,7 @@ public sealed class LabContextMiddleware(
             }
         }
 
-        await _next(context);
+        await next(context);
     }
 }
 
