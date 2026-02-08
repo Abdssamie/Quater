@@ -113,32 +113,61 @@ public static class ServiceCollectionExtensions
             var ipAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
             return new AuditTrailInterceptor(currentUserService, ipAddress);
         });
-        services.AddScoped<RlsSessionInterceptor>();
 
-        // Add DbContext with interceptors
-        services.AddDbContext<QuaterDbContext>((sp, options) =>
+        // Add DbContext with factory pattern for RLS session variable management
+        services.AddScoped<QuaterDbContext>(serviceProvider =>
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection")
+            var labContextAccessor = serviceProvider.GetRequiredService<ILabContextAccessor>();
+            var config = serviceProvider.GetRequiredService<IConfiguration>();
+
+            var connectionString = config.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
                     "Database connection string 'DefaultConnection' is not configured. " +
                     "Please set the following environment variables: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD");
 
-            options.UseNpgsql(connectionString);
+            // Create DbContextOptionsBuilder manually
+            var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>();
+            optionsBuilder.UseNpgsql(connectionString);
 
-            // Register the entity sets needed by OpenIddict.
-            options.UseOpenIddict();
+            // Register the entity sets needed by OpenIddict
+            optionsBuilder.UseOpenIddict();
 
             // Only add interceptors in non-test environments
             // In test environments, interceptors can cause FK violations when creating test data
             if (!environment.IsEnvironment("Testing"))
             {
-                var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
-                var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
-                var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
-                var rlsSessionInterceptor = sp.GetRequiredService<RlsSessionInterceptor>();
+                var softDeleteInterceptor = serviceProvider.GetRequiredService<SoftDeleteInterceptor>();
+                var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
+                var auditTrailInterceptor = serviceProvider.GetRequiredService<AuditTrailInterceptor>();
 
-                options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor, rlsSessionInterceptor);
+                optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
             }
+
+            // Create the DbContext instance
+            var context = new QuaterDbContext(optionsBuilder.Options);
+
+            // Set RLS session variables immediately based on lab context
+            if (labContextAccessor.IsSystemAdmin)
+            {
+                // System admin: bypass RLS
+                context.Database.ExecuteSql($"SELECT set_config('app.is_system_admin', 'true', false)");
+                context.Database.ExecuteSql($"SELECT set_config('app.current_lab_id', '', false)");
+            }
+            else if (labContextAccessor.CurrentLabId.HasValue)
+            {
+                // Lab context exists: set lab ID and clear system admin flag
+                var labId = labContextAccessor.CurrentLabId.Value.ToString();
+                context.Database.ExecuteSql($"SELECT set_config('app.current_lab_id', {labId}, false)");
+                context.Database.ExecuteSql($"SELECT set_config('app.is_system_admin', '', false)");
+            }
+            else
+            {
+                // No context: clear both variables
+                context.Database.ExecuteSql($"SELECT set_config('app.current_lab_id', '', false)");
+                context.Database.ExecuteSql($"SELECT set_config('app.is_system_admin', '', false)");
+            }
+
+            return context;
         });
 
         return services;
