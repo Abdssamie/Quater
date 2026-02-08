@@ -3,18 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Interfaces;
-using Quater.Shared.Enums;
 
 namespace Quater.Backend.Api.Controllers;
-
-/**
- * @id: audit-log-controller
- * @priority: high
- * @progress: 100
- * @deps: ["audit-log-service", "audit-log-dto"]
- * @spec: Read-only controller for viewing audit logs. Endpoints: GET /api/auditlogs (paginated), GET /api/auditlogs/entity/{entityId}, GET /api/auditlogs/user/{userId}, GET /api/auditlogs/filter. Admin-only access.
- * @skills: ["csharp", "dotnet", "aspnetcore"]
- */
 
 /// <summary>
 /// Controller for viewing audit logs (read-only, Admin only)

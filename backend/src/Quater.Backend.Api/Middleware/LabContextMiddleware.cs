@@ -14,9 +14,6 @@ public sealed class LabContextMiddleware(
     RequestDelegate next,
     ILogger<LabContextMiddleware> logger)
 {
-    private readonly RequestDelegate _next = next;
-    private readonly ILogger<LabContextMiddleware> _logger = logger;
-
     /// <summary>
     /// Processes the HTTP request and sets the lab context if X-Lab-Id header is present.
     /// </summary>
@@ -33,11 +30,11 @@ public sealed class LabContextMiddleware(
             {
                 labContext.SetSystemAdmin();
 
-                _logger.LogDebug(
+                logger.LogDebug(
                     "System admin detected: UserId={UserId} — RLS bypass enabled",
                     userGuid);
 
-                await _next(context);
+                await next(context);
                 return;
             }
 
@@ -48,18 +45,14 @@ public sealed class LabContextMiddleware(
                 // Set context with default role - actual role will be validated by authorization handler
                 labContext.SetContext(labId, UserRole.Viewer);
                 
-                // NOTE: PostgreSQL session variables for RLS (app.current_lab_id, app.is_system_admin)
-                // are set by factory function when DbContext is created, not here.
-                // Lab membership and role validation happens in LabContextAuthorizationHandler.
-                
-                _logger.LogDebug(
+                logger.LogDebug(
                     "Lab context set: UserId={UserId}, LabId={LabId}",
                     userGuid,
                     labId);
             }
         }
 
-        await _next(context);
+        await next(context);
     }
 }
 

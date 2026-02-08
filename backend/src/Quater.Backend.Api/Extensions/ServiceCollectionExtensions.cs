@@ -133,48 +133,43 @@ public static class ServiceCollectionExtensions
             // Register the entity sets needed by OpenIddict
             optionsBuilder.UseOpenIddict();
 
-            // Only add interceptors in non-test environments
-            // In test environments, interceptors can cause FK violations when creating test data
-            if (!environment.IsEnvironment("Testing"))
-            {
-                var softDeleteInterceptor = serviceProvider.GetRequiredService<SoftDeleteInterceptor>();
-                var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
-                var auditTrailInterceptor = serviceProvider.GetRequiredService<AuditTrailInterceptor>();
+            // Add interceptors
+            var softDeleteInterceptor = serviceProvider.GetRequiredService<SoftDeleteInterceptor>();
+            var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
+            var auditTrailInterceptor = serviceProvider.GetRequiredService<AuditTrailInterceptor>();
 
-                optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
-            }
+            optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
 
             // Create the DbContext instance
             var context = new QuaterDbContext(optionsBuilder.Options);
 
             // Set RLS session variables immediately based on lab context
-            try
+            // Only execute SQL if there's an actual context (system admin or lab context)
+            // If no context is set, skip SQL execution (this is normal during initialization)
+            if (labContextAccessor.IsSystemAdmin || labContextAccessor.CurrentLabId.HasValue)
             {
-                if (labContextAccessor.IsSystemAdmin)
+                try
                 {
-                    // System admin: bypass RLS
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
+                    if (labContextAccessor.IsSystemAdmin)
+                    {
+                        // System admin: bypass RLS
+                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
+                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
+                    }
+                    else if (labContextAccessor.CurrentLabId.HasValue)
+                    {
+                        // Lab context exists: set lab ID and clear system admin flag
+                        var labId = labContextAccessor.CurrentLabId.Value;
+                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
+                        context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
+                    }
                 }
-                else if (labContextAccessor.CurrentLabId.HasValue)
+                catch (Exception ex)
                 {
-                    // Lab context exists: set lab ID and clear system admin flag
-                    var labId = labContextAccessor.CurrentLabId.Value;
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
+                    throw new InvalidOperationException(
+                        "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
+                        ex);
                 }
-                else
-                {
-                    // No context: clear both variables
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
-                    ex);
             }
 
             return context;

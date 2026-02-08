@@ -48,6 +48,7 @@ public static class ConfigurationValidationExtensions
             {
                 logger.LogCritical("  - {Error}", error);
             }
+
             throw new InvalidOperationException(
                 $"Configuration validation failed with {errors.Count} error(s). See logs for details.");
         }
