@@ -113,6 +113,7 @@ public static class ServiceCollectionExtensions
             var ipAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
             return new AuditTrailInterceptor(currentUserService, ipAddress);
         });
+        services.AddScoped<RlsSessionInterceptor>();
 
         // Add DbContext with interceptors
         services.AddDbContext<QuaterDbContext>((sp, options) =>
@@ -134,8 +135,9 @@ public static class ServiceCollectionExtensions
                 var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
                 var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
                 var auditTrailInterceptor = sp.GetRequiredService<AuditTrailInterceptor>();
+                var rlsSessionInterceptor = sp.GetRequiredService<RlsSessionInterceptor>();
 
-                options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+                options.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor, rlsSessionInterceptor);
             }
         });
 

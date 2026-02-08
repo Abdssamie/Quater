@@ -70,11 +70,8 @@ public sealed class LabContextMiddleware(
 
                 labContext.SetContext(labId, userLab.Role);
                 
-                // Set PostgreSQL session variables for RLS policies
-                await db.Database.ExecuteSqlRawAsync(
-                    "SELECT set_config('app.current_lab_id', {0}, true)",
-                    labId.ToString(),
-                    context.RequestAborted);
+                // NOTE: PostgreSQL session variables for RLS (app.current_lab_id, app.is_system_admin)
+                // are set by RlsSessionInterceptor on every connection open, not here.
                 
                 _logger.LogDebug(
                     "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",

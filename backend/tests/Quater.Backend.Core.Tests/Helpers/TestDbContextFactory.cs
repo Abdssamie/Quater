@@ -51,6 +51,8 @@ public class TestDbContextFactory : IAsyncLifetime
         {
             if (_isInitialized) return;
 
+            Environment.SetEnvironmentVariable("SYSTEM_ADMIN_USER_ID", "eb4b0ebc-7a02-43ca-a858-656bd7e4357f");
+
             await _container.StartAsync();
             _connectionString = _container.GetConnectionString();
             _isInitialized = true;
