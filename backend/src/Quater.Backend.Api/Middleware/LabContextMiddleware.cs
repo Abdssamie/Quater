@@ -1,17 +1,14 @@
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Quater.Backend.Core.Constants;
-using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Interfaces;
-using Quater.Backend.Data;
-using Quater.Shared.Models;
+using Quater.Shared.Enums;
 
 namespace Quater.Backend.Api.Middleware;
 
 /// <summary>
-/// Middleware that intercepts requests, reads the X-Lab-Id header, validates user access via UserLab,
-/// and sets the lab context for the request.
+/// Middleware that intercepts requests, reads the X-Lab-Id header, and sets the lab context for the request.
+/// Lab membership validation is performed by LabContextAuthorizationHandler.
 /// </summary>
 public sealed class LabContextMiddleware(
     RequestDelegate next,
@@ -25,8 +22,7 @@ public sealed class LabContextMiddleware(
     /// </summary>
     public async Task InvokeAsync(
         HttpContext context,
-        ILabContextAccessor labContext,
-        QuaterDbContext db)
+        ILabContextAccessor labContext)
     {
         var userId = context.User.FindFirstValue(OpenIddictConstants.Claims.Subject);
 
@@ -49,35 +45,17 @@ public sealed class LabContextMiddleware(
 
             if (!string.IsNullOrEmpty(labIdHeader) && Guid.TryParse(labIdHeader, out var labId))
             {
-                // Check UserLab table for membership and role
-                var userLab = await db.UserLabs
-                    .Include(ul => ul.Lab)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(ul => 
-                        ul.UserId == userGuid && 
-                        ul.LabId == labId && 
-                        !ul.Lab.IsDeleted, 
-                        context.RequestAborted);
-
-                if (userLab is null)
-                {
-                    _logger.LogWarning(
-                        "User {UserId} attempted to access Lab {LabId} without membership",
-                        userGuid,
-                        labId);
-                    throw new ForbiddenException(ErrorMessages.UserNotLabMember);
-                }
-
-                labContext.SetContext(labId, userLab.Role);
+                // Set context with default role - actual role will be validated by authorization handler
+                labContext.SetContext(labId, UserRole.Viewer);
                 
                 // NOTE: PostgreSQL session variables for RLS (app.current_lab_id, app.is_system_admin)
-                // are set by RlsSessionInterceptor on every connection open, not here.
+                // are set by factory function when DbContext is created, not here.
+                // Lab membership and role validation happens in LabContextAuthorizationHandler.
                 
                 _logger.LogDebug(
-                    "Lab context set: UserId={UserId}, LabId={LabId}, Role={Role}",
+                    "Lab context set: UserId={UserId}, LabId={LabId}",
                     userGuid,
-                    labId,
-                    userLab.Role);
+                    labId);
             }
         }
 
