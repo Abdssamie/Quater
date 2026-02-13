@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
@@ -216,6 +217,7 @@ public static class DatabaseSeeder
 
     /// <summary>
     /// Generates a secure random password that meets the password requirements.
+    /// Uses cryptographically secure random number generation.
     /// </summary>
     private static string GenerateSecurePassword()
     {
@@ -224,23 +226,48 @@ public static class DatabaseSeeder
         const string digits = "0123456789";
         const string special = "!@#$%^&*";
 
-        var random = new Random();
+        using var rng = RandomNumberGenerator.Create();
         var password = new char[16];
 
         // Ensure at least one of each required character type
-        password[0] = uppercase[random.Next(uppercase.Length)];
-        password[1] = lowercase[random.Next(lowercase.Length)];
-        password[2] = digits[random.Next(digits.Length)];
-        password[3] = special[random.Next(special.Length)];
+        password[0] = uppercase[GetSecureRandomIndex(rng, uppercase.Length)];
+        password[1] = lowercase[GetSecureRandomIndex(rng, lowercase.Length)];
+        password[2] = digits[GetSecureRandomIndex(rng, digits.Length)];
+        password[3] = special[GetSecureRandomIndex(rng, special.Length)];
 
         // Fill the rest with random characters from all sets
         var allChars = uppercase + lowercase + digits + special;
         for (var i = 4; i < password.Length; i++)
         {
-            password[i] = allChars[random.Next(allChars.Length)];
+            password[i] = allChars[GetSecureRandomIndex(rng, allChars.Length)];
         }
 
-        // Shuffle the password to avoid predictable patterns
-        return new string(password.OrderBy(_ => random.Next()).ToArray());
+        // Shuffle the password to avoid predictable patterns using Fisher-Yates algorithm
+        ShuffleArray(rng, password);
+
+        return new string(password);
+    }
+
+    /// <summary>
+    /// Gets a cryptographically secure random index for the given array length.
+    /// </summary>
+    private static int GetSecureRandomIndex(RandomNumberGenerator rng, int length)
+    {
+        var bytes = new byte[4];
+        rng.GetBytes(bytes);
+        var randomValue = BitConverter.ToInt32(bytes, 0) & int.MaxValue; // Ensure positive
+        return randomValue % length;
+    }
+
+    /// <summary>
+    /// Shuffles the array in place using Fisher-Yates algorithm with cryptographically secure random.
+    /// </summary>
+    private static void ShuffleArray(RandomNumberGenerator rng, char[] array)
+    {
+        for (int i = array.Length - 1; i > 0; i--)
+        {
+            int j = GetSecureRandomIndex(rng, i + 1);
+            (array[i], array[j]) = (array[j], array[i]);
+        }
     }
 }

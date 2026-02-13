@@ -60,7 +60,8 @@ public class RlsSessionInterceptor : DbConnectionInterceptor
         if (_labContext.CurrentLabId.HasValue)
         {
             using var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT set_config('app.current_lab_id', @labId, true)";
+            // Use positional parameter $1 for PostgreSQL to avoid any SQL injection risks
+            cmd.CommandText = "SELECT set_config('app.current_lab_id', $1, true)";
 
             var param = cmd.CreateParameter();
             param.ParameterName = "labId";
@@ -88,7 +89,8 @@ public class RlsSessionInterceptor : DbConnectionInterceptor
         if (_labContext.CurrentLabId.HasValue)
         {
             await using var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT set_config('app.current_lab_id', @labId, true)";
+            // Use positional parameter $1 for PostgreSQL to avoid any SQL injection risks
+            cmd.CommandText = "SELECT set_config('app.current_lab_id', $1, true)";
 
             var param = cmd.CreateParameter();
             param.ParameterName = "labId";
