@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.2" />
-    <PackageReference Include="OpenIddict.Abstractions" Version="5.8.0" />
+    <PackageReference Include="OpenIddict.Abstractions" Version="6.0.0" />
     <PackageReference Include="Scriban" Version="6.5.2" />
   </ItemGroup>
 

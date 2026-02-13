@@ -245,7 +245,7 @@ public static class ServiceCollectionExtensions
                 // Configure endpoints
                 options.SetAuthorizationEndpointUris("/api/auth/authorize")
                        .SetTokenEndpointUris("/api/auth/token")
-                       .SetUserinfoEndpointUris("/api/auth/userinfo")
+                       .SetUserInfoEndpointUris("/api/auth/userinfo")
                        .SetRevocationEndpointUris("/api/auth/revoke");
 
                 // Enable OAuth2/OIDC flows
@@ -337,7 +337,7 @@ public static class ServiceCollectionExtensions
                 var aspNetCoreBuilder = options.UseAspNetCore()
                        .EnableAuthorizationEndpointPassthrough()
                        .EnableTokenEndpointPassthrough()
-                       .EnableUserinfoEndpointPassthrough();
+                       .EnableUserInfoEndpointPassthrough();
 
                 // Note: Revocation endpoint is handled automatically by OpenIddict when
                 // SetRevocationEndpointUris is configured - no passthrough needed
