@@ -126,6 +126,9 @@ public sealed class PasswordController(
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
+            // TODO: MEDIUM - Timing inconsistency. Forgot password has timing protection, reset doesn't.
+            // This immediately returns for non-existent users, potentially allowing timing-based email enumeration.
+            // Consider adding constant-time delay like ForgotPassword endpoint.
             return BadRequest(new { error = "Invalid request" });
         }
 

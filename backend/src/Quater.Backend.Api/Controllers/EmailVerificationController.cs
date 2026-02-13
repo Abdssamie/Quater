@@ -31,6 +31,8 @@ public sealed class EmailVerificationController(
     /// <summary>
     /// Verify user email address using a token
     /// </summary>
+    // TODO: HIGH - Missing rate limiting. Risk: Email enumeration and spam attacks.
+    // Add: [EndpointRateLimit(10, 60, RateLimitTrackBy.Ip)]
     [HttpPost("verify")]
     [AllowAnonymous]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
@@ -80,6 +82,8 @@ public sealed class EmailVerificationController(
     /// <summary>
     /// Resend the email verification link
     /// </summary>
+    // TODO: HIGH - Missing rate limiting. Risk: Email enumeration and spam attacks.
+    // Add: [EndpointRateLimit(5, 60, RateLimitTrackBy.Email)]
     [HttpPost("resend")]
     [AllowAnonymous]
     public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)

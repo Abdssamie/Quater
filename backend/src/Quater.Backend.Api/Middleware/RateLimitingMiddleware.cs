@@ -163,6 +163,8 @@ public class RateLimitingMiddleware
         }
         catch (RedisConnectionException ex)
         {
+            // TODO: MEDIUM - Rate limiting fails open when Redis is down. Risk: No brute force protection during Redis outage.
+            // Consider failing closed for auth endpoints, or adding in-memory fallback rate limiting.
             // Fail open: allow request to proceed if Redis is unavailable
             // This prevents Redis outages from taking down the entire API
             _logger.LogError(ex,

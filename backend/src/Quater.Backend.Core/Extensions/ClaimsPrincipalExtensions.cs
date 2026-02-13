@@ -13,6 +13,10 @@ public static class ClaimsPrincipalExtensions
     /// <param name="principal">The claims principal.</param>
     /// <returns>The user ID.</returns>
     /// <exception cref="InvalidOperationException">Thrown when user ID is not found in claims.</exception>
+    // TODO: CRITICAL - Uses ClaimTypes.NameIdentifier instead of OpenIddictConstants.Claims.Subject.
+    // OpenIddict tokens use 'sub' claim, not the legacy ASP.NET NameIdentifier claim type.
+    // Risk: Inconsistent claim handling, potential authentication bypass if tokens don't contain NameIdentifier.
+    // Should use: principal.FindFirstValue(OpenIddictConstants.Claims.Subject)
     public static Guid GetUserIdOrThrow(this ClaimsPrincipal principal)
     {
         var userIdString = principal.FindFirstValue(ClaimTypes.NameIdentifier);

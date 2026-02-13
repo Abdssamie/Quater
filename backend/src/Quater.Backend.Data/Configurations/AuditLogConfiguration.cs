@@ -17,7 +17,7 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
 
         entity.Property(e => e.UserId)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("uuid");
 
         // Enum stored as string for compatibility with SQLite desktop app
         // EntityType.Lab -> "Lab"

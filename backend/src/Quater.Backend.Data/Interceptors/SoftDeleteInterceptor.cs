@@ -92,8 +92,16 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             }
             else
             {
-                throw new InvalidOperationException("Unexpected Error. IAuditable models must " +
-                                                    "have DeletedAt property and it must be DateTime");
+                throw new InvalidOperationException("Unexpected Error. ISoftDelete models must " +
+                                                    "have DeletedAt property and it must be DateTime?");
+            }
+
+            // Validate DeletedBy property type
+            var deletedByProperty = entry.Entity.GetType().GetProperty("DeletedBy");
+            if (deletedByProperty != null && deletedByProperty.PropertyType != typeof(string))
+            {
+                throw new InvalidOperationException("Unexpected Error. ISoftDelete models must " +
+                                                    "have DeletedBy property and it must be string?");
             }
 
             // Ensure owned entities are properly included
