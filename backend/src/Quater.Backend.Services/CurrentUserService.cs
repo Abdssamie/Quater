@@ -1,12 +1,14 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Quater.Backend.Data.Interceptors;
-using System.Security.Claims;
 using Quater.Backend.Core.Constants;
+using OpenIddict.Abstractions;
 
 namespace Quater.Backend.Services;
 
 /// <summary>
 /// Service for retrieving current user information from HTTP context.
+/// Uses OpenIddict's 'sub' claim for consistency with JWT access tokens.
 /// </summary>
 public class CurrentUserService : ICurrentUserService
 {
@@ -19,11 +21,13 @@ public class CurrentUserService : ICurrentUserService
 
     /// <summary>
     /// Gets the current authenticated user's ID.
+    /// Uses OpenIddict's 'sub' claim for consistency with JWT access tokens.
     /// </summary>
-    /// <returns>The user ID from claims, or "System" if not authenticated.</returns>
+    /// <returns>The user ID from claims, or System user ID if not authenticated.</returns>
     public Guid GetCurrentUserId()
     {
-        var userIdString = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdString = _httpContextAccessor.HttpContext?.User?
+            .FindFirstValue(OpenIddictConstants.Claims.Subject);
 
         if (string.IsNullOrEmpty(userIdString))
         {
