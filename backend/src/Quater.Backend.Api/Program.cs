@@ -11,6 +11,7 @@ using Quater.Backend.Data;
 using Quater.Backend.Data.Seeders;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Models;
+using Sentry;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,14 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configure Sentry
+builder.WebHost.UseSentry(o =>
+{
+    o.Dsn = "https://1bfe6017932565499080e1ff518bbb17@o4509589925527552.ingest.de.sentry.io/4510886764478545";
+    // When configuring for the first time, to see what the SDK is doing:
+    o.Debug = true;
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -48,12 +57,25 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
     }
 
-    // Add security definition for Bearer token authentication
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    // Add OAuth2 security definition for Swagger UI
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri("/api/auth/authorize", UriKind.Relative),
+                TokenUrl = new Uri("/api/auth/token", UriKind.Relative),
+                Scopes = new Dictionary<string, string>
+                {
+                    { "api", "Access to Quater API" },
+                    { "openid", "OpenID Connect" },
+                    { "profile", "User profile" },
+                    { "email", "User email" }
+                }
+            }
+        }
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -64,10 +86,10 @@ builder.Services.AddSwaggerGen(options =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id = "oauth2"
                 }
             },
-            Array.Empty<string>()
+            new[] { "api" }
         }
     });
 });
@@ -128,7 +150,11 @@ app.UseCors("QuaterCorsPolicy");
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.OAuthClientId("quater-swagger-client");
+        options.OAuthUsePkce();
+    });
 }
 
 app.UseAuthentication();
@@ -150,29 +176,76 @@ app.MapGet("/health/email", (IEmailQueue queue) =>
     });
 }).RequireAuthorization();
 
+// Sentry verification endpoint - use this to test Sentry integration
+// Returns immediately, check your Sentry dashboard after calling this endpoint
+app.MapGet("/sentry-test", () =>
+{
+    try
+    {
+        // Send test message with additional context
+        SentrySdk.CaptureMessage("Hello Sentry - Quater API is online!", SentryLevel.Info);
+        
+        // Also log a test error to verify error capture works
+        SentrySdk.CaptureException(new Exception("Test error - please ignore"), scope =>
+        {
+            scope.SetTag("test", "true");
+            scope.SetExtra("timestamp", DateTime.UtcNow);
+        });
+        
+        return Results.Ok(new 
+        { 
+            message = "Test events sent to Sentry",
+            timestamp = DateTime.UtcNow,
+            instruction = "Check your Sentry dashboard for events"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Failed to send test event: {ex.Message}");
+    }
+});
+
+// Sentry health check - shows if SDK is initialized
+app.MapGet("/health/sentry", () =>
+{
+    var isEnabled = SentrySdk.IsEnabled;
+    var lastEventId = SentrySdk.LastEventId.ToString();
+    
+    return Results.Ok(new
+    {
+        enabled = isEnabled,
+        lastEventId = string.IsNullOrEmpty(lastEventId) ? null : lastEventId,
+        dsnConfigured = true, // Hardcoded DSN is configured
+        timestamp = DateTime.UtcNow
+    });
+});
+
 // Apply migrations and seed database on startup (skip in Testing environment)
 if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
     try
     {
         var context = services.GetRequiredService<QuaterDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
+        var configuration = services.GetRequiredService<IConfiguration>();
 
         // Apply migrations
         context.Database.Migrate();
 
         // Seed database
-        await DatabaseSeeder.SeedAsync(context, userManager);
+        await DatabaseSeeder.SeedAsync(context, userManager, configuration, logger);
 
         // Seed OpenIddict client applications
         await OpenIddictSeeder.SeedAsync(services);
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        throw; // Re-throw to fail fast in production
     }
 }
 
