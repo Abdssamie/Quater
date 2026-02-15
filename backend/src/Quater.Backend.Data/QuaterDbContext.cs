@@ -62,6 +62,10 @@ public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
                 .WithMany(l => l.UserLabs)
                 .HasForeignKey(e => e.LabId);
             entity.Property(e => e.Role).HasConversion<string>();
+            
+            // Global query filter to match Lab's soft delete filter
+            // This prevents loading UserLab records for soft-deleted Labs
+            entity.HasQueryFilter(e => !e.Lab.IsDeleted);
         });
 
         // Apply all entity configurations from the current assembly
