@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Quater.Backend.Core.Constants;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -9,6 +11,11 @@ namespace Quater.Backend.Data.Seeders;
 
 /// <summary>
 /// Seeds the database with initial data for Parameters and Admin user.
+/// 
+/// PRODUCTION SAFETY:
+/// - In Production: ADMIN_DEFAULT_PASSWORD environment variable is REQUIRED
+/// - In Development: Password is auto-generated if not provided (displayed in logs)
+/// - Admin user is only created once; subsequent runs are skipped gracefully
 /// </summary>
 public static class DatabaseSeeder
 {
@@ -17,14 +24,20 @@ public static class DatabaseSeeder
     /// </summary>
     /// <param name="context">The database context.</param>
     /// <param name="userManager">The user manager for creating admin user.</param>
-    public static async Task SeedAsync(QuaterDbContext context, UserManager<User> userManager)
+    /// <param name="configuration">The configuration for environment check.</param>
+    /// <param name="logger">The logger for output.</param>
+    public static async Task SeedAsync(
+        QuaterDbContext context,
+        UserManager<User> userManager,
+        IConfiguration configuration,
+        ILogger logger)
     {
         // Ensure database is created
         await context.Database.EnsureCreatedAsync();
 
         // Seed Admin User
-        await SeedAdminUserAsync(context, userManager);
-        
+        await SeedAdminUserAsync(context, userManager, configuration, logger);
+
         // Seed Parameters
         await SeedParametersAsync(context);
     }
@@ -150,15 +163,71 @@ public static class DatabaseSeeder
 
     /// <summary>
     /// Seeds the default admin user and lab.
+    /// 
+    /// PRODUCTION SAFETY:
+    /// - In Production/Staging: ADMIN_DEFAULT_PASSWORD environment variable is REQUIRED
+    ///   The application will fail to start if not provided, preventing auto-generated passwords
+    /// - In Development: Password is auto-generated if not provided (displayed in logs)
+    /// - Admin user is only created once; subsequent runs are skipped gracefully
     /// </summary>
-    private static async Task SeedAdminUserAsync(QuaterDbContext context, UserManager<User> userManager)
+    private static async Task SeedAdminUserAsync(
+        QuaterDbContext context,
+        UserManager<User> userManager,
+        IConfiguration configuration,
+        ILogger logger)
     {
-        // Check if admin user already exists
+        // Check if admin user already exists by ID
         var systemUserId = SystemUser.GetId();
         var adminUser = await userManager.FindByIdAsync(systemUserId.ToString());
         if (adminUser != null)
         {
+            logger.LogDebug("Admin user already exists with ID {UserId}", systemUserId);
             return; // Admin already exists
+        }
+
+        // Also check if a user with the admin email already exists (handles ID changes)
+        var existingAdminByEmail = await userManager.FindByEmailAsync("admin@quater.local");
+        if (existingAdminByEmail != null)
+        {
+            logger.LogWarning(
+                "Admin user already exists with email {Email} but different ID. " +
+                "This may indicate SYSTEM_ADMIN_USER_ID was changed. Existing admin will be used.",
+                "admin@quater.local");
+            return; // Admin already exists with different ID
+        }
+
+        // Check environment
+        var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Production";
+        var isProduction = environment.Equals("Production", StringComparison.OrdinalIgnoreCase);
+        var isStaging = environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
+
+        // Get admin password from environment variable
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
+
+        if (string.IsNullOrEmpty(adminPassword))
+        {
+            if (isProduction || isStaging)
+            {
+                // In Production/Staging: FAIL FAST - require explicit password
+                throw new InvalidOperationException(
+                    "ADMIN_DEFAULT_PASSWORD environment variable is required in Production/Staging environments. " +
+                    "Please set this variable to a secure password before starting the application. " +
+                    "Example: ADMIN_DEFAULT_PASSWORD=YourSecurePassword123! dotnet run");
+            }
+
+            // In Development: Generate a secure random password
+            adminPassword = GenerateSecurePassword();
+            logger.LogWarning("=".PadRight(80, '='));
+            logger.LogWarning("IMPORTANT: Default admin password generated!");
+            logger.LogWarning("Email: admin@quater.local");
+            logger.LogWarning("Password: {Password}", adminPassword);
+            logger.LogWarning("Please change this password immediately after first login.");
+            logger.LogWarning("Set ADMIN_DEFAULT_PASSWORD environment variable to use a custom password.");
+            logger.LogWarning("=".PadRight(80, '='));
+        }
+        else
+        {
+            logger.LogInformation("Using ADMIN_DEFAULT_PASSWORD from environment variable");
         }
 
         // Create default lab first
@@ -191,28 +260,14 @@ public static class DatabaseSeeder
             ]
         };
 
-        // Get admin password from environment variable or generate a secure random one
-        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
-
-        if (string.IsNullOrEmpty(adminPassword))
-        {
-            // Generate a secure random password if not provided
-            adminPassword = GenerateSecurePassword();
-            Console.WriteLine("=".PadRight(80, '='));
-            Console.WriteLine("IMPORTANT: Default admin password generated!");
-            Console.WriteLine("Email: admin@quater.local");
-            Console.WriteLine($"Password: {adminPassword}");
-            Console.WriteLine("Please change this password immediately after first login.");
-            Console.WriteLine("Set ADMIN_DEFAULT_PASSWORD environment variable to use a custom password.");
-            Console.WriteLine("=".PadRight(80, '='));
-        }
-
         var result = await userManager.CreateAsync(admin, adminPassword);
 
         if (!result.Succeeded)
         {
-            throw new Exception($"Failed to create admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            throw new InvalidOperationException($"Failed to create admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
+
+        logger.LogInformation("Admin user created successfully with ID {UserId}", systemUserId);
     }
 
     /// <summary>

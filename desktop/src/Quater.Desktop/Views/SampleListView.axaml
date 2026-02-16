@@ -85,9 +85,9 @@
                          AutoGenerateColumns="False">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="100"/>
-                        <DataGridTextColumn Header="Location" Binding="{Binding LocationDescription}" Width="200"/>
-                        <DataGridTextColumn Header="Latitude" Binding="{Binding LocationLatitude}" Width="100"/>
-                    <DataGridTextColumn Header="Longitude" Binding="{Binding LocationLongitude}" Width="100"/>
+                        <DataGridTextColumn Header="Location" Binding="{Binding Location.Description}" Width="200"/>
+                        <DataGridTextColumn Header="Latitude" Binding="{Binding Location.Latitude}" Width="100"/>
+                        <DataGridTextColumn Header="Longitude" Binding="{Binding Location.Longitude}" Width="100"/>
                         <DataGridTextColumn Header="Collection Date" Binding="{Binding CollectionDate}" Width="150"/>
                         <DataGridTextColumn Header="Collector" Binding="{Binding CollectorName}" Width="150"/>
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>

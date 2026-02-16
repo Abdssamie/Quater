@@ -159,12 +159,14 @@ if (!app.Environment.IsEnvironment("Testing"))
     {
         var context = services.GetRequiredService<QuaterDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
 
         // Apply migrations
         context.Database.Migrate();
 
         // Seed database
-        await DatabaseSeeder.SeedAsync(context, userManager);
+        await DatabaseSeeder.SeedAsync(context, userManager, configuration, logger);
 
         // Seed OpenIddict client applications
         await OpenIddictSeeder.SeedAsync(services);

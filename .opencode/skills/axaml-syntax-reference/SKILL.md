@@ -25,6 +25,7 @@ Complete reference for Avalonia XAML (AXAML) syntax.
 ## When to use me
 
 Use this skill when you need to:
+
 - Set up a new AXAML file with correct structure
 - Add namespace declarations for SukiUI or custom types
 - Choose between attribute and element property syntax
@@ -283,22 +284,26 @@ xmlns:local="clr-namespace:YourApp"
 ## Quick Troubleshooting
 
 **Binding not working?**
+
 - Check `x:DataType` is set
 - Verify property exists in ViewModel
 - Use `Mode=TwoWay` for input controls
 - Check for typos in property names
 
 **SukiUI controls not found?**
+
 - Verify namespace: `xmlns:suki="https://github.com/kikipoulet/SukiUI"`
 - Check NuGet package is installed
 - Ensure using `<suki:SukiWindow>` not `<Window>`
 
 **Navigation not working?**
+
 - Define DataTemplates in SukiWindow
 - Map each ViewModel to its View
 - Ensure SelectedItem binding is TwoWay
 
 **Styles not applying?**
+
 - Check selector syntax
 - Verify class names match
 - Ensure styles are in correct scope (Window.Styles, UserControl.Styles, etc.)

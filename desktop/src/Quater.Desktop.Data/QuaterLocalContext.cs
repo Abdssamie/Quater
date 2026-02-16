@@ -20,9 +20,9 @@ public class QuaterLocalContext : DbContext
     public DbSet<Sample> Samples { get; set; } = null!;
     public DbSet<TestResult> TestResults { get; set; } = null!;
     public DbSet<Parameter> Parameters { get; set; } = null!;
-
     public DbSet<Lab> Labs { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<UserLab> UserLabs { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
 
@@ -107,17 +107,25 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasConversion(new SampleTypeConverter());
 
-            entity.Property(e => e.LocationLatitude)
-                .IsRequired();
+            // Configure Location value object as owned entity
+            entity.OwnsOne(e => e.Location, location =>
+            {
+                location.Property(l => l.Latitude)
+                    .HasColumnName("LocationLatitude")
+                    .IsRequired();
 
-            entity.Property(e => e.LocationLongitude)
-                .IsRequired();
+                location.Property(l => l.Longitude)
+                    .HasColumnName("LocationLongitude")
+                    .IsRequired();
 
-            entity.Property(e => e.LocationDescription)
-                .HasMaxLength(200);
+                location.Property(l => l.Description)
+                    .HasColumnName("LocationDescription")
+                    .HasMaxLength(200);
 
-            entity.Property(e => e.LocationHierarchy)
-                .HasMaxLength(500);
+                location.Property(l => l.Hierarchy)
+                    .HasColumnName("LocationHierarchy")
+                    .HasMaxLength(500);
+            });
 
             entity.Property(e => e.CollectionDate)
                 .IsRequired();
@@ -135,41 +143,45 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasConversion(new SampleStatusConverter());
 
-            entity.Property(e => e.Version)
+            // RowVersion for concurrency (maps to IConcurrent.RowVersion)
+            entity.Property(e => e.RowVersion)
                 .IsRequired()
+                .IsRowVersion()
                 .IsConcurrencyToken();
 
-            entity.Property(e => e.LastModified)
-                .IsRequired()
-                .IsConcurrencyToken();
+            // Audit properties (IAuditable)
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
 
-            entity.Property(e => e.LastModifiedBy)
-                .IsRequired()
-                .HasMaxLength(100);
+            entity.Property(e => e.CreatedBy)
+                .IsRequired();
 
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.UpdatedBy);
+
+            // Soft delete (ISoftDelete)
             entity.Property(e => e.IsDeleted)
                 .IsRequired()
                 .HasDefaultValue(false);
 
-            entity.Property(e => e.IsSynced)
-                .IsRequired()
-                .HasDefaultValue(false);
+            entity.Property(e => e.DeletedAt);
+
+            entity.Property(e => e.DeletedBy);
 
             entity.Property(e => e.LabId)
                 .IsRequired();
 
-            entity.Property(e => e.CreatedBy)
+            // Shadow property for client-side sync tracking (not on shared model)
+            entity.Property<bool>("IsSynced")
                 .IsRequired()
-                .HasMaxLength(100);
+                .HasDefaultValue(false);
 
-            entity.Property(e => e.CreatedDate)
-                .IsRequired();
+            // Shadow property for tracking last sync modification time
+            entity.Property<DateTime?>("LastSyncedAt");
 
             // Indexes
-            entity.HasIndex(e => e.LastModified)
-                .HasDatabaseName("IX_Samples_LastModified");
-
-            entity.HasIndex(e => e.IsSynced)
+            entity.HasIndex("IsSynced")
                 .HasDatabaseName("IX_Samples_IsSynced");
 
             entity.HasIndex(e => e.Status)
@@ -182,8 +194,8 @@ public class QuaterLocalContext : DbContext
                 .HasDatabaseName("IX_Samples_CollectionDate");
 
             // Composite index for sync queries
-            entity.HasIndex(e => new { e.IsSynced, e.LastModified })
-                .HasDatabaseName("IX_Samples_IsSynced_LastModified");
+            entity.HasIndex("IsSynced", nameof(Sample.UpdatedAt))
+                .HasDatabaseName("IX_Samples_IsSynced_UpdatedAt");
 
             // Relationships
             entity.HasMany(e => e.TestResults)
@@ -204,16 +216,26 @@ public class QuaterLocalContext : DbContext
             entity.Property(e => e.SampleId)
                 .IsRequired();
 
-            entity.Property(e => e.ParameterName)
-                .IsRequired()
-                .HasMaxLength(100);
+            // Configure Measurement value object as owned entity
+            entity.OwnsOne(e => e.Measurement, measurement =>
+            {
+                measurement.Property(m => m.ParameterId)
+                    .HasColumnName("ParameterId")
+                    .IsRequired();
 
-            entity.Property(e => e.Value)
-                .IsRequired();
+                measurement.Property(m => m.Value)
+                    .HasColumnName("Value")
+                    .IsRequired();
 
-            entity.Property(e => e.Unit)
+                measurement.Property(m => m.Unit)
+                    .HasColumnName("Unit")
+                    .IsRequired()
+                    .HasMaxLength(20);
+            });
+
+            entity.Property(e => e.Status)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasConversion(new TestResultStatusConverter());
 
             entity.Property(e => e.TestDate)
                 .IsRequired();
@@ -234,41 +256,56 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasConversion(new ComplianceStatusConverter());
 
-            entity.Property(e => e.Version)
+            entity.Property(e => e.VoidedTestResultId);
+
+            entity.Property(e => e.ReplacedByTestResultId);
+
+            entity.Property(e => e.IsVoided)
                 .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.VoidReason)
+                .HasMaxLength(500);
+
+            // RowVersion for concurrency (maps to IConcurrent.RowVersion)
+            entity.Property(e => e.RowVersion)
+                .IsRequired()
+                .IsRowVersion()
                 .IsConcurrencyToken();
 
-            entity.Property(e => e.LastModified)
-                .IsRequired()
-                .IsConcurrencyToken();
+            // Audit properties (IAuditable)
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
 
-            entity.Property(e => e.LastModifiedBy)
-                .IsRequired()
-                .HasMaxLength(100);
+            entity.Property(e => e.CreatedBy)
+                .IsRequired();
 
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.UpdatedBy);
+
+            // Soft delete (ISoftDelete)
             entity.Property(e => e.IsDeleted)
                 .IsRequired()
                 .HasDefaultValue(false);
 
-            entity.Property(e => e.IsSynced)
+            entity.Property(e => e.DeletedAt);
+
+            entity.Property(e => e.DeletedBy);
+
+            // Shadow property for client-side sync tracking (not on shared model)
+            entity.Property<bool>("IsSynced")
                 .IsRequired()
                 .HasDefaultValue(false);
 
-            entity.Property(e => e.CreatedBy)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.Property(e => e.CreatedDate)
-                .IsRequired();
+            // Shadow property for tracking last sync modification time
+            entity.Property<DateTime?>("LastSyncedAt");
 
             // Indexes
             entity.HasIndex(e => e.SampleId)
                 .HasDatabaseName("IX_TestResults_SampleId");
 
-            entity.HasIndex(e => e.LastModified)
-                .HasDatabaseName("IX_TestResults_LastModified");
-
-            entity.HasIndex(e => e.IsSynced)
+            entity.HasIndex("IsSynced")
                 .HasDatabaseName("IX_TestResults_IsSynced");
 
             entity.HasIndex(e => e.ComplianceStatus)
@@ -278,8 +315,8 @@ public class QuaterLocalContext : DbContext
                 .HasDatabaseName("IX_TestResults_TestDate");
 
             // Composite index for sync queries
-            entity.HasIndex(e => new { e.IsSynced, e.LastModified })
-                .HasDatabaseName("IX_TestResults_IsSynced_LastModified");
+            entity.HasIndex("IsSynced", nameof(TestResult.UpdatedAt))
+                .HasDatabaseName("IX_TestResults_IsSynced_UpdatedAt");
         });
     }
 
@@ -299,6 +336,14 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
 
+            entity.Property(e => e.WhoThreshold);
+
+            entity.Property(e => e.MoroccanThreshold);
+
+            entity.Property(e => e.MinValue);
+
+            entity.Property(e => e.MaxValue);
+
             entity.Property(e => e.Description)
                 .HasMaxLength(500);
 
@@ -306,11 +351,36 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            entity.Property(e => e.CreatedDate)
+            // RowVersion for concurrency (maps to IConcurrent.RowVersion)
+            entity.Property(e => e.RowVersion)
+                .IsRequired()
+                .IsRowVersion()
+                .IsConcurrencyToken();
+
+            // Audit properties (IAuditable)
+            entity.Property(e => e.CreatedAt)
                 .IsRequired();
 
-            entity.Property(e => e.LastModified)
+            entity.Property(e => e.CreatedBy)
                 .IsRequired();
+
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.UpdatedBy);
+
+            // Soft delete (ISoftDelete)
+            entity.Property(e => e.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.DeletedAt);
+
+            entity.Property(e => e.DeletedBy);
+
+            // Shadow property for client-side sync tracking (not on shared model)
+            entity.Property<bool>("IsSynced")
+                .IsRequired()
+                .HasDefaultValue(false);
 
             // Indexes
             entity.HasIndex(e => e.Name)
@@ -319,6 +389,9 @@ public class QuaterLocalContext : DbContext
 
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("IX_Parameters_IsActive");
+
+            entity.HasIndex("IsSynced")
+                .HasDatabaseName("IX_Parameters_IsSynced");
         });
     }
 
@@ -328,7 +401,7 @@ public class QuaterLocalContext : DbContext
     {
         modelBuilder.Entity<Lab>(entity =>
         {
-            entity.ToTable("Lab");
+            entity.ToTable("Labs");
 
             entity.HasKey(e => e.Id);
 
@@ -342,12 +415,47 @@ public class QuaterLocalContext : DbContext
             entity.Property(e => e.ContactInfo)
                 .HasMaxLength(500);
 
-            entity.Property(e => e.CreatedDate)
-                .IsRequired();
-
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+
+            // RowVersion for concurrency (maps to IConcurrent.RowVersion)
+            entity.Property(e => e.RowVersion)
+                .IsRequired()
+                .IsRowVersion()
+                .IsConcurrencyToken();
+
+            // Audit properties (IAuditable)
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedBy)
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.UpdatedBy);
+
+            // Soft delete (ISoftDelete)
+            entity.Property(e => e.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.DeletedAt);
+
+            entity.Property(e => e.DeletedBy);
+
+            // Shadow property for client-side sync tracking (not on shared model)
+            entity.Property<bool>("IsSynced")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            // Indexes
+            entity.HasIndex(e => e.Name)
+                .HasDatabaseName("IX_Labs_Name");
+
+            entity.HasIndex(e => e.IsActive)
+                .HasDatabaseName("IX_Labs_IsActive");
         });
     }
 
@@ -355,31 +463,104 @@ public class QuaterLocalContext : DbContext
     {
         modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("User");
+            entity.ToTable("Users");
 
             entity.HasKey(e => e.Id);
 
-            // Value Converter handles enum-to-string conversion for SQLite
-            // UserRole.Admin -> "Admin", UserRole.Technician -> "Technician"
-            entity.Property(e => e.Role)
+            // IdentityUser properties
+            entity.Property(e => e.UserName)
+                .HasMaxLength(256);
+
+            entity.Property(e => e.NormalizedUserName)
+                .HasMaxLength(256);
+
+            entity.Property(e => e.Email)
+                .HasMaxLength(256);
+
+            entity.Property(e => e.NormalizedEmail)
+                .HasMaxLength(256);
+
+            entity.Property(e => e.EmailConfirmed)
                 .IsRequired()
-                .HasConversion(new UserRoleConverter());
+                .HasDefaultValue(false);
 
-            entity.Property(e => e.LabId)
-                .IsRequired();
+            entity.Property(e => e.PasswordHash);
 
-            entity.Property(e => e.CreatedDate)
-                .IsRequired();
+            entity.Property(e => e.SecurityStamp);
+
+            entity.Property(e => e.ConcurrencyStamp);
+
+            entity.Property(e => e.PhoneNumber);
+
+            entity.Property(e => e.PhoneNumberConfirmed)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.TwoFactorEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.LockoutEnd);
+
+            entity.Property(e => e.LockoutEnabled)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.AccessFailedCount)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            // Custom User properties
+            entity.Property(e => e.LastLogin);
 
             entity.Property(e => e.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
 
+            // RowVersion for concurrency (maps to IConcurrent.RowVersion)
+            entity.Property(e => e.RowVersion)
+                .IsRequired()
+                .IsRowVersion()
+                .IsConcurrencyToken();
+
+            // Shadow property for client-side sync tracking (not on shared model)
+            entity.Property<bool>("IsSynced")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            // Indexes (IdentityUser indexes)
+            entity.HasIndex(e => e.NormalizedUserName)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_NormalizedUserName");
+
+            entity.HasIndex(e => e.NormalizedEmail)
+                .HasDatabaseName("IX_Users_NormalizedEmail");
+        });
+
+        // Configure UserLab join entity
+        modelBuilder.Entity<UserLab>(entity =>
+        {
+            entity.ToTable("UserLabs");
+
+            entity.HasKey(e => new { e.UserId, e.LabId });
+
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasConversion(new UserRoleConverter());
+
+            entity.Property(e => e.AssignedAt)
+                .IsRequired();
+
             // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.UserLabs)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(e => e.Lab)
-                .WithMany(l => l.Users)
+                .WithMany(l => l.UserLabs)
                 .HasForeignKey(e => e.LabId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
@@ -387,24 +568,23 @@ public class QuaterLocalContext : DbContext
     {
         modelBuilder.Entity<AuditLog>(entity =>
         {
-            entity.ToTable("AuditLog");
+            entity.ToTable("AuditLogs");
 
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.UserId)
-                .IsRequired()
-                .HasMaxLength(100);
+                .IsRequired();
 
             entity.Property(e => e.EntityType)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasConversion(new EntityTypeConverter());
 
             entity.Property(e => e.EntityId)
                 .IsRequired();
 
             entity.Property(e => e.Action)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasConversion(new AuditActionConverter());
 
             entity.Property(e => e.OldValue)
                 .HasMaxLength(4000);
@@ -412,7 +592,9 @@ public class QuaterLocalContext : DbContext
             entity.Property(e => e.NewValue)
                 .HasMaxLength(4000);
 
-
+            entity.Property(e => e.IsTruncated)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             entity.Property(e => e.Timestamp)
                 .IsRequired();
@@ -436,30 +618,33 @@ public class QuaterLocalContext : DbContext
     {
         modelBuilder.Entity<AuditLogArchive>(entity =>
         {
-            entity.ToTable("AuditLogArchive");
+            entity.ToTable("AuditLogArchives");
 
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.UserId)
-                .IsRequired()
-                .HasMaxLength(100);
+                .IsRequired();
 
             entity.Property(e => e.EntityType)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasConversion(new EntityTypeConverter());
 
             entity.Property(e => e.EntityId)
                 .IsRequired();
 
             entity.Property(e => e.Action)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasConversion(new AuditActionConverter());
 
             entity.Property(e => e.OldValue)
                 .HasMaxLength(4000);
 
             entity.Property(e => e.NewValue)
                 .HasMaxLength(4000);
+
+            entity.Property(e => e.IsTruncated)
+                .IsRequired()
+                .HasDefaultValue(false);
 
             entity.Property(e => e.Timestamp)
                 .IsRequired();

@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
@@ -10,11 +11,11 @@ public class StatusToColorConverter : IValueConverter
     {
         if (value is string status)
         {
-            return status.ToLower() switch
+            return status.ToLowerInvariant() switch
             {
-                "compliant" => Brushes.ForestGreen,
-                "non-compliant" => Brushes.Crimson,
-                "warning" => Brushes.Orange,
+                "compliant" or "conforme" => Brushes.ForestGreen,
+                "non-compliant" or "non conforme" or "non-conforme" => Brushes.Crimson,
+                "warning" or "avertissement" => Brushes.Orange,
                 _ => Brushes.Gray
             };
         }

@@ -23,6 +23,7 @@ Complete guide to MVVM patterns using CommunityToolkit.Mvvm in Avalonia applicat
 ## When to use me
 
 Use this skill when you need to:
+
 - Create new ViewModels for Avalonia views
 - Implement observable properties that notify the UI of changes
 - Add commands to handle user interactions (button clicks, etc.)
@@ -34,7 +35,7 @@ Use this skill when you need to:
 
 ### Basic ViewModel
 
-```csharp
+```cs
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace YourApp.ViewModels;
@@ -46,7 +47,7 @@ public partial class ViewModelBase : ObservableObject
 
 ### Page ViewModel Base
 
-```csharp
+```cs
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace YourApp.ViewModels;
@@ -62,14 +63,14 @@ public abstract partial class PageViewModelBase : ViewModelBase
 
 ### Basic Observable Property
 
-```csharp
+```cs
 [ObservableProperty]
 private string _name = "";
 ```
 
 ### With Validation
 
-```csharp
+```cs
 using System.ComponentModel.DataAnnotations;
 
 [ObservableProperty]
@@ -80,7 +81,7 @@ private string _name = "";
 
 ### With Property Changed Notification
 
-```csharp
+```cs
 [ObservableProperty]
 private string _firstName = "";
 
@@ -104,7 +105,7 @@ partial void OnLastNameChanged(string value)
 
 ### Basic Command
 
-```csharp
+```cs
 [RelayCommand]
 private void Save()
 {
@@ -114,7 +115,7 @@ private void Save()
 
 ### Command with Parameter
 
-```csharp
+```cs
 [RelayCommand]
 private void ButtonClick(string buttonName)
 {
@@ -132,7 +133,7 @@ private void ButtonClick(string buttonName)
 
 ### Async Command
 
-```csharp
+```cs
 [RelayCommand]
 private async Task LoadDataAsync()
 {
@@ -144,7 +145,7 @@ private async Task LoadDataAsync()
 
 ### Command with CanExecute
 
-```csharp
+```cs
 [ObservableProperty]
 private bool _isDataLoaded;
 

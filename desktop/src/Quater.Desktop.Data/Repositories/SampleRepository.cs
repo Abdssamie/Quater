@@ -44,32 +44,26 @@ public class SampleRepository(QuaterLocalContext context, TimeProvider timeProvi
 
     public async Task<Sample> CreateAsync(Sample sample, CancellationToken ct = default)
     {
-        var now = timeProvider.GetUtcNow().DateTime;
-        
         sample.Id = Guid.NewGuid();
-        sample.CreatedDate = now;
-        sample.LastModified = now;
-        sample.Version = 1;
-        sample.IsDeleted = false;
-        sample.IsSynced = false;
 
         context.Samples.Add(sample);
+
+        // Set shadow property for sync tracking
+        context.Entry(sample).Property("IsSynced").CurrentValue = false;
+
         await context.SaveChangesAsync(ct);
-        
+
         return sample;
     }
 
     public async Task<Sample> UpdateAsync(Sample sample, CancellationToken ct = default)
     {
-        var now = timeProvider.GetUtcNow().DateTime;
-        
-        sample.LastModified = now;
-        sample.Version += 1;
-        sample.IsSynced = false;
+        // Set shadow property to indicate needs sync
+        context.Entry(sample).Property("IsSynced").CurrentValue = false;
 
         context.Samples.Update(sample);
         await context.SaveChangesAsync(ct);
-        
+
         return sample;
     }
 
@@ -79,10 +73,11 @@ public class SampleRepository(QuaterLocalContext context, TimeProvider timeProvi
         if (sample == null)
             return false;
 
-        // Soft delete
-        sample.IsDeleted = true;
-        sample.LastModified = timeProvider.GetUtcNow().DateTime;
-        sample.IsSynced = false;
+        // Use EF Core's Remove which triggers soft delete via interceptor or direct update
+        context.Samples.Remove(sample);
+
+        // Set shadow property to indicate needs sync
+        context.Entry(sample).Property("IsSynced").CurrentValue = false;
 
         await context.SaveChangesAsync(ct);
         return true;

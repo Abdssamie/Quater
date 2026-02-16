@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "theme": "nightowl",
   "agent": {
     "avalonia-data-binding": {
       "mode": "primary",
