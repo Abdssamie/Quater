@@ -1,6 +1,14 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace Quater.Desktop.ViewModels;
 
-public class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase
 {
-    public string Greeting => "Welcome to Quater Desktop!";
+    [ObservableProperty]
+    private DashboardViewModel _dashboard;
+
+    public MainViewModel()
+    {
+        Dashboard = new DashboardViewModel();
+    }
 }
