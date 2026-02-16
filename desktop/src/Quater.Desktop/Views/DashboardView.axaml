@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Quater.Desktop.ViewModels"
+             xmlns:conv="using:Quater.Desktop.Converters"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:theme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="Quater.Desktop.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <UserControl.Resources>
+        <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
+    </UserControl.Resources>
+
+    <Design.DataContext>
+        <vm:DashboardViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="5" Margin="0,0,0,20">
+            <TextBlock Text="Lab Overview" Classes="h1" FontWeight="Bold" />
+            <TextBlock Text="Water Quality Monitoring System • v0.1.0-alpha" Classes="h4" Foreground="{DynamicResource SukiText_Medium}" />
+        </StackPanel>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="2*, 1*" RowDefinitions="Auto, *">
+            
+            <!-- Stats Cards -->
+            <ItemsControl Grid.Row="0" Grid.ColumnSpan="2" ItemsSource="{Binding Stats}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <suki:GlassCard Margin="10">
+                            <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <PathIcon Data="{Binding Icon}" Width="24" Height="24" Foreground="{DynamicResource SukiPrimaryColor}" />
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Value}" Classes="h2" FontWeight="Bold" />
+                            </StackPanel>
+                        </suki:GlassCard>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Charts / Graph Area (Placeholder for now) -->
+            <suki:GlassCard Grid.Row="1" Grid.Column="0" Margin="10">
+                <Grid RowDefinitions="Auto, *">
+                    <TextBlock Grid.Row="0" Text="Compliance Trends (Last 30 Days)" FontWeight="Bold" Margin="0,0,0,15" />
+                    
+                    <!-- Simple CSS-like Bar Chart using Grid -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*" RowDefinitions="*,Auto" Height="200" VerticalAlignment="Bottom">
+                        <!-- Bars -->
+                        <Border Grid.Column="0" Background="{DynamicResource SukiPrimaryColor}" Height="120" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" Opacity="0.6"/>
+                        <Border Grid.Column="1" Background="{DynamicResource SukiPrimaryColor}" Height="140" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" Opacity="0.7"/>
+                        <Border Grid.Column="2" Background="{DynamicResource SukiPrimaryColor}" Height="180" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" Opacity="0.8"/>
+                        <Border Grid.Column="3" Background="#FF5555" Height="60" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" ToolTip.Tip="Non-Compliant Spike"/> 
+                        <Border Grid.Column="4" Background="{DynamicResource SukiPrimaryColor}" Height="160" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" Opacity="0.9"/>
+                        <Border Grid.Column="5" Background="{DynamicResource SukiPrimaryColor}" Height="190" VerticalAlignment="Bottom" CornerRadius="4,4,0,0" Margin="10,0" />
+                        
+                        <!-- Labels -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mon" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Tue" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Wed" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="Thu" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="4" Text="Fri" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                        <TextBlock Grid.Row="1" Grid.Column="5" Text="Sat" HorizontalAlignment="Center" Margin="0,5,0,0" FontSize="10"/>
+                    </Grid>
+                </Grid>
+            </suki:GlassCard>
+
+            <!-- Recent Activity List -->
+            <suki:GlassCard Grid.Row="1" Grid.Column="1" Margin="10">
+                <Grid RowDefinitions="Auto, *">
+                    <TextBlock Grid.Row="0" Text="Recent Samples" FontWeight="Bold" Margin="0,0,0,15" />
+                    
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding RecentSamples}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,10" Padding="10" CornerRadius="6" Background="{DynamicResource SukiBackground}">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="12" />
+                                                <TextBlock Text="{Binding Location}" FontSize="10" Foreground="{DynamicResource SukiText_Low}" />
+                                                <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,2,0,0">
+                                                    <TextBlock Text="{Binding Parameter}" FontSize="11" />
+                                                    <TextBlock Text="•" FontSize="11" Foreground="{DynamicResource SukiText_Low}" />
+                                                    <TextBlock Text="{Binding Result}" FontSize="11" FontWeight="SemiBold" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            
+                                            <Border Grid.Column="1" CornerRadius="12" Padding="8,2" VerticalAlignment="Center" 
+                                                    Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"> <!-- Mock converter logic needed or hardcode color for demo -->
+                                                <TextBlock Text="{Binding Status}" FontSize="10" Foreground="White" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </suki:GlassCard>
+        </Grid>
+        
+        <!-- Footer / Status Bar -->
+        <Border Grid.Row="2" Padding="10" Margin="10,0" CornerRadius="8" Background="{DynamicResource SukiControlBorderBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <PathIcon Data="mdi-server-network" Width="14" Height="14" />
+                    <TextBlock Text="Backend: Connected (24ms)" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <PathIcon Data="mdi-database-check" Width="14" Height="14" />
+                    <TextBlock Text="Sync: Up to Date" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
