@@ -1,12 +1,13 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace Quater.Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// TODO: MEDIUM - Endpoint is unauthenticated and publicly exposes version/environment info.
-// Risk: Information disclosure. Consider adding [Authorize] or removing sensitive details.
+[Authorize]
 public class VersionController : ControllerBase
 {
     [HttpGet]
