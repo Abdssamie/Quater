@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
+using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Shared.Models;
@@ -102,12 +103,7 @@ public sealed class PasswordController(
 
         // Add constant-time delay to prevent timing attack vulnerability
         // This ensures response time is consistent regardless of whether email exists
-        var elapsed = stopwatch.ElapsedMilliseconds;
-        var remainingDelay = 200 - (int)elapsed;
-        if (remainingDelay > 0)
-        {
-            await Task.Delay(remainingDelay);
-        }
+        await ApplyTimingProtectionAsync(stopwatch);
 
         return Ok(new { message = "If the email exists, a password reset link has been sent" });
     }
@@ -131,12 +127,7 @@ public sealed class PasswordController(
         {
             // Add constant-time delay to prevent timing attack vulnerability
             // This ensures response time is consistent regardless of whether email exists
-            var elapsed = stopwatch.ElapsedMilliseconds;
-            var remainingDelay = 200 - (int)elapsed;
-            if (remainingDelay > 0)
-            {
-                await Task.Delay(remainingDelay);
-            }
+            await ApplyTimingProtectionAsync(stopwatch);
 
             return BadRequest(new { error = "Invalid request" });
         }
@@ -168,6 +159,21 @@ public sealed class PasswordController(
         }
 
         return Ok(new { message = "Password reset successfully" });
+    }
+
+    /// <summary>
+    /// Applies timing attack protection by ensuring a minimum delay.
+    /// This prevents attackers from determining if an email exists based on response time.
+    /// </summary>
+    /// <param name="stopwatch">The stopwatch that was started at the beginning of the request.</param>
+    private static async Task ApplyTimingProtectionAsync(System.Diagnostics.Stopwatch stopwatch)
+    {
+        var elapsed = stopwatch.ElapsedMilliseconds;
+        var remainingDelay = SecurityConstants.TimingProtectionDelayMs - (int)elapsed;
+        if (remainingDelay > 0)
+        {
+            await Task.Delay(remainingDelay);
+        }
     }
 }
 

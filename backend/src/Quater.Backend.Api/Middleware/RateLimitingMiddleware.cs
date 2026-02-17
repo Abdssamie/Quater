@@ -163,48 +163,20 @@ public class RateLimitingMiddleware
         }
         catch (RedisConnectionException ex)
         {
-            // FAIL CLOSED: Return 503 Service Unavailable when Redis is down
-            // This ensures rate limiting is enforced even during Redis outages
-            _logger.LogError(ex,
-                "Redis connection error for client {ClientId}; failing closed (returning 503).",
-                clientId);
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "Rate limiting service is currently unavailable. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, $"global rate limiting for client {clientId}",
+                "Rate limiting service is currently unavailable. Please try again later.");
             return;
         }
         catch (RedisTimeoutException ex)
         {
-            // FAIL CLOSED: Return 503 on timeout
-            _logger.LogError(ex,
-                "Redis timeout for client {ClientId}; failing closed (returning 503).",
-                clientId);
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "Rate limiting service timeout. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, $"global rate limiting timeout for client {clientId}",
+                "Rate limiting service timeout. Please try again later.");
             return;
         }
         catch (Exception ex)
         {
-            // FAIL CLOSED: Return 503 for any other errors
-            _logger.LogError(ex,
-                "Rate limiting error for client {ClientId}; failing closed (returning 503).",
-                clientId);
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "An error occurred in rate limiting. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, $"global rate limiting for client {clientId}",
+                "An error occurred in rate limiting. Please try again later.");
             return;
         }
 
@@ -304,44 +276,20 @@ public class RateLimitingMiddleware
         }
         catch (RedisConnectionException ex)
         {
-            // FAIL CLOSED
-            _logger.LogError(ex,
-                "Redis connection error for endpoint rate limit; failing closed (returning 503).");
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "Rate limiting service is currently unavailable. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, "endpoint rate limiting",
+                "Rate limiting service is currently unavailable. Please try again later.");
             return;
         }
         catch (RedisTimeoutException ex)
         {
-            // FAIL CLOSED
-            _logger.LogError(ex,
-                "Redis timeout for endpoint rate limit; failing closed (returning 503).");
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "Rate limiting service timeout. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, "endpoint rate limiting timeout",
+                "Rate limiting service timeout. Please try again later.");
             return;
         }
         catch (Exception ex)
         {
-            // FAIL CLOSED
-            _logger.LogError(ex,
-                "Endpoint rate limiting error; failing closed (returning 503).");
-
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = "Service temporarily unavailable",
-                message = "An error occurred in rate limiting. Please try again later."
-            });
+            await HandleRedisErrorAsync(context, ex, "endpoint rate limiting",
+                "An error occurred in rate limiting. Please try again later.");
             return;
         }
 
@@ -444,6 +392,24 @@ public class RateLimitingMiddleware
         // Fall back to IP address for anonymous users
         var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return $"ip:{ipAddress}";
+    }
+
+    /// <summary>
+    /// Handles Redis errors by returning a 503 Service Unavailable response.
+    /// This implements the fail-closed security model.
+    /// </summary>
+    private async Task HandleRedisErrorAsync(HttpContext context, Exception ex, string errorContext, string message)
+    {
+        _logger.LogError(ex,
+            "Redis error in {ErrorContext}; failing closed (returning 503).",
+            errorContext);
+
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            error = "Service temporarily unavailable",
+            message
+        });
     }
 
     /// <summary>
