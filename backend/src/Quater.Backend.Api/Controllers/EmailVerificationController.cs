@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Quater.Backend.Api.Attributes;
 using Quater.Backend.Api.Helpers;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Infrastructure.Email;
@@ -31,10 +32,9 @@ public sealed class EmailVerificationController(
     /// <summary>
     /// Verify user email address using a token
     /// </summary>
-    // TODO: HIGH - Missing rate limiting. Risk: Email enumeration and spam attacks.
-    // Add: [EndpointRateLimit(10, 60, RateLimitTrackBy.Ip)]
     [HttpPost("verify")]
     [AllowAnonymous]
+    [EndpointRateLimit(10, 60, RateLimitTrackBy.IpAddress)]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
     {
         if (!ModelState.IsValid)
@@ -82,10 +82,9 @@ public sealed class EmailVerificationController(
     /// <summary>
     /// Resend the email verification link
     /// </summary>
-    // TODO: HIGH - Missing rate limiting. Risk: Email enumeration and spam attacks.
-    // Add: [EndpointRateLimit(5, 60, RateLimitTrackBy.Email)]
     [HttpPost("resend")]
     [AllowAnonymous]
+    [EndpointRateLimit(5, 60, RateLimitTrackBy.Email)]
     public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
     {
         if (!ModelState.IsValid)

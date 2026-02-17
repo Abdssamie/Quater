@@ -428,6 +428,63 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
 
     #endregion
 
+    #region Rate Limiting Tests
+
+    [Fact]
+    public async Task VerifyEmail_ExceedsRateLimit_Returns429()
+    {
+        // Arrange - Create a user for verification
+        var (user, _) = await CreateUnverifiedUserAsync();
+
+        // Make 11 requests (limit is 10 per 60 minutes per IP)
+        for (int i = 0; i < 10; i++)
+        {
+            var request = new VerifyEmailRequest
+            {
+                UserId = user.Id.ToString(),
+                Code = "invalid-token"
+            };
+            await _client.PostJsonAsync("/api/email-verification/verify", request);
+        }
+
+        // Act - 11th request should be rate limited
+        var finalRequest = new VerifyEmailRequest
+        {
+            UserId = user.Id.ToString(),
+            Code = "invalid-token"
+        };
+        var response = await _client.PostJsonAsync("/api/email-verification/verify", finalRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task ResendVerification_ExceedsRateLimit_Returns429()
+    {
+        // Arrange - Make 6 requests with same email (limit is 5 per 60 minutes per email)
+        for (int i = 0; i < 5; i++)
+        {
+            var request = new ResendVerificationRequest
+            {
+                Email = "test-rate-limit@example.com"
+            };
+            await _client.PostJsonAsync("/api/email-verification/resend", request);
+        }
+
+        // Act - 6th request should be rate limited
+        var finalRequest = new ResendVerificationRequest
+        {
+            Email = "test-rate-limit@example.com"
+        };
+        var response = await _client.PostJsonAsync("/api/email-verification/resend", finalRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     /// <summary>
