@@ -123,12 +123,21 @@ public sealed class PasswordController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        // Start timing to ensure consistent response time regardless of email existence
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
-            // TODO: MEDIUM - Timing inconsistency. Forgot password has timing protection, reset doesn't.
-            // This immediately returns for non-existent users, potentially allowing timing-based email enumeration.
-            // Consider adding constant-time delay like ForgotPassword endpoint.
+            // Add constant-time delay to prevent timing attack vulnerability
+            // This ensures response time is consistent regardless of whether email exists
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var remainingDelay = 200 - (int)elapsed;
+            if (remainingDelay > 0)
+            {
+                await Task.Delay(remainingDelay);
+            }
+
             return BadRequest(new { error = "Invalid request" });
         }
 

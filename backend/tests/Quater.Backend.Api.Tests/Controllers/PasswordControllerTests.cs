@@ -488,6 +488,75 @@ public sealed class PasswordControllerTests(ApiTestFixture fixture) : IAsyncLife
         tokenResponse.AccessToken.Should().NotBeNullOrEmpty();
     }
 
+    [Fact]
+    public async Task ResetPassword_NonExistentEmail_ReturnsBadRequestWithTimingProtection()
+    {
+        // Arrange
+        var request = new
+        {
+            Email = "nonexistent-reset@test.com",
+            Code = "some-token",
+            NewPassword = "NewPassword456!"
+        };
+
+        // Act
+        var stopwatch = Stopwatch.StartNew();
+        var response = await _client.PostJsonAsync("/api/password/reset", request);
+        stopwatch.Stop();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Invalid request");
+
+        // Verify timing attack protection (200ms delay)
+        stopwatch.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(200);
+    }
+
+    [Fact]
+    public async Task ResetPassword_TimingAttackProtection_ConsistentResponseTime()
+    {
+        // Arrange
+        var (user, _) = await CreateTestUserAsync("timing-reset-exists@test.com", "OldPassword123!");
+        var resetToken = await GeneratePasswordResetTokenAsync(user);
+
+        var existingEmailRequest = new
+        {
+            Email = user.Email!,
+            Code = resetToken,
+            NewPassword = "NewPassword456!"
+        };
+
+        var nonExistentEmailRequest = new
+        {
+            Email = "nonexistent-reset2@test.com",
+            Code = "some-token",
+            NewPassword = "NewPassword456!"
+        };
+
+        // Act - Test existing email
+        var stopwatch1 = Stopwatch.StartNew();
+        var response1 = await _client.PostJsonAsync("/api/password/reset", existingEmailRequest);
+        stopwatch1.Stop();
+
+        // Act - Test non-existent email
+        var stopwatch2 = Stopwatch.StartNew();
+        var response2 = await _client.PostJsonAsync("/api/password/reset", nonExistentEmailRequest);
+        stopwatch2.Stop();
+
+        // Assert
+        response1.StatusCode.Should().Be(HttpStatusCode.OK);
+        response2.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Response times should be consistent (within 300ms) to prevent timing attacks
+        var timeDifference = Math.Abs(stopwatch1.ElapsedMilliseconds - stopwatch2.ElapsedMilliseconds);
+        timeDifference.Should().BeLessThan(300, "response times should be consistent to prevent timing attacks");
+
+        // Both should have at least some processing time
+        stopwatch1.ElapsedMilliseconds.Should().BeGreaterThan(0);
+        stopwatch2.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(200);
+    }
+
     #endregion
 
     #region Helper Methods
