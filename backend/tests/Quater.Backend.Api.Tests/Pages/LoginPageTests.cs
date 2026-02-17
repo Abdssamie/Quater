@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -103,12 +104,25 @@ public sealed class LoginPageTests : IAsyncLifetime
 
         await CreateUserAsync(inactiveUser, "Password123!");
 
+        // Get antiforgery token
+        var (antiforgeryToken, cookies) = await GetAntiforgeryTokenAsync();
+
         // Act
-        var response = await _client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login")
         {
-            ["Email"] = "inactive@test.com",
-            ["Password"] = "Password123!"
-        }));
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = "inactive@test.com",
+                ["Password"] = "Password123!",
+                ["__RequestVerificationToken"] = antiforgeryToken
+            })
+        };
+        if (!string.IsNullOrEmpty(cookies))
+        {
+            request.Headers.Add("Cookie", cookies);
+        }
+
+        var response = await _client.SendAsync(request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK); // Returns page with error
@@ -132,12 +146,25 @@ public sealed class LoginPageTests : IAsyncLifetime
 
         await CreateUserAsync(activeUser, "Password123!");
 
+        // Get antiforgery token
+        var (antiforgeryToken, cookies) = await GetAntiforgeryTokenAsync();
+
         // Act
-        var response = await _client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login")
         {
-            ["Email"] = "active@test.com",
-            ["Password"] = "Password123!"
-        }));
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = "active@test.com",
+                ["Password"] = "Password123!",
+                ["__RequestVerificationToken"] = antiforgeryToken
+            })
+        };
+        if (!string.IsNullOrEmpty(cookies))
+        {
+            request.Headers.Add("Cookie", cookies);
+        }
+
+        var response = await _client.SendAsync(request);
 
         // Assert - Should redirect (302) or return OK if redirect target doesn't exist (404)
         // In test environment, the redirect target "/" might not exist, so we accept both
@@ -165,11 +192,24 @@ public sealed class LoginPageTests : IAsyncLifetime
         var responses = new List<HttpResponseMessage>();
         for (int i = 0; i < 6; i++)
         {
-            var response = await _client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+            // Get fresh antiforgery token for each request (since cookies change)
+            var (antiforgeryToken, cookies) = await GetAntiforgeryTokenAsync();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login")
             {
-                ["Email"] = "ratelimit@test.com",
-                ["Password"] = "WrongPassword!"
-            }));
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["Email"] = "ratelimit@test.com",
+                    ["Password"] = "WrongPassword!",
+                    ["__RequestVerificationToken"] = antiforgeryToken
+                })
+            };
+            if (!string.IsNullOrEmpty(cookies))
+            {
+                request.Headers.Add("Cookie", cookies);
+            }
+
+            var response = await _client.SendAsync(request);
             responses.Add(response);
         }
 
@@ -196,7 +236,112 @@ public sealed class LoginPageTests : IAsyncLifetime
         rateLimitContent.Should().Contain("Too many login attempts. Please try again in 15 minutes.");
     }
 
+    [Fact]
+    public async Task Login_WithoutAntiforgeryToken_ReturnsBadRequest()
+    {
+        // Arrange
+        var activeUser = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "csrf@test.com",
+            Email = "csrf@test.com",
+            EmailConfirmed = true,
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
+            IsActive = true
+        };
+
+        await CreateUserAsync(activeUser, "Password123!");
+
+        // Act - Post without antiforgery token (bypassing the form)
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = "csrf@test.com",
+                ["Password"] = "Password123!"
+            })
+        };
+
+        var response = await _client.SendAsync(request);
+
+        // Assert - Should be blocked by CSRF protection (400 Bad Request)
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Login_WithValidAntiforgeryToken_Succeeds()
+    {
+        // Arrange
+        var activeUser = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "validcsrf@test.com",
+            Email = "validcsrf@test.com",
+            EmailConfirmed = true,
+            UserLabs = [ new UserLab { LabId = _testLab.Id, Role = UserRole.Viewer } ],
+            IsActive = true
+        };
+
+        await CreateUserAsync(activeUser, "Password123!");
+
+        // First, get the login page to retrieve the antiforgery token
+        var getResponse = await _client.GetAsync("/Account/Login");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var pageContent = await getResponse.Content.ReadAsStringAsync();
+
+        // Extract the antiforgery token from the page
+        var tokenMatch = System.Text.RegularExpressions.Regex.Match(
+            pageContent,
+            @"<input[^>]*name=""__RequestVerificationToken""[^>]*value=""([^""]*)""");
+
+        tokenMatch.Success.Should().BeTrue("antiforgery token should be present in the login form");
+        var antiforgeryToken = tokenMatch.Groups[1].Value;
+
+        // Act - Post with the antiforgery token
+        var request = new HttpRequestMessage(HttpMethod.Post, "/Account/Login")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = "validcsrf@test.com",
+                ["Password"] = "Password123!",
+                ["__RequestVerificationToken"] = antiforgeryToken
+            })
+        };
+
+        // Copy cookies from the GET request to maintain session
+        if (getResponse.Headers.Contains("Set-Cookie"))
+        {
+            foreach (var cookie in getResponse.Headers.GetValues("Set-Cookie"))
+            {
+                request.Headers.Add("Cookie", cookie);
+            }
+        }
+
+        var response = await _client.SendAsync(request);
+
+        // Assert - Should succeed (redirect or OK)
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.NotFound);
+    }
+
     #region Helper Methods
+
+    /// <summary>
+    /// Gets the antiforgery token from the login page.
+    /// </summary>
+    private async Task<(string token, string cookies)> GetAntiforgeryTokenAsync()
+    {
+        var response = await _client.GetAsync("/Account/Login");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+
+        var tokenMatch = Regex.Match(content, @"<input[^>]*name=""__RequestVerificationToken""[^>]*value=""([^""]*)""");
+        tokenMatch.Success.Should().BeTrue("antiforgery token should be present in the login form");
+
+        var cookies = response.Headers.Contains("Set-Cookie")
+            ? string.Join("; ", response.Headers.GetValues("Set-Cookie"))
+            : string.Empty;
+        return (tokenMatch.Groups[1].Value, cookies);
+    }
 
     /// <summary>
     /// Creates a test lab in the database.

@@ -14,8 +14,6 @@ namespace Quater.Backend.Api.Pages.Account;
 /// and the user is not yet authenticated via cookie.
 /// </summary>
 [AllowAnonymous]
-[IgnoreAntiforgeryToken] // TODO: HIGH - CSRF protection disabled on login form. Risk: Cross-site request forgery attacks.
-                          // Consider enabling antiforgery token validation or implementing alternative CSRF protection.
 public sealed class LoginModel(
     SignInManager<User> signInManager,
     UserManager<User> userManager,

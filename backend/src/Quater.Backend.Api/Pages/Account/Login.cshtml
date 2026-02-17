@@ -114,6 +114,7 @@
         }
 
         <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+            @Html.AntiForgeryToken()
             <div class="field">
                 <label asp-for="Email">Email</label>
                 <input asp-for="Email" type="email" autocomplete="email" autofocus placeholder="you@example.com" />
