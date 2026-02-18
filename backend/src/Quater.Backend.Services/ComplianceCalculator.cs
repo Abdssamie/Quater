@@ -49,10 +49,52 @@ public class ComplianceCalculator(QuaterDbContext context) : IComplianceCalculat
     {
         var results = new Dictionary<string, ComplianceStatus>();
 
+        // Extract distinct parameter names
+        var parameterNames = testResults.Keys.ToList();
+
+        // Fetch all parameters in a single query
+        var parameters = await context.Parameters
+            .AsNoTracking()
+            .Where(p => parameterNames.Contains(p.Name) && p.IsActive)
+            .ToDictionaryAsync(p => p.Name, ct);
+
+        // Calculate compliance for each test result
         foreach (var (parameterName, value) in testResults)
         {
-            var status = await CalculateComplianceAsync(parameterName, value, ct);
-            results[parameterName] = status;
+            if (!parameters.TryGetValue(parameterName, out var parameter))
+            {
+                results[parameterName] = ComplianceStatus.Warning;
+                continue;
+            }
+
+            // Check if value is within acceptable range (hard limits)
+            if (parameter.MinValue.HasValue && value < parameter.MinValue.Value)
+            {
+                results[parameterName] = ComplianceStatus.Fail;
+                continue;
+            }
+
+            if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
+            {
+                results[parameterName] = ComplianceStatus.Fail;
+                continue;
+            }
+
+            // Check WHO threshold (international standard - stricter)
+            if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
+            {
+                results[parameterName] = ComplianceStatus.Fail;
+                continue;
+            }
+
+            // Check Moroccan threshold (national standard - may be more lenient)
+            if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
+            {
+                results[parameterName] = ComplianceStatus.Warning;
+                continue;
+            }
+
+            results[parameterName] = ComplianceStatus.Pass;
         }
 
         return results;
