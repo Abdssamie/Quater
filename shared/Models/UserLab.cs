@@ -17,5 +17,5 @@ public class UserLab
     [Required]
     public UserRole Role { get; set; }
 
-    public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
+    public DateTime AssignedAt { get; set; }
 }
