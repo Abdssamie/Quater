@@ -62,17 +62,9 @@ public class ParametersController(IParameterService parameterService, ILogger<Pa
         [FromBody] CreateParameterDto dto,
         CancellationToken ct = default)
     {
-        try
-        {
-            var created = await parameterService.CreateAsync(dto, ct);
-            logger.LogInformation("Parameter created successfully with ID {ParameterId}, Name: {ParameterName}", created.Id, created.Name);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Invalid operation when creating parameter {ParameterName}", dto.Name);
-            return BadRequest(new { message = ex.Message });
-        }
+        var created = await parameterService.CreateAsync(dto, ct);
+        logger.LogInformation("Parameter created successfully with ID {ParameterId}, Name: {ParameterName}", created.Id, created.Name);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     /// <summary>
