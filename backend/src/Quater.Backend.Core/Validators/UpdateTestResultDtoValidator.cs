@@ -32,9 +32,6 @@ public class UpdateTestResultDtoValidator : AbstractValidator<UpdateTestResultDt
         RuleFor(x => x.TestMethod)
             .IsInEnum().WithMessage("Invalid test method");
 
-        RuleFor(x => x.ComplianceStatus)
-            .IsInEnum().WithMessage("Invalid compliance status");
-
         RuleFor(x => x.Version)
             .GreaterThanOrEqualTo(0).WithMessage("Version must be non-negative");
     }

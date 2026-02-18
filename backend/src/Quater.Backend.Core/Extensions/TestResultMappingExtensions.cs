@@ -72,7 +72,7 @@ public static class TestResultMappingExtensions
         testResult.TestDate = dto.TestDate;
         testResult.TechnicianName = dto.TechnicianName;
         testResult.TestMethod = dto.TestMethod;
-        testResult.ComplianceStatus = dto.ComplianceStatus;
+        // Note: ComplianceStatus is now recalculated by the service, not set from DTO
     }
 
     /// <summary>

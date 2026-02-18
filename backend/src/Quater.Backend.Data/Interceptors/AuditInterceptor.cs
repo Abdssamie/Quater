@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Backend.Data.Interceptors;

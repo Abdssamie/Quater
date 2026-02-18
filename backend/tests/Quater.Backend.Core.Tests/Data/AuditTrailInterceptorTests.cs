@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
 using Quater.Backend.Data.Interceptors;

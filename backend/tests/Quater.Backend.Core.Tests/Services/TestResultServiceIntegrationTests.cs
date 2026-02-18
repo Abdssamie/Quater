@@ -156,7 +156,6 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
             TechnicianName = "Updated Tech",
             TestMethod = TestMethod.Electrode,
             TestDate = existing.TestDate,
-            ComplianceStatus = ComplianceStatus.Pass,
             Version = 1
         };
 

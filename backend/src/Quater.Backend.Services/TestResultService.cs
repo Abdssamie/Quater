@@ -145,6 +145,10 @@ public class TestResultService(
         // Use extension method to update entity with Measurement ValueObject
         existing.UpdateFromDto(dto, parameter, userId);
 
+        // Recalculate compliance status based on new value
+        var complianceStatus = await complianceCalculator.CalculateComplianceAsync(dto.ParameterName, dto.Value, ct);
+        existing.ComplianceStatus = complianceStatus;
+
         // Validate
         await validator.ValidateAndThrowAsync(existing, ct);
 

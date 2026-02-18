@@ -9,7 +9,7 @@ public class PagedResponse<T>
     /// <summary>
     /// The items in the current page.
     /// </summary>
-    public IEnumerable<T> Items { get; set; } = new List<T>();
+    public IEnumerable<T> Items { get; set; } = [];
 
     /// <summary>
     /// The current page number (1-based).

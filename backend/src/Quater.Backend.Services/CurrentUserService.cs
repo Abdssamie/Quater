@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using Quater.Backend.Data.Interceptors;
 using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.Interfaces;
 using OpenIddict.Abstractions;
 
 namespace Quater.Backend.Services;
