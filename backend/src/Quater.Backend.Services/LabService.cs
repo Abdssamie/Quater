@@ -30,7 +30,6 @@ public class LabService(
     {
         var query = context.Labs
             .AsNoTracking()
-            .Where(l => !l.IsDeleted)
             .OrderBy(l => l.Name);
 
         var totalCount = await query.CountAsync(ct);
