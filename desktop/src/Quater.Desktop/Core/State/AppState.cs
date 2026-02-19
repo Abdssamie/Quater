@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Quater.Shared.Models;
+using Quater.Desktop.Api.Model;
+using Quater.Shared.Enums;
 
 namespace Quater.Desktop.Core.State;
 
@@ -16,15 +17,27 @@ public sealed partial class AppState : ObservableObject
     
     [ObservableProperty]
     private string _lastSyncTime = "Never";
-    
+
     [ObservableProperty]
-    private User? _currentUser;
+    private UserDto? _currentUser;
     
     [ObservableProperty]
     private int _pendingSyncCount;
     
     [ObservableProperty]
     private string _currentLabName = string.Empty;
+
+    [ObservableProperty]
+    private bool _isAuthenticated;
+
+    [ObservableProperty]
+    private Guid _currentLabId;
+
+    [ObservableProperty]
+    private UserRole _currentRole = UserRole.Viewer;
+
+    [ObservableProperty]
+    private IReadOnlyList<LabDto> _availableLabs = Array.Empty<LabDto>();
     
     public void SetConnected()
     {

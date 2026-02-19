@@ -1,0 +1,3754 @@
+openapi: 3.0.4
+info:
+  contact:
+    email: support@quater.app
+    name: Quater Development Team
+  description: "REST API for managing water quality testing data, compliance calculations,\
+    \ and laboratory operations"
+  title: Quater Water Quality Management API
+  version: v1
+servers:
+- url: /
+security:
+- {}
+tags:
+- name: AuditLogs
+- name: Auth
+- name: Authorization
+- name: EmailVerification
+- name: Health
+- name: Labs
+- name: Parameters
+- name: Password
+- name: Samples
+- name: TestResults
+- name: UserLabs
+- name: Users
+- name: Version
+paths:
+  /api/AuditLogs:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+          description: OK
+      summary: Get all audit logs with pagination
+      tags:
+      - AuditLogs
+  /api/AuditLogs/{id}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/AuditLogDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get audit log by ID
+      tags:
+      - AuditLogs
+  /api/AuditLogs/by_entity/{entityId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: entityId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+          description: OK
+      summary: Get audit logs by entity ID
+      tags:
+      - AuditLogs
+  /api/AuditLogs/by_user/{userId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Get audit logs by user ID
+      tags:
+      - AuditLogs
+  /api/AuditLogs/filter:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditLogFilterDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/AuditLogFilterDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/AuditLogFilterDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogDtoPagedResult"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Get audit logs with advanced filtering
+      tags:
+      - AuditLogs
+  /api/Auth/token:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: "OAuth2 token endpoint - handles authorization_code and refresh_token\
+        \ grant types.\n\nFor authorization code exchange:\n  POST /api/auth/token\n\
+        \  Content-Type: application/x-www-form-urlencoded\n  \n  grant_type=authorization_code&code=AUTH_CODE&code_verifier=PKCE_VERIFIER&redirect_uri=quater://oauth/callback&client_id=quater-mobile\n\
+        \nFor refresh:\n  POST /api/auth/token\n  Content-Type: application/x-www-form-urlencoded\n\
+        \  \n  grant_type=refresh_token&refresh_token=YOUR_REFRESH_TOKEN"
+      tags:
+      - Auth
+  /api/Auth/logout:
+    post:
+      description: |-
+        This endpoint revokes ALL tokens for the user, effectively logging them out from all devices.
+        For per-device logout, use the /revoke endpoint with the specific refresh token.
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: Logout and revoke all tokens for the user
+      tags:
+      - Auth
+  /api/Auth/userinfo:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: Get current user information
+      tags:
+      - Auth
+  /api/auth/authorize:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: "OAuth 2.0 authorization endpoint - handles authorization code flow\
+        \ with PKCE.\nAccepts both GET and POST as per OAuth 2.0 spec (RFC 6749 Section\
+        \ 3.1).\n            \nQuery parameters (validated by OpenIddict before reaching\
+        \ this endpoint):\n  response_type=code (required)\n  client_id=quater-mobile\
+        \ or quater-desktop (required)\n  redirect_uri=... (required, validated against\
+        \ registered URIs)\n  scope=openid email profile offline_access api (optional)\n\
+        \  state=... (recommended, returned as-is in redirect)\n  code_challenge=...\
+        \ (required when PKCE is enforced)\n  code_challenge_method=S256 (required\
+        \ when PKCE is enforced)\n            \nFlow:\n1. OpenIddict validates client_id,\
+        \ redirect_uri, code_challenge, code_challenge_method\n2. This controller\
+        \ checks if user is authenticated (via cookie)\n3. If not authenticated, returns\
+        \ Challenge to redirect to login\n4. If authenticated, creates claims principal\
+        \ and issues authorization code\n5. Redirects to redirect_uri with code and\
+        \ state parameters"
+      tags:
+      - Authorization
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: "OAuth 2.0 authorization endpoint - handles authorization code flow\
+        \ with PKCE.\nAccepts both GET and POST as per OAuth 2.0 spec (RFC 6749 Section\
+        \ 3.1).\n            \nQuery parameters (validated by OpenIddict before reaching\
+        \ this endpoint):\n  response_type=code (required)\n  client_id=quater-mobile\
+        \ or quater-desktop (required)\n  redirect_uri=... (required, validated against\
+        \ registered URIs)\n  scope=openid email profile offline_access api (optional)\n\
+        \  state=... (recommended, returned as-is in redirect)\n  code_challenge=...\
+        \ (required when PKCE is enforced)\n  code_challenge_method=S256 (required\
+        \ when PKCE is enforced)\n            \nFlow:\n1. OpenIddict validates client_id,\
+        \ redirect_uri, code_challenge, code_challenge_method\n2. This controller\
+        \ checks if user is authenticated (via cookie)\n3. If not authenticated, returns\
+        \ Challenge to redirect to login\n4. If authenticated, creates claims principal\
+        \ and issues authorization code\n5. Redirects to redirect_uri with code and\
+        \ state parameters"
+      tags:
+      - Authorization
+  /api/email_verification/verify:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+      responses:
+        "200":
+          description: OK
+      summary: Verify user email address using a token
+      tags:
+      - EmailVerification
+  /api/email_verification/resend:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationRequest"
+      responses:
+        "200":
+          description: OK
+      summary: Resend the email verification link
+      tags:
+      - EmailVerification
+  /api/Health/live:
+    get:
+      description: |-
+        Use this endpoint for liveness probes in Kubernetes.
+        It only checks if the application is responsive.
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: |-
+        Basic health check endpoint.
+        Returns 200 OK if the service is running.
+      tags:
+      - Health
+  /api/Health/ready:
+    get:
+      description: |-
+        Use this endpoint for readiness probes in Kubernetes.
+        It verifies that all dependencies are available.
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+        "503":
+          description: Service Unavailable
+      summary: |-
+        Readiness check endpoint.
+        Returns 200 OK if the service is ready to accept traffic.
+        Checks database connectivity and other dependencies.
+      tags:
+      - Health
+  /api/Health/startup:
+    get:
+      description: |-
+        Use this endpoint for startup probes in Kubernetes.
+        It helps with slow-starting containers.
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: |-
+        Startup check endpoint.
+        Returns 200 OK if the service has completed startup.
+      tags:
+      - Health
+  /api/Health:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+        "503":
+          description: Service Unavailable
+      summary: Detailed health check endpoint with comprehensive status information.
+      tags:
+      - Health
+  /api/Labs:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/LabDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/LabDtoPagedResult"
+          description: OK
+      summary: Get all labs with pagination
+      tags:
+      - Labs
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLabDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/CreateLabDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/CreateLabDto"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+          description: Created
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Create a new lab
+      tags:
+      - Labs
+  /api/Labs/active:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                items:
+                  $ref: "#/components/schemas/LabDto"
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/LabDto"
+                type: array
+            text/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/LabDto"
+                type: array
+          description: OK
+      summary: Get active labs only
+      tags:
+      - Labs
+  /api/Labs/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Delete a lab (soft delete - marks as inactive)
+      tags:
+      - Labs
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get lab by ID
+      tags:
+      - Labs
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLabDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLabDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateLabDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/LabDto"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Update an existing lab
+      tags:
+      - Labs
+  /api/Parameters:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ParameterDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDtoPagedResult"
+          description: OK
+      summary: Get all parameters with pagination
+      tags:
+      - Parameters
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateParameterDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/CreateParameterDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/CreateParameterDto"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+          description: Created
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Create a new parameter
+      tags:
+      - Parameters
+  /api/Parameters/active:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ParameterDto"
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ParameterDto"
+                type: array
+            text/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ParameterDto"
+                type: array
+          description: OK
+      summary: Get active parameters only
+      tags:
+      - Parameters
+  /api/Parameters/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Delete a parameter (soft delete - marks as inactive)
+      tags:
+      - Parameters
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get parameter by ID
+      tags:
+      - Parameters
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateParameterDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateParameterDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateParameterDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ParameterDto"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Update an existing parameter
+      tags:
+      - Parameters
+  /api/Password/change:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: OK
+      summary: Change password for authenticated user
+      tags:
+      - Password
+  /api/Password/forgot:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: OK
+      summary: Request password reset token (forgot password)
+      tags:
+      - Password
+  /api/Password/reset:
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: OK
+      summary: Reset password using a valid token
+      tags:
+      - Password
+  /api/Samples:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+          description: OK
+      summary: Get all samples with pagination
+      tags:
+      - Samples
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSampleDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/CreateSampleDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/CreateSampleDto"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+          description: Created
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Create a new sample
+      tags:
+      - Samples
+  /api/Samples/by_lab/{labId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: labId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/SampleDtoPagedResult"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get samples by lab ID with pagination
+      tags:
+      - Samples
+  /api/Samples/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Delete a sample (soft delete)
+      tags:
+      - Samples
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get sample by ID
+      tags:
+      - Samples
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSampleDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSampleDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateSampleDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/SampleDto"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+        "409":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Conflict
+      summary: Update an existing sample
+      tags:
+      - Samples
+  /api/TestResults:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+          description: OK
+      summary: Get all test results with pagination
+      tags:
+      - TestResults
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTestResultDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/CreateTestResultDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/CreateTestResultDto"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+          description: Created
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Create a new test result
+      tags:
+      - TestResults
+  /api/TestResults/by_sample/{sampleId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: sampleId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDtoPagedResult"
+          description: OK
+      summary: Get test results by sample ID with pagination
+      tags:
+      - TestResults
+  /api/TestResults/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Delete a test result (soft delete)
+      tags:
+      - TestResults
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get test result by ID
+      tags:
+      - TestResults
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTestResultDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTestResultDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateTestResultDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TestResultDto"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+        "409":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Conflict
+      summary: Update an existing test result
+      tags:
+      - TestResults
+  /api/users/{userId}/labs/{labId}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: labId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Removes a user from a lab.
+      tags:
+      - UserLabs
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: labId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddUserToLabRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/AddUserToLabRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/AddUserToLabRequest"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+          description: Created
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+        "409":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Conflict
+      summary: Adds a user to a lab with the specified role.
+      tags:
+      - UserLabs
+  /api/users/{userId}/labs/{labId}/role:
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: labId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleRequest"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleRequest"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleRequest"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserLabDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Updates a user's role in a specific lab.
+      tags:
+      - UserLabs
+  /api/users/{userId}/labs:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserLabDto"
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserLabDto"
+                type: array
+            text/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserLabDto"
+                type: array
+          description: OK
+      summary: Gets all labs a user belongs to (placeholder for consistency).
+      tags:
+      - UserLabs
+  /api/Users:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Get all users with pagination
+      tags:
+      - Users
+    post:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/CreateUserDto"
+      responses:
+        "201":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+          description: Created
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Create a new user
+      tags:
+      - Users
+  /api/Users/active:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserDto"
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserDto"
+                type: array
+            text/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/UserDto"
+                type: array
+          description: OK
+      summary: "Get active users only (non-paginated, useful for dropdowns)"
+      tags:
+      - Users
+  /api/Users/by_lab/{labId}:
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: labId
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          default: 1
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 50
+          format: int32
+          type: integer
+        style: form
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDtoPagedResult"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+      summary: Get users by lab ID with pagination
+      tags:
+      - Users
+  /api/Users/{id}:
+    delete:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Delete a user (soft delete - marks as inactive)
+      tags:
+      - Users
+    get:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+          description: OK
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserDto"
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+          description: OK
+        "400":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Bad Request
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
+        "409":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Conflict
+      summary: Update an existing user
+      tags:
+      - Users
+  /api/Version:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: api-version
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: OK
+      summary: Gets the current API version information.
+      tags:
+      - Version
+components:
+  schemas:
+    AddUserToLabRequest:
+      additionalProperties: false
+      description: Request to add a user to a lab.
+      example:
+        role: 0
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+      type: object
+    AuditAction:
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      format: int32
+      type: integer
+    AuditLogDto:
+      additionalProperties: false
+      example:
+        isTruncated: true
+        newValue: newValue
+        entityType: 0
+        isArchived: true
+        ipAddress: ipAddress
+        action: 6
+        userEmail: userEmail
+        entityId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        oldValue: oldValue
+        userId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          format: uuid
+          type: string
+        userId:
+          format: uuid
+          type: string
+        userEmail:
+          nullable: true
+          type: string
+        entityType:
+          $ref: "#/components/schemas/EntityType"
+        entityId:
+          format: uuid
+          type: string
+        action:
+          $ref: "#/components/schemas/AuditAction"
+        oldValue:
+          nullable: true
+          type: string
+        newValue:
+          nullable: true
+          type: string
+        isTruncated:
+          type: boolean
+        timestamp:
+          format: date-time
+          type: string
+        ipAddress:
+          nullable: true
+          type: string
+        isArchived:
+          type: boolean
+      type: object
+    AuditLogDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 5
+        hasNextPage: true
+        totalPages: 2
+        pageSize: 5
+        hasPreviousPage: true
+        totalCount: 1
+        items:
+        - isTruncated: true
+          newValue: newValue
+          entityType: 0
+          isArchived: true
+          ipAddress: ipAddress
+          action: 6
+          userEmail: userEmail
+          entityId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          oldValue: oldValue
+          userId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          timestamp: 2000-01-23T04:56:07.000+00:00
+        - isTruncated: true
+          newValue: newValue
+          entityType: 0
+          isArchived: true
+          ipAddress: ipAddress
+          action: 6
+          userEmail: userEmail
+          entityId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          oldValue: oldValue
+          userId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AuditLogDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    AuditLogFilterDto:
+      additionalProperties: false
+      example:
+        includeArchived: true
+        pageNumber: 1
+        endDate: 2000-01-23T04:56:07.000+00:00
+        entityType: 0
+        action: 6
+        pageSize: 5
+        entityId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        userId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        startDate: 2000-01-23T04:56:07.000+00:00
+      properties:
+        entityType:
+          $ref: "#/components/schemas/EntityType"
+        entityId:
+          format: uuid
+          nullable: true
+          type: string
+        userId:
+          format: uuid
+          nullable: true
+          type: string
+        action:
+          $ref: "#/components/schemas/AuditAction"
+        startDate:
+          format: date-time
+          nullable: true
+          type: string
+        endDate:
+          format: date-time
+          nullable: true
+          type: string
+        includeArchived:
+          type: boolean
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+      type: object
+    ChangePasswordRequest:
+      additionalProperties: false
+      description: Request model for password change
+      example:
+        newPassword: newPassword
+        currentPassword: currentPassword
+      properties:
+        currentPassword:
+          description: The user's current password.
+          minLength: 1
+          type: string
+        newPassword:
+          description: The new password to set.
+          minLength: 8
+          type: string
+      required:
+      - currentPassword
+      - newPassword
+      type: object
+    ComplianceStatus:
+      enum:
+      - 0
+      - 1
+      - 2
+      format: int32
+      type: integer
+    CreateLabDto:
+      additionalProperties: false
+      example:
+        contactInfo: contactInfo
+        name: name
+        location: location
+      properties:
+        name:
+          maxLength: 200
+          minLength: 1
+          type: string
+        location:
+          maxLength: 500
+          nullable: true
+          type: string
+        contactInfo:
+          maxLength: 500
+          nullable: true
+          type: string
+      required:
+      - name
+      type: object
+    CreateParameterDto:
+      additionalProperties: false
+      example:
+        unit: unit
+        minValue: 6.027456183070403
+        whoThreshold: 14396433401959713000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        maxValue: 1.4658129805029452
+        name: name
+        description: description
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+        unit:
+          maxLength: 20
+          minLength: 1
+          type: string
+        whoThreshold:
+          format: double
+          maximum: 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+          minimum: 0
+          nullable: true
+          type: number
+        minValue:
+          format: double
+          nullable: true
+          type: number
+        maxValue:
+          format: double
+          nullable: true
+          type: number
+        description:
+          maxLength: 500
+          nullable: true
+          type: string
+      required:
+      - name
+      - unit
+      type: object
+    CreateSampleDto:
+      additionalProperties: false
+      example:
+        notes: notes
+        locationHierarchy: locationHierarchy
+        locationDescription: locationDescription
+        labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        locationLatitude: 18.494211295267263
+        locationLongitude: -127.23073270189397
+        type: 0
+        collectionDate: 2000-01-23T04:56:07.000+00:00
+        collectorName: collectorName
+      properties:
+        type:
+          $ref: "#/components/schemas/SampleType"
+        locationLatitude:
+          format: double
+          maximum: 90
+          minimum: -90
+          type: number
+        locationLongitude:
+          format: double
+          maximum: 180
+          minimum: -180
+          type: number
+        locationDescription:
+          maxLength: 200
+          nullable: true
+          type: string
+        locationHierarchy:
+          maxLength: 500
+          nullable: true
+          type: string
+        collectionDate:
+          format: date-time
+          type: string
+        collectorName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        notes:
+          maxLength: 1000
+          nullable: true
+          type: string
+        labId:
+          format: uuid
+          type: string
+      required:
+      - collectionDate
+      - collectorName
+      - labId
+      - locationLatitude
+      - locationLongitude
+      - type
+      type: object
+    CreateTestResultDto:
+      additionalProperties: false
+      example:
+        unit: unit
+        sampleId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        technicianName: technicianName
+        testMethod: 6
+        parameterName: parameterName
+        value: 0.8008281904610115
+        testDate: 2000-01-23T04:56:07.000+00:00
+      properties:
+        sampleId:
+          format: uuid
+          type: string
+        parameterName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        value:
+          format: double
+          type: number
+        unit:
+          maxLength: 20
+          minLength: 1
+          type: string
+        testDate:
+          format: date-time
+          type: string
+        technicianName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        testMethod:
+          $ref: "#/components/schemas/TestMethod"
+      required:
+      - parameterName
+      - sampleId
+      - technicianName
+      - testDate
+      - testMethod
+      - unit
+      - value
+      type: object
+    CreateUserDto:
+      additionalProperties: false
+      example:
+        password: password
+        role: 0
+        labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        userName: userName
+        email: email
+      properties:
+        userName:
+          maxLength: 256
+          minLength: 1
+          type: string
+        email:
+          format: email
+          maxLength: 256
+          minLength: 1
+          type: string
+        password:
+          minLength: 6
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        labId:
+          format: uuid
+          type: string
+      required:
+      - email
+      - labId
+      - password
+      - role
+      - userName
+      type: object
+    EntityType:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      format: int32
+      type: integer
+    ForgotPasswordRequest:
+      additionalProperties: false
+      description: Request model for forgot password
+      example:
+        email: email
+      properties:
+        email:
+          description: The user's email address.
+          format: email
+          minLength: 1
+          type: string
+      required:
+      - email
+      type: object
+    LabDto:
+      additionalProperties: false
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        createdDate: 2000-01-23T04:56:07.000+00:00
+        updatedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        contactInfo: contactInfo
+        createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: name
+        location: location
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        isActive: true
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          nullable: true
+          type: string
+        location:
+          nullable: true
+          type: string
+        contactInfo:
+          nullable: true
+          type: string
+        createdDate:
+          format: date-time
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+        createdBy:
+          format: uuid
+          type: string
+        updatedAt:
+          format: date-time
+          nullable: true
+          type: string
+        updatedBy:
+          format: uuid
+          nullable: true
+          type: string
+      type: object
+    LabDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 6
+        hasNextPage: true
+        totalPages: 5
+        pageSize: 1
+        hasPreviousPage: true
+        totalCount: 0
+        items:
+        - createdAt: 2000-01-23T04:56:07.000+00:00
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          updatedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          contactInfo: contactInfo
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: name
+          location: location
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          isActive: true
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+        - createdAt: 2000-01-23T04:56:07.000+00:00
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          updatedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          contactInfo: contactInfo
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: name
+          location: location
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          isActive: true
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/LabDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    ParameterDto:
+      additionalProperties: false
+      example:
+        unit: unit
+        minValue: 6.027456183070403
+        createdDate: 2000-01-23T04:56:07.000+00:00
+        whoThreshold: 0.8008281904610115
+        maxValue: 1.4658129805029452
+        name: name
+        description: description
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        lastModified: 2000-01-23T04:56:07.000+00:00
+        isActive: true
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          nullable: true
+          type: string
+        unit:
+          nullable: true
+          type: string
+        whoThreshold:
+          format: double
+          nullable: true
+          type: number
+        minValue:
+          format: double
+          nullable: true
+          type: number
+        maxValue:
+          format: double
+          nullable: true
+          type: number
+        description:
+          nullable: true
+          type: string
+        isActive:
+          type: boolean
+        createdDate:
+          format: date-time
+          type: string
+        lastModified:
+          format: date-time
+          type: string
+      type: object
+    ParameterDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 5
+        hasNextPage: true
+        totalPages: 7
+        pageSize: 2
+        hasPreviousPage: true
+        totalCount: 5
+        items:
+        - unit: unit
+          minValue: 6.027456183070403
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          whoThreshold: 0.8008281904610115
+          maxValue: 1.4658129805029452
+          name: name
+          description: description
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          isActive: true
+        - unit: unit
+          minValue: 6.027456183070403
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          whoThreshold: 0.8008281904610115
+          maxValue: 1.4658129805029452
+          name: name
+          description: description
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          isActive: true
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/ParameterDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    ProblemDetails:
+      additionalProperties: {}
+      example:
+        instance: instance
+        detail: detail
+        type: type
+        title: title
+        status: 0
+      properties:
+        type:
+          nullable: true
+          type: string
+        title:
+          nullable: true
+          type: string
+        status:
+          format: int32
+          nullable: true
+          type: integer
+        detail:
+          nullable: true
+          type: string
+        instance:
+          nullable: true
+          type: string
+      type: object
+    ResendVerificationRequest:
+      additionalProperties: false
+      description: Request model for resending verification email
+      example:
+        email: email
+      properties:
+        email:
+          description: The email address to resend the verification code to.
+          format: email
+          minLength: 1
+          type: string
+      required:
+      - email
+      type: object
+    ResetPasswordRequest:
+      additionalProperties: false
+      description: Request model for resetting password with token
+      example:
+        code: code
+        newPassword: newPassword
+        email: email
+      properties:
+        email:
+          description: The user's email address.
+          format: email
+          minLength: 1
+          type: string
+        code:
+          description: The password reset code sent to the user's email.
+          minLength: 1
+          type: string
+        newPassword:
+          description: The new password to set.
+          minLength: 8
+          type: string
+      required:
+      - code
+      - email
+      - newPassword
+      type: object
+    SampleDto:
+      additionalProperties: false
+      example:
+        isSynced: true
+        notes: notes
+        locationHierarchy: locationHierarchy
+        locationDescription: locationDescription
+        lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        locationLatitude: 6.027456183070403
+        type: 0
+        collectionDate: 2000-01-23T04:56:07.000+00:00
+        version: 5
+        createdDate: 2000-01-23T04:56:07.000+00:00
+        isDeleted: true
+        createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        locationLongitude: 1.4658129805029452
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        lastModified: 2000-01-23T04:56:07.000+00:00
+        collectorName: collectorName
+        status: 5
+      properties:
+        id:
+          format: uuid
+          type: string
+        type:
+          $ref: "#/components/schemas/SampleType"
+        locationLatitude:
+          format: double
+          type: number
+        locationLongitude:
+          format: double
+          type: number
+        locationDescription:
+          nullable: true
+          type: string
+        locationHierarchy:
+          nullable: true
+          type: string
+        collectionDate:
+          format: date-time
+          type: string
+        collectorName:
+          nullable: true
+          type: string
+        notes:
+          nullable: true
+          type: string
+        status:
+          $ref: "#/components/schemas/SampleStatus"
+        version:
+          format: int32
+          type: integer
+        lastModified:
+          format: date-time
+          type: string
+        lastModifiedBy:
+          format: uuid
+          type: string
+        isDeleted:
+          type: boolean
+        isSynced:
+          type: boolean
+        labId:
+          format: uuid
+          type: string
+        createdBy:
+          format: uuid
+          type: string
+        createdDate:
+          format: date-time
+          type: string
+      type: object
+    SampleDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 7
+        hasNextPage: true
+        totalPages: 3
+        pageSize: 9
+        hasPreviousPage: true
+        totalCount: 2
+        items:
+        - isSynced: true
+          notes: notes
+          locationHierarchy: locationHierarchy
+          locationDescription: locationDescription
+          lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          locationLatitude: 6.027456183070403
+          type: 0
+          collectionDate: 2000-01-23T04:56:07.000+00:00
+          version: 5
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          isDeleted: true
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          locationLongitude: 1.4658129805029452
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          collectorName: collectorName
+          status: 5
+        - isSynced: true
+          notes: notes
+          locationHierarchy: locationHierarchy
+          locationDescription: locationDescription
+          lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          locationLatitude: 6.027456183070403
+          type: 0
+          collectionDate: 2000-01-23T04:56:07.000+00:00
+          version: 5
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          isDeleted: true
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          locationLongitude: 1.4658129805029452
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          collectorName: collectorName
+          status: 5
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/SampleDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    SampleStatus:
+      enum:
+      - 0
+      - 1
+      - 2
+      format: int32
+      type: integer
+    SampleType:
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      format: int32
+      type: integer
+    TestMethod:
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      format: int32
+      type: integer
+    TestResultDto:
+      additionalProperties: false
+      example:
+        isSynced: true
+        sampleId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        technicianName: technicianName
+        lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        complianceStatus: 1
+        parameterName: parameterName
+        version: 5
+        unit: unit
+        createdDate: 2000-01-23T04:56:07.000+00:00
+        isDeleted: true
+        createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        testMethod: 6
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        lastModified: 2000-01-23T04:56:07.000+00:00
+        value: 0.8008281904610115
+        testDate: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          format: uuid
+          type: string
+        sampleId:
+          format: uuid
+          type: string
+        parameterName:
+          nullable: true
+          type: string
+        value:
+          format: double
+          type: number
+        unit:
+          nullable: true
+          type: string
+        testDate:
+          format: date-time
+          type: string
+        technicianName:
+          nullable: true
+          type: string
+        testMethod:
+          $ref: "#/components/schemas/TestMethod"
+        complianceStatus:
+          $ref: "#/components/schemas/ComplianceStatus"
+        version:
+          format: int32
+          type: integer
+        lastModified:
+          format: date-time
+          type: string
+        lastModifiedBy:
+          format: uuid
+          type: string
+        isDeleted:
+          type: boolean
+        isSynced:
+          type: boolean
+        createdBy:
+          format: uuid
+          type: string
+        createdDate:
+          format: date-time
+          type: string
+      type: object
+    TestResultDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 2
+        hasNextPage: true
+        totalPages: 9
+        pageSize: 7
+        hasPreviousPage: true
+        totalCount: 5
+        items:
+        - isSynced: true
+          sampleId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          technicianName: technicianName
+          lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          complianceStatus: 1
+          parameterName: parameterName
+          version: 5
+          unit: unit
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          isDeleted: true
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          testMethod: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          value: 0.8008281904610115
+          testDate: 2000-01-23T04:56:07.000+00:00
+        - isSynced: true
+          sampleId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          technicianName: technicianName
+          lastModifiedBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          complianceStatus: 1
+          parameterName: parameterName
+          version: 5
+          unit: unit
+          createdDate: 2000-01-23T04:56:07.000+00:00
+          isDeleted: true
+          createdBy: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          testMethod: 6
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          lastModified: 2000-01-23T04:56:07.000+00:00
+          value: 0.8008281904610115
+          testDate: 2000-01-23T04:56:07.000+00:00
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/TestResultDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    UpdateLabDto:
+      additionalProperties: false
+      example:
+        contactInfo: contactInfo
+        name: name
+        location: location
+        isActive: true
+      properties:
+        name:
+          maxLength: 200
+          minLength: 1
+          type: string
+        location:
+          maxLength: 500
+          nullable: true
+          type: string
+        contactInfo:
+          maxLength: 500
+          nullable: true
+          type: string
+        isActive:
+          type: boolean
+      required:
+      - name
+      type: object
+    UpdateParameterDto:
+      additionalProperties: false
+      example:
+        unit: unit
+        minValue: 6.027456183070403
+        whoThreshold: 14396433401959713000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        maxValue: 1.4658129805029452
+        name: name
+        description: description
+        isActive: true
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+        unit:
+          maxLength: 20
+          minLength: 1
+          type: string
+        whoThreshold:
+          format: double
+          maximum: 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+          minimum: 0
+          nullable: true
+          type: number
+        minValue:
+          format: double
+          nullable: true
+          type: number
+        maxValue:
+          format: double
+          nullable: true
+          type: number
+        description:
+          maxLength: 500
+          nullable: true
+          type: string
+        isActive:
+          type: boolean
+      required:
+      - name
+      - unit
+      type: object
+    UpdateSampleDto:
+      additionalProperties: false
+      example:
+        notes: notes
+        locationHierarchy: locationHierarchy
+        locationDescription: locationDescription
+        locationLatitude: 18.494211295267263
+        locationLongitude: -127.23073270189397
+        type: 0
+        collectionDate: 2000-01-23T04:56:07.000+00:00
+        collectorName: collectorName
+        version: 5
+        status: 5
+      properties:
+        type:
+          $ref: "#/components/schemas/SampleType"
+        locationLatitude:
+          format: double
+          maximum: 90
+          minimum: -90
+          type: number
+        locationLongitude:
+          format: double
+          maximum: 180
+          minimum: -180
+          type: number
+        locationDescription:
+          maxLength: 200
+          nullable: true
+          type: string
+        locationHierarchy:
+          maxLength: 500
+          nullable: true
+          type: string
+        collectionDate:
+          format: date-time
+          type: string
+        collectorName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        notes:
+          maxLength: 1000
+          nullable: true
+          type: string
+        status:
+          $ref: "#/components/schemas/SampleStatus"
+        version:
+          format: int32
+          type: integer
+      required:
+      - collectionDate
+      - collectorName
+      - locationLatitude
+      - locationLongitude
+      - status
+      - type
+      - version
+      type: object
+    UpdateTestResultDto:
+      additionalProperties: false
+      example:
+        unit: unit
+        technicianName: technicianName
+        testMethod: 6
+        parameterName: parameterName
+        value: 0.8008281904610115
+        version: 1
+        testDate: 2000-01-23T04:56:07.000+00:00
+      properties:
+        parameterName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        value:
+          format: double
+          type: number
+        unit:
+          maxLength: 20
+          minLength: 1
+          type: string
+        testDate:
+          format: date-time
+          type: string
+        technicianName:
+          maxLength: 100
+          minLength: 1
+          type: string
+        testMethod:
+          $ref: "#/components/schemas/TestMethod"
+        version:
+          format: int32
+          type: integer
+      required:
+      - parameterName
+      - technicianName
+      - testDate
+      - testMethod
+      - unit
+      - value
+      - version
+      type: object
+    UpdateUserDto:
+      additionalProperties: false
+      example:
+        role: 0
+        labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        userName: userName
+        isActive: true
+        email: email
+      properties:
+        userName:
+          maxLength: 256
+          nullable: true
+          type: string
+        email:
+          format: email
+          maxLength: 256
+          nullable: true
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        labId:
+          format: uuid
+          nullable: true
+          type: string
+        isActive:
+          nullable: true
+          type: boolean
+      type: object
+    UpdateUserRoleRequest:
+      additionalProperties: false
+      description: Request to update a user's role in a lab.
+      example:
+        role: 0
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+      type: object
+    UserDto:
+      additionalProperties: false
+      example:
+        lastLogin: 2000-01-23T04:56:07.000+00:00
+        labs:
+        - role: 0
+          assignedAt: 2000-01-23T04:56:07.000+00:00
+          labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          labName: labName
+        - role: 0
+          assignedAt: 2000-01-23T04:56:07.000+00:00
+          labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          labName: labName
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        userName: userName
+        isActive: true
+        email: email
+      properties:
+        id:
+          format: uuid
+          type: string
+        userName:
+          nullable: true
+          type: string
+        email:
+          nullable: true
+          type: string
+        labs:
+          items:
+            $ref: "#/components/schemas/UserLabDto"
+          nullable: true
+          type: array
+        lastLogin:
+          format: date-time
+          nullable: true
+          type: string
+        isActive:
+          type: boolean
+      type: object
+    UserDtoPagedResult:
+      additionalProperties: false
+      example:
+        pageNumber: 6
+        hasNextPage: true
+        totalPages: 5
+        pageSize: 1
+        hasPreviousPage: true
+        totalCount: 0
+        items:
+        - lastLogin: 2000-01-23T04:56:07.000+00:00
+          labs:
+          - role: 0
+            assignedAt: 2000-01-23T04:56:07.000+00:00
+            labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            labName: labName
+          - role: 0
+            assignedAt: 2000-01-23T04:56:07.000+00:00
+            labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            labName: labName
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          userName: userName
+          isActive: true
+          email: email
+        - lastLogin: 2000-01-23T04:56:07.000+00:00
+          labs:
+          - role: 0
+            assignedAt: 2000-01-23T04:56:07.000+00:00
+            labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            labName: labName
+          - role: 0
+            assignedAt: 2000-01-23T04:56:07.000+00:00
+            labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+            labName: labName
+          id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          userName: userName
+          isActive: true
+          email: email
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/UserDto"
+          nullable: true
+          type: array
+        totalCount:
+          format: int32
+          type: integer
+        pageNumber:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+        totalPages:
+          format: int32
+          readOnly: true
+          type: integer
+        hasPreviousPage:
+          readOnly: true
+          type: boolean
+        hasNextPage:
+          readOnly: true
+          type: boolean
+      type: object
+    UserLabDto:
+      additionalProperties: false
+      example:
+        role: 0
+        assignedAt: 2000-01-23T04:56:07.000+00:00
+        labId: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        labName: labName
+      properties:
+        labId:
+          format: uuid
+          type: string
+        labName:
+          maxLength: 200
+          minLength: 1
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        assignedAt:
+          format: date-time
+          type: string
+      required:
+      - labName
+      - role
+      type: object
+    UserRole:
+      enum:
+      - 1
+      - 2
+      - 3
+      format: int32
+      type: integer
+    VerifyEmailRequest:
+      additionalProperties: false
+      description: Request model for email verification
+      example:
+        code: code
+        userId: userId
+      properties:
+        userId:
+          description: The user's ID.
+          minLength: 1
+          type: string
+        code:
+          description: The verification code sent to the user's email.
+          minLength: 1
+          type: string
+      required:
+      - code
+      - userId
+      type: object
+  securitySchemes:
+    Bearer:
+      bearerFormat: JWT
+      description: "JWT Authorization header using the Bearer scheme. Enter 'Bearer'\
+        \ [space] and then your token in the text input below."
+      scheme: bearer
+      type: http
+
