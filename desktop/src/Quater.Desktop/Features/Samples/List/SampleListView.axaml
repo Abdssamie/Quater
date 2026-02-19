@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.Samples.List"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="Quater.Desktop.Features.Samples.List.SampleListView"
+             x:DataType="vm:SampleListViewModel">
+
+    <Grid RowDefinitions="Auto, *" Margin="20">
+        <suki:GlassCard Grid.Row="0" Margin="0,0,0,15" Padding="15">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBox Text="{Binding SearchText}" Watermark="Search samples..."
+                         MinWidth="200" />
+
+                <CalendarDatePicker SelectedDate="{Binding StartDateFilter}"
+                                    HorizontalAlignment="Stretch" />
+
+                <CalendarDatePicker SelectedDate="{Binding EndDateFilter}"
+                                    HorizontalAlignment="Stretch" />
+
+                <Button Command="{Binding ApplyFiltersCommand}"
+                        IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                    Apply Filters
+                </Button>
+
+                <Button Command="{Binding ClearFiltersCommand}"
+                        IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                    Clear
+                </Button>
+
+                <Button Command="{Binding CreateSampleCommand}"
+                        Classes="accent"
+                        HorizontalAlignment="Right">
+                    + New Sample
+                </Button>
+            </StackPanel>
+        </suki:GlassCard>
+
+        <suki:GlassCard Grid.Row="1" Padding="15">
+            <Grid RowDefinitions="Auto, *">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="0,0,0,15">
+                    <TextBlock Text="Samples" Classes="h2" FontWeight="Bold" />
+                    <TextBlock Text="{Binding TotalCount, StringFormat='({0} total)'}"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SukiText_Medium}" />
+                    <ProgressBar IsIndeterminate="True"
+                                 IsVisible="{Binding IsLoading}"
+                                 Width="100"
+                                 Height="4" />
+                </StackPanel>
+
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding Samples}"
+                          SelectedItem="{Binding SelectedSample}"
+                          IsReadOnly="True"
+                          AutoGenerateColumns="False"
+                          GridLinesVisibility="All"
+                          IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Id}" Header="ID" Width="*" />
+                        <DataGridTextColumn Binding="{Binding Type}" Header="Type" Width="*" />
+                        <DataGridTextColumn Binding="{Binding Location.Description}" Header="Location" Width="*" />
+                        <DataGridTextColumn Binding="{Binding Status}" Header="Status" Width="*" />
+                        <DataGridTextColumn Binding="{Binding CollectionDate, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}"
+                                           Header="Collected" Width="*" />
+                        <DataGridTemplateColumn Header="Actions" Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <Button Content="Edit"
+                                                Command="{Binding $parent[DataGrid].((vm:SampleListViewModel)DataContext).EditSampleCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="Delete"
+                                                Classes="danger"
+                                                Command="{Binding $parent[DataGrid].((vm:SampleListViewModel)DataContext).DeleteSampleCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </suki:GlassCard>
+    </Grid>
+</UserControl>

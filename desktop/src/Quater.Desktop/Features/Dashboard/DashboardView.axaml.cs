@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace Quater.Desktop.Views;
+namespace Quater.Desktop.Features.Dashboard;
 
 public partial class DashboardView : UserControl
 {

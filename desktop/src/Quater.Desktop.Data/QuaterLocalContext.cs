@@ -336,9 +336,7 @@ public class QuaterLocalContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
 
-            entity.Property(e => e.WhoThreshold);
-
-            entity.Property(e => e.MoroccanThreshold);
+            entity.Property(e => e.Threshold);
 
             entity.Property(e => e.MinValue);
 
