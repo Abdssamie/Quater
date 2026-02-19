@@ -11,7 +11,6 @@ public class ParameterDto
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public double? WhoThreshold { get; set; }
-    public double? MoroccanThreshold { get; set; }
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
     public string? Description { get; set; }
@@ -36,9 +35,6 @@ public class CreateParameterDto
     [Range(0, double.MaxValue, ErrorMessage = "WHO threshold must be non-negative")]
     public double? WhoThreshold { get; set; }
 
-    [Range(0, double.MaxValue, ErrorMessage = "Moroccan threshold must be non-negative")]
-    public double? MoroccanThreshold { get; set; }
-
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }
 
@@ -61,9 +57,6 @@ public class UpdateParameterDto
 
     [Range(0, double.MaxValue, ErrorMessage = "WHO threshold must be non-negative")]
     public double? WhoThreshold { get; set; }
-
-    [Range(0, double.MaxValue, ErrorMessage = "Moroccan threshold must be non-negative")]
-    public double? MoroccanThreshold { get; set; }
 
     public double? MinValue { get; set; }
     public double? MaxValue { get; set; }

@@ -18,8 +18,7 @@ public static class ParameterMappingExtensions
             Id = parameter.Id,
             Name = parameter.Name,
             Unit = parameter.Unit,
-            WhoThreshold = parameter.WhoThreshold,
-            MoroccanThreshold = parameter.MoroccanThreshold,
+            WhoThreshold = parameter.Threshold,
             MinValue = parameter.MinValue,
             MaxValue = parameter.MaxValue,
             Description = parameter.Description,
@@ -39,8 +38,7 @@ public static class ParameterMappingExtensions
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Unit = dto.Unit,
-            WhoThreshold = dto.WhoThreshold,
-            MoroccanThreshold = dto.MoroccanThreshold,
+            Threshold = dto.WhoThreshold,
             MinValue = dto.MinValue,
             MaxValue = dto.MaxValue,
             Description = dto.Description,
@@ -55,8 +53,7 @@ public static class ParameterMappingExtensions
     {
         parameter.Name = dto.Name;
         parameter.Unit = dto.Unit;
-        parameter.WhoThreshold = dto.WhoThreshold;
-        parameter.MoroccanThreshold = dto.MoroccanThreshold;
+        parameter.Threshold = dto.WhoThreshold;
         parameter.MinValue = dto.MinValue;
         parameter.MaxValue = dto.MaxValue;
         parameter.Description = dto.Description;

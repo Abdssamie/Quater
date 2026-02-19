@@ -20,13 +20,9 @@ public class ParameterValidator : AbstractValidator<Parameter>
             .When(x => x.MinValue.HasValue && x.MaxValue.HasValue)
             .WithMessage("Minimum value must be less than maximum value");
 
-        RuleFor(x => x.WhoThreshold)
-            .GreaterThan(0).When(x => x.WhoThreshold.HasValue)
+        RuleFor(x => x.Threshold)
+            .GreaterThan(0).When(x => x.Threshold.HasValue)
             .WithMessage("WHO threshold must be positive");
-
-        RuleFor(x => x.MoroccanThreshold)
-            .GreaterThan(0).When(x => x.MoroccanThreshold.HasValue)
-            .WithMessage("Moroccan threshold must be positive");
 
         RuleFor(x => x.Description)
             .MaximumLength(1000).WithMessage("Description must not exceed 1000 characters");

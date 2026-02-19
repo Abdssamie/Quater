@@ -23,7 +23,6 @@ public class CreateParameterDtoValidatorTests
             Name = "pH",
             Unit = "pH units",
             WhoThreshold = 8.5,
-            MoroccanThreshold = 9.0,
             MinValue = 6.5,
             MaxValue = 9.5
         };
@@ -121,7 +120,6 @@ public class CreateParameterDtoValidatorTests
             Name = "pH",
             Unit = "pH units",
             WhoThreshold = null,
-            MoroccanThreshold = null,
             MinValue = null,
             MaxValue = null
         };

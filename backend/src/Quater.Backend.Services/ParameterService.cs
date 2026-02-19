@@ -83,8 +83,7 @@ public class ParameterService(
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Unit = dto.Unit,
-            WhoThreshold = dto.WhoThreshold,
-            MoroccanThreshold = dto.MoroccanThreshold,
+            Threshold = dto.WhoThreshold,
             MinValue = dto.MinValue,
             MaxValue = dto.MaxValue,
             Description = dto.Description,
@@ -114,8 +113,7 @@ public class ParameterService(
 
         existing.Name = dto.Name;
         existing.Unit = dto.Unit;
-        existing.WhoThreshold = dto.WhoThreshold;
-        existing.MoroccanThreshold = dto.MoroccanThreshold;
+        existing.Threshold = dto.WhoThreshold;
         existing.MinValue = dto.MinValue;
         existing.MaxValue = dto.MaxValue;
         existing.Description = dto.Description;
@@ -145,8 +143,7 @@ public class ParameterService(
         Id = parameter.Id,
         Name = parameter.Name,
         Unit = parameter.Unit,
-        WhoThreshold = parameter.WhoThreshold,
-        MoroccanThreshold = parameter.MoroccanThreshold,
+        WhoThreshold = parameter.Threshold,
         MinValue = parameter.MinValue,
         MaxValue = parameter.MaxValue,
         Description = parameter.Description,

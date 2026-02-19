@@ -66,7 +66,6 @@ public static class MockDataFactory
         string name = "pH",
         string unit = "pH units",
         double? whoThreshold = 8.5,
-        double? moroccanThreshold = 9.0,
         double? minValue = 6.5,
         double? maxValue = 9.5)
     {
@@ -75,12 +74,11 @@ public static class MockDataFactory
             Id = Guid.NewGuid(),
             Name = name,
             Unit = unit,
-            WhoThreshold = whoThreshold,
-            MoroccanThreshold = moroccanThreshold,
+            Threshold = whoThreshold,
             MinValue = minValue,
             MaxValue = maxValue,
             IsActive = true,
-            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 } // For in-memory database compatibility
+            RowVersion = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 }
         };
     }
 
@@ -92,10 +90,10 @@ public static class MockDataFactory
         return
         [
             CreateParameter(),
-            CreateParameter("Turbidity", "NTU", 5.0, 10.0, 0, null),
-            CreateParameter("Chlorine", "mg/L", 5.0, null, 0.2, 5.0),
-            CreateParameter("Temperature", "°C", 25.0, 30.0, 0, 40.0),
-            CreateParameter("Conductivity", "µS/cm", 2500, 2700, null, null)
+            CreateParameter("Turbidity", "NTU", 5.0, 0, null),
+            CreateParameter("Chlorine", "mg/L", 5.0, 0.2, 5.0),
+            CreateParameter("Temperature", "°C", 25.0, 0, 40.0),
+            CreateParameter("Conductivity", "µS/cm", 2500, null, null)
         ];
     }
 
@@ -221,11 +219,8 @@ public static class MockDataFactory
         if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
             return ComplianceStatus.Fail;
 
-        if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
+        if (parameter.Threshold.HasValue && value > parameter.Threshold.Value)
             return ComplianceStatus.Fail;
-
-        if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
-            return ComplianceStatus.Warning;
 
         return ComplianceStatus.Pass;
     }

@@ -29,13 +29,9 @@ public class ComplianceCalculator(QuaterDbContext context) : IComplianceCalculat
         if (parameter.MaxValue.HasValue && value > parameter.MaxValue.Value)
             return ComplianceStatus.Fail;
 
-        // Check WHO threshold (international standard - stricter)
-        if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
+        // Check WHO threshold (international standard)
+        if (parameter.Threshold.HasValue && value > parameter.Threshold.Value)
             return ComplianceStatus.Fail;
-
-        // Check Moroccan threshold (national standard - may be more lenient)
-        if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
-            return ComplianceStatus.Warning;
 
         return ComplianceStatus.Pass;
     }
@@ -80,17 +76,10 @@ public class ComplianceCalculator(QuaterDbContext context) : IComplianceCalculat
                 continue;
             }
 
-            // Check WHO threshold (international standard - stricter)
-            if (parameter.WhoThreshold.HasValue && value > parameter.WhoThreshold.Value)
+            // Check WHO threshold
+            if (parameter.Threshold.HasValue && value > parameter.Threshold.Value)
             {
                 results[parameterName] = ComplianceStatus.Fail;
-                continue;
-            }
-
-            // Check Moroccan threshold (national standard - may be more lenient)
-            if (parameter.MoroccanThreshold.HasValue && value > parameter.MoroccanThreshold.Value)
-            {
-                results[parameterName] = ComplianceStatus.Warning;
                 continue;
             }
 

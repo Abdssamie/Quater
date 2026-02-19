@@ -22,10 +22,6 @@ public class UpdateParameterDtoValidator : AbstractValidator<UpdateParameterDto>
             .GreaterThanOrEqualTo(0).WithMessage("WHO threshold must be non-negative")
             .When(x => x.WhoThreshold.HasValue);
 
-        RuleFor(x => x.MoroccanThreshold)
-            .GreaterThanOrEqualTo(0).WithMessage("Moroccan threshold must be non-negative")
-            .When(x => x.MoroccanThreshold.HasValue);
-
         RuleFor(x => x.MinValue)
             .LessThan(x => x.MaxValue).WithMessage("Minimum value must be less than maximum value")
             .When(x => x.MinValue.HasValue && x.MaxValue.HasValue);
