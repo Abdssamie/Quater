@@ -14,6 +14,9 @@ namespace Quater.Backend.Api.Authorization;
 /// </summary>
 public class LabContextRoleRequirement(UserRole minimumRole) : IAuthorizationRequirement
 {
+    /// <summary>
+    /// Gets the minimum required role for authorization.
+    /// </summary>
     public UserRole MinimumRole { get; } = minimumRole;
 }
 
@@ -28,6 +31,7 @@ public class LabContextAuthorizationHandler(
     ILogger<LabContextAuthorizationHandler> logger)
     : AuthorizationHandler<LabContextRoleRequirement>
 {
+    /// <inheritdoc />
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         LabContextRoleRequirement requirement)

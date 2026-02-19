@@ -48,6 +48,9 @@ public class RateLimitingMiddleware
         return {current, ttl}
     ");
 
+    /// <summary>
+    /// Creates a new instance of RateLimitingMiddleware.
+    /// </summary>
     public RateLimitingMiddleware(
         RequestDelegate next,
         IConnectionMultiplexer redis,
@@ -69,6 +72,9 @@ public class RateLimitingMiddleware
             _authenticatedLimit, _windowSeconds, _anonymousLimit, _windowSeconds);
     }
 
+    /// <summary>
+    /// Invokes the middleware to apply rate limiting.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         // Check for endpoint-specific rate limit attribute
@@ -426,9 +432,11 @@ public class RateLimitingMiddleware
 /// <summary>
 /// Extension method to register RateLimitingMiddleware
 /// </summary>
-//
 public static class RateLimitingMiddlewareExtensions
 {
+    /// <summary>
+    /// Adds the RateLimitingMiddleware to the application pipeline.
+    /// </summary>
     public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder builder)
     {
         return builder.UseMiddleware<RateLimitingMiddleware>();

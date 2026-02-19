@@ -15,10 +15,13 @@ namespace Quater.Backend.Api.Controllers;
 // - Track invitation status (pending, accepted, expired)
 // This will replace the removed self-registration endpoint with a secure invite-only system.
 
+/// <summary>
+/// Controller for managing user-lab associations.
+/// </summary>
 [ApiController]
 [Route("api/users/{userId}/labs")]
 [Authorize(Policy = Policies.AdminOnly)]
-public class UserLabsController(IUserLabService userLabService) : ControllerBase
+public partial class UserLabsController(IUserLabService userLabService) : ControllerBase
 {
     /// <summary>
     /// Adds a user to a lab with the specified role.
@@ -80,6 +83,9 @@ public class UserLabsController(IUserLabService userLabService) : ControllerBase
 /// </summary>
 public class AddUserToLabRequest
 {
+    /// <summary>
+    /// The role to assign to the user in the lab.
+    /// </summary>
     public UserRole Role { get; set; }
 }
 
@@ -88,5 +94,8 @@ public class AddUserToLabRequest
 /// </summary>
 public class UpdateUserRoleRequest
 {
+    /// <summary>
+    /// The new role for the user in the lab.
+    /// </summary>
     public UserRole Role { get; set; }
 }

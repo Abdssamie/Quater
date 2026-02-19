@@ -15,7 +15,7 @@ namespace Quater.Backend.Api.Controllers;
 /// Email verification controller
 /// </summary>
 [ApiController]
-[Route("api/email-verification")]
+[Route("api/email_verification")]
 public sealed class EmailVerificationController(
     UserManager<User> userManager,
     ILogger<EmailVerificationController> logger,
@@ -122,9 +122,15 @@ public sealed class EmailVerificationController(
 /// </summary>
 public class VerifyEmailRequest
 {
+    /// <summary>
+    /// The user's ID.
+    /// </summary>
     [Required(ErrorMessage = "User ID is required")]
     public string UserId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The verification code sent to the user's email.
+    /// </summary>
     [Required(ErrorMessage = "Verification code is required")]
     public string Code { get; set; } = string.Empty;
 }
@@ -134,6 +140,9 @@ public class VerifyEmailRequest
 /// </summary>
 public class ResendVerificationRequest
 {
+    /// <summary>
+    /// The email address to resend the verification code to.
+    /// </summary>
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email address")]
     public string Email { get; set; } = string.Empty;

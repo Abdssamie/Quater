@@ -8,12 +8,18 @@ public class SecurityHeadersMiddleware
     private readonly RequestDelegate _next;
     private readonly IHostEnvironment _environment;
 
+    /// <summary>
+    /// Creates a new instance of SecurityHeadersMiddleware.
+    /// </summary>
     public SecurityHeadersMiddleware(RequestDelegate next, IHostEnvironment environment)
     {
         _next = next;
         _environment = environment;
     }
 
+    /// <summary>
+    /// Invokes the middleware to add security headers.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         // Use OnStarting to ensure headers are added before response starts
@@ -74,6 +80,9 @@ public class SecurityHeadersMiddleware
 /// </summary>
 public static class SecurityHeadersMiddlewareExtensions
 {
+    /// <summary>
+    /// Adds the SecurityHeadersMiddleware to the application pipeline.
+    /// </summary>
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder builder)
     {
         return builder.UseMiddleware<SecurityHeadersMiddleware>();

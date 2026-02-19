@@ -16,6 +16,9 @@ using Quater.Shared.Models;
 
 namespace Quater.Backend.Api.Extensions;
 
+/// <summary>
+/// Provides extension methods for configuring application services.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>

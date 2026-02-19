@@ -16,6 +16,9 @@ public class GlobalExceptionHandlerMiddleware
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
     private readonly IHostEnvironment _environment;
 
+    /// <summary>
+    /// Creates a new instance of GlobalExceptionHandlerMiddleware.
+    /// </summary>
     public GlobalExceptionHandlerMiddleware(
         RequestDelegate next,
         ILogger<GlobalExceptionHandlerMiddleware> logger,
@@ -26,6 +29,9 @@ public class GlobalExceptionHandlerMiddleware
         _environment = environment;
     }
 
+    /// <summary>
+    /// Invokes the middleware to handle exceptions.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         try

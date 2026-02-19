@@ -8,10 +8,13 @@ using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
 
+/// <summary>
+/// Controller for managing water samples.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
-public class SamplesController(ISampleService sampleService, ILogger<SamplesController> logger) : ControllerBase
+public partial class SamplesController(ISampleService sampleService, ILogger<SamplesController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all samples with pagination
@@ -33,7 +36,7 @@ public class SamplesController(ISampleService sampleService, ILogger<SamplesCont
     /// <summary>
     /// Get samples by lab ID with pagination
     /// </summary>
-    [HttpGet("by-lab/{labId}")]
+    [HttpGet("by_lab/{labId}")]
     [ProducesResponseType(typeof(PagedResult<SampleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<SampleDto>>> GetByLabId(

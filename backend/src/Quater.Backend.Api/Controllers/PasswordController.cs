@@ -182,9 +182,15 @@ public sealed class PasswordController(
 /// </summary>
 public class ChangePasswordRequest
 {
+    /// <summary>
+    /// The user's current password.
+    /// </summary>
     [Required(ErrorMessage = "Current password is required")]
     public string CurrentPassword { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The new password to set.
+    /// </summary>
     [Required(ErrorMessage = "New password is required")]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
     public string NewPassword { get; set; } = string.Empty;
@@ -195,6 +201,9 @@ public class ChangePasswordRequest
 /// </summary>
 public class ForgotPasswordRequest
 {
+    /// <summary>
+    /// The user's email address.
+    /// </summary>
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email address")]
     public string Email { get; set; } = string.Empty;
@@ -205,13 +214,22 @@ public class ForgotPasswordRequest
 /// </summary>
 public class ResetPasswordRequest
 {
+    /// <summary>
+    /// The user's email address.
+    /// </summary>
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email address")]
     public string Email { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The password reset code sent to the user's email.
+    /// </summary>
     [Required(ErrorMessage = "Reset code is required")]
     public string Code { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The new password to set.
+    /// </summary>
     [Required(ErrorMessage = "New password is required")]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
     public string NewPassword { get; set; } = string.Empty;

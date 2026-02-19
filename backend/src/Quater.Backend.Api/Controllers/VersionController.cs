@@ -5,11 +5,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Quater.Backend.Api.Controllers;
 
+/// <summary>
+/// Controller for retrieving API version information.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public class VersionController : ControllerBase
 {
+    /// <summary>
+    /// Gets the current API version information.
+    /// </summary>
     [HttpGet]
     public IActionResult Get()
     {

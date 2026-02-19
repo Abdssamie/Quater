@@ -49,7 +49,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     /// <summary>
     /// Get users by lab ID with pagination
     /// </summary>
-    [HttpGet("by-lab/{labId}")]
+    [HttpGet("by_lab/{labId}")]
     [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<UserDto>>> GetByLabId(

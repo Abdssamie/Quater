@@ -1,7 +1,13 @@
 namespace Quater.Backend.Api.Extensions;
 
+/// <summary>
+/// Provides extension methods for validating application configuration.
+/// </summary>
 public static class ConfigurationValidationExtensions
 {
+    /// <summary>
+    /// Validates that all required configuration values are present.
+    /// </summary>
     public static void ValidateConfiguration(this WebApplication app)
     {
         var logger = app.Services.GetRequiredService<ILogger<Program>>();

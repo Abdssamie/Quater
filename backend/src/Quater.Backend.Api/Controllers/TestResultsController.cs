@@ -8,10 +8,13 @@ using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
 
+/// <summary>
+/// Controller for managing test results.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
-public class TestResultsController(ITestResultService testResultService, ILogger<TestResultsController> logger) : ControllerBase
+public partial class TestResultsController(ITestResultService testResultService, ILogger<TestResultsController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all test results with pagination
@@ -33,7 +36,7 @@ public class TestResultsController(ITestResultService testResultService, ILogger
     /// <summary>
     /// Get test results by sample ID with pagination
     /// </summary>
-    [HttpGet("by-sample/{sampleId}")]
+    [HttpGet("by_sample/{sampleId}")]
     [ProducesResponseType(typeof(PagedResult<TestResultDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<TestResultDto>>> GetBySampleId(
         Guid sampleId,

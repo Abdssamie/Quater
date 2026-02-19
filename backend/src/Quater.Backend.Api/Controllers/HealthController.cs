@@ -17,6 +17,9 @@ public class HealthController : ControllerBase
     private readonly QuaterDbContext _context;
     private readonly ILogger<HealthController> _logger;
 
+    /// <summary>
+    /// Creates a new instance of HealthController.
+    /// </summary>
     public HealthController(QuaterDbContext context, ILogger<HealthController> logger)
     {
         _context = context;

@@ -23,24 +23,42 @@ public sealed class LoginModel(
     private const int MaxLoginAttempts = 5;
     private const int WindowMinutes = 15;
 
+    /// <summary>
+    /// The user's email address.
+    /// </summary>
     [BindProperty]
     [Required(ErrorMessage = "Email is required.")]
     [EmailAddress(ErrorMessage = "Invalid email format.")]
     public string Email { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The user's password.
+    /// </summary>
     [BindProperty]
     [Required(ErrorMessage = "Password is required.")]
     public string Password { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The URL to redirect to after successful login.
+    /// </summary>
     public string? ReturnUrl { get; set; }
 
+    /// <summary>
+    /// Error message to display to the user.
+    /// </summary>
     public string? ErrorMessage { get; set; }
 
+    /// <summary>
+    /// Handles the GET request for the login page.
+    /// </summary>
     public void OnGet(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
     }
 
+    /// <summary>
+    /// Handles the POST request for the login form.
+    /// </summary>
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;

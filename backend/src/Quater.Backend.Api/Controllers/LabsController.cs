@@ -7,10 +7,13 @@ using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
 
+/// <summary>
+/// Controller for managing labs.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
-public class LabsController(ILabService labService, ILogger<LabsController> logger) : ControllerBase
+public partial class LabsController(ILabService labService, ILogger<LabsController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all labs with pagination

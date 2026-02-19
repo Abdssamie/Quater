@@ -6,10 +6,13 @@ using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.Controllers;
 
+/// <summary>
+/// Controller for managing test parameters.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = Policies.ViewerOrAbove)] // All endpoints require at least Viewer role
-public class ParametersController(IParameterService parameterService, ILogger<ParametersController> logger) : ControllerBase
+public partial class ParametersController(IParameterService parameterService, ILogger<ParametersController> logger) : ControllerBase
 {
     /// <summary>
     /// Get all parameters with pagination

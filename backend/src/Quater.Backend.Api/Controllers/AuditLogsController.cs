@@ -17,6 +17,9 @@ public class AuditLogsController : ControllerBase
     private readonly IAuditLogService _auditLogService;
     private readonly ILogger<AuditLogsController> _logger;
 
+    /// <summary>
+    /// Creates a new instance of AuditLogsController.
+    /// </summary>
     public AuditLogsController(IAuditLogService auditLogService, ILogger<AuditLogsController> logger)
     {
         _auditLogService = auditLogService;
@@ -58,7 +61,7 @@ public class AuditLogsController : ControllerBase
     /// <summary>
     /// Get audit logs by entity ID
     /// </summary>
-    [HttpGet("by-entity/{entityId}")]
+    [HttpGet("by_entity/{entityId}")]
     [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByEntity(
         Guid entityId,
@@ -76,7 +79,7 @@ public class AuditLogsController : ControllerBase
     /// <summary>
     /// Get audit logs by user ID
     /// </summary>
-    [HttpGet("by-user/{userId}")]
+    [HttpGet("by_user/{userId}")]
     [ProducesResponseType(typeof(PagedResult<AuditLogDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<AuditLogDto>>> GetByUser(
