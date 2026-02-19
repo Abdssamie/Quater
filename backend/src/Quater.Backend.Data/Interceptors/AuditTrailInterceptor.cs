@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 using Quater.Shared.Models;
@@ -364,15 +365,3 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     }
 }
 
-/// <summary>
-/// Interface for getting current user information.
-/// Implement this in your application to provide user context to the audit interceptor.
-/// </summary>
-public interface ICurrentUserService
-{
-    /// <summary>
-    /// Gets the current user's ID.
-    /// </summary>
-    /// <returns>The user ID, or "System" if no user is authenticated.</returns>
-    Guid GetCurrentUserId();
-}

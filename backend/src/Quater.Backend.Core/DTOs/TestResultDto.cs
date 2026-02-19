@@ -82,9 +82,6 @@ public class UpdateTestResultDto
     [Required(ErrorMessage = "Test method is required")]
     public TestMethod TestMethod { get; set; }
 
-    [Required(ErrorMessage = "Compliance status is required")]
-    public ComplianceStatus ComplianceStatus { get; set; }
-
     [Required(ErrorMessage = "Version is required")]
     public int Version { get; set; }
 }

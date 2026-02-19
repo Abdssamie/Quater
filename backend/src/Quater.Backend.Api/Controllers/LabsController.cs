@@ -63,20 +63,12 @@ public class LabsController(ILabService labService, ILogger<LabsController> logg
         [FromBody] CreateLabDto dto,
         CancellationToken ct = default)
     {
-        try
-        {
-            var userId = User.GetUserIdOrThrow();
+        var userId = User.GetUserIdOrThrow();
 
-            var created = await labService.CreateAsync(dto, userId, ct);
-            logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}",
-                created.Id, created.Name, userId);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Invalid operation when creating lab {LabName}", dto.Name);
-            return BadRequest(new { message = ex.Message });
-        }
+        var created = await labService.CreateAsync(dto, userId, ct);
+        logger.LogInformation("Lab created successfully with ID {LabId}, Name: {LabName} by user {UserId}",
+            created.Id, created.Name, userId);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     /// <summary>

@@ -17,7 +17,7 @@ public class ParameterService(
     {
         var parameter = await context.Parameters
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id, ct);
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
 
         if (parameter == null)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);

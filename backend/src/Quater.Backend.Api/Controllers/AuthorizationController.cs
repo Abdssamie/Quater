@@ -80,7 +80,7 @@ public sealed class AuthorizationController(
                 properties: new AuthenticationProperties
                 {
                     RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
-                        Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList())
+                        Request.HasFormContentType ? [.. Request.Form] : Request.Query.ToList())
                 });
         }
 

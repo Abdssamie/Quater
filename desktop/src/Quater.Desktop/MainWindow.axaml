@@ -3,36 +3,46 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
-                 xmlns:vm="using:Quater.Desktop.ViewModels"
-                 xmlns:views="using:Quater.Desktop.Views"
+                 xmlns:vm="clr-namespace:Quater.Desktop.Core.Shell"
+                 xmlns:dashboard="clr-namespace:Quater.Desktop.Features.Dashboard"
+                 xmlns:samples="clr-namespace:Quater.Desktop.Features.Samples.List"
                  mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
                  x:Class="Quater.Desktop.MainWindow"
-                 x:DataType="vm:MainViewModel"
-                 Title="Quater - Gestion de Laboratoire Qualité de l'Eau">
-                 
+                 x:DataType="vm:ShellViewModel"
+                 Title="Quater - Water Quality Lab Management">
+
+    <suki:SukiWindow.DataTemplates>
+        <DataTemplate DataType="{x:Type dashboard:DashboardViewModel}">
+            <dashboard:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type samples:SampleListViewModel}">
+            <samples:SampleListView />
+        </DataTemplate>
+    </suki:SukiWindow.DataTemplates>
+
     <suki:SukiSideMenu>
         <suki:SukiSideMenu.HeaderContent>
             <StackPanel Spacing="5" Margin="20">
                 <TextBlock Text="QUATER" Classes="h3" FontWeight="Bold" />
-                <TextBlock Text="Gestionnaire de Labo" FontSize="12" Opacity="0.7" />
+                <TextBlock Text="Lab Manager" FontSize="12" Opacity="0.7" />
             </StackPanel>
         </suki:SukiSideMenu.HeaderContent>
 
-        <suki:SukiSideMenuItem Header="Tableau de Bord">
+        <suki:SukiSideMenuItem Header="Dashboard">
             <suki:SukiSideMenuItem.Icon>
                 <PathIcon Data="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
             </suki:SukiSideMenuItem.Icon>
             <suki:SukiSideMenuItem.PageContent>
-                <views:DashboardView DataContext="{Binding Dashboard}" />
+                <ContentControl Content="{Binding CurrentView}" />
             </suki:SukiSideMenuItem.PageContent>
         </suki:SukiSideMenuItem>
 
-        <suki:SukiSideMenuItem Header="Échantillons">
-             <suki:SukiSideMenuItem.Icon>
+        <suki:SukiSideMenuItem Header="Samples">
+            <suki:SukiSideMenuItem.Icon>
                 <PathIcon Data="M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z" />
             </suki:SukiSideMenuItem.Icon>
             <suki:SukiSideMenuItem.PageContent>
-                <TextBlock Text="Vue Échantillons (Bientôt Disponible)" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ContentControl Content="{Binding CurrentView}" />
             </suki:SukiSideMenuItem.PageContent>
         </suki:SukiSideMenuItem>
     </suki:SukiSideMenu>

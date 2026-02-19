@@ -10,21 +10,16 @@ using System.Reflection;
 /// Scriban-based email template renderer
 /// Templates are stored as embedded resources
 /// </summary>
-public sealed class ScribanTemplateService(ILogger<ScribanTemplateService> logger) : IEmailTemplateService, IDisposable
+public sealed class ScribanTemplateService(ILogger<ScribanTemplateService> logger) : IEmailTemplateService
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Template> _templateCache = new();
-    private readonly SemaphoreSlim _cacheLock = new(1, 1);
-    private bool _disposed;
 
     public async Task<string> RenderAsync<TModel>(string templateName, TModel model, CancellationToken cancellationToken = default)
         where TModel : class
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(ScribanTemplateService));
-
         try
         {
-            var template = await GetTemplateAsync(templateName, cancellationToken);
+            var template = GetOrLoadTemplate(templateName);
 
             var scriptObject = new ScriptObject();
             // Use snake_case renamer to match template variables (user_name, app_name, etc.)
@@ -70,63 +65,33 @@ public sealed class ScribanTemplateService(ILogger<ScribanTemplateService> logge
         return result.ToString();
     }
 
-    private async Task<Template> GetTemplateAsync(string templateName, CancellationToken cancellationToken)
+    private Template GetOrLoadTemplate(string templateName)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(ScribanTemplateService));
-
-        // Check cache first (thread-safe read)
-        if (_templateCache.TryGetValue(templateName, out var cachedTemplate))
+        return _templateCache.GetOrAdd(templateName, name =>
         {
-            return cachedTemplate;
-        }
-
-        await _cacheLock.WaitAsync(cancellationToken);
-        try
-        {
-            // Double-check after acquiring lock
-            if (_templateCache.TryGetValue(templateName, out cachedTemplate))
-            {
-                return cachedTemplate;
-            }
-
             // Load template from embedded resource
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = $"Quater.Backend.Infrastructure.Email.Templates.{templateName}.html";
+            var resourceName = $"Quater.Backend.Infrastructure.Email.Templates.{name}.html";
 
-            await using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
-                throw new FileNotFoundException($"Email template '{templateName}' not found as embedded resource: {resourceName}");
+                throw new FileNotFoundException($"Email template '{name}' not found as embedded resource: {resourceName}");
             }
 
             using var reader = new StreamReader(stream);
-            var templateContent = await reader.ReadToEndAsync(cancellationToken);
+            var templateContent = reader.ReadToEnd();
 
             var template = Template.Parse(templateContent);
             if (template.HasErrors)
             {
                 var errors = string.Join(", ", template.Messages.Select(m => m.Message));
-                throw new InvalidOperationException($"Template '{templateName}' has parsing errors: {errors}");
+                throw new InvalidOperationException($"Template '{name}' has parsing errors: {errors}");
             }
 
-            _templateCache[templateName] = template;
-            logger.LogInformation("Loaded and cached template '{TemplateName}'", templateName);
+            logger.LogInformation("Loaded and cached template '{TemplateName}'", name);
 
             return template;
-        }
-        finally
-        {
-            _cacheLock.Release();
-        }
-    }
-
-    public void Dispose()
-    {
-        if (_disposed)
-            return;
-
-        _cacheLock?.Dispose();
-        _disposed = true;
+        });
     }
 }
