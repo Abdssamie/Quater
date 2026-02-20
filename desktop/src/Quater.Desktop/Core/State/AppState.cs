@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Quater.Desktop.Api.Model;
-using Quater.Shared.Enums;
 
 namespace Quater.Desktop.Core.State;
 
@@ -34,10 +33,7 @@ public sealed partial class AppState : ObservableObject
     private Guid _currentLabId;
 
     [ObservableProperty]
-    private UserRole _currentRole = UserRole.Viewer;
-
-    [ObservableProperty]
-    private IReadOnlyList<LabDto> _availableLabs = Array.Empty<LabDto>();
+    private IReadOnlyList<UserLabDto> _availableLabs = Array.Empty<UserLabDto>();
     
     public void SetConnected()
     {

@@ -4,7 +4,7 @@ using Quater.Shared.Enums;
 
 namespace Quater.Desktop.Data.Repositories;
 
-public class SampleRepository(QuaterLocalContext context, TimeProvider timeProvider) : ISampleRepository
+public class SampleRepository(QuaterLocalContext context) : ISampleRepository
 {
     public async Task<Sample?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {

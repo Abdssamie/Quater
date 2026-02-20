@@ -232,9 +232,6 @@ namespace Quater.Desktop.Data.Migrations
                     b.Property<double?>("MinValue")
                         .HasColumnType("REAL");
 
-                    b.Property<double?>("MoroccanThreshold")
-                        .HasColumnType("REAL");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -246,6 +243,9 @@ namespace Quater.Desktop.Data.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("BLOB");
 
+                    b.Property<double?>("Threshold")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("Unit")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -256,9 +256,6 @@ namespace Quater.Desktop.Data.Migrations
 
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("TEXT");
-
-                    b.Property<double?>("WhoThreshold")
-                        .HasColumnType("REAL");
 
                     b.HasKey("Id");
 
@@ -564,6 +561,73 @@ namespace Quater.Desktop.Data.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("Quater.Shared.Models.UserInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserInvitations", (string)null);
+                });
+
             modelBuilder.Entity("Quater.Shared.Models.UserLab", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -700,6 +764,25 @@ namespace Quater.Desktop.Data.Migrations
                     b.Navigation("Sample");
                 });
 
+            modelBuilder.Entity("Quater.Shared.Models.UserInvitation", b =>
+                {
+                    b.HasOne("Quater.Shared.Models.User", "InvitedBy")
+                        .WithMany("SentInvitations")
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Quater.Shared.Models.User", "User")
+                        .WithOne("ReceivedInvitation")
+                        .HasForeignKey("Quater.Shared.Models.UserInvitation", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvitedBy");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Quater.Shared.Models.UserLab", b =>
                 {
                     b.HasOne("Quater.Shared.Models.Lab", "Lab")
@@ -736,6 +819,10 @@ namespace Quater.Desktop.Data.Migrations
                     b.Navigation("AuditLogArchives");
 
                     b.Navigation("AuditLogs");
+
+                    b.Navigation("ReceivedInvitation");
+
+                    b.Navigation("SentInvitations");
 
                     b.Navigation("UserLabs");
                 });

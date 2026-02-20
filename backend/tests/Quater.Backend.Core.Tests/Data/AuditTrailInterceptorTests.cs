@@ -782,4 +782,6 @@ public class MockCurrentUserService : ICurrentUserService
     }
 
     public Guid GetCurrentUserId() => _userId;
+
+    public Guid GetCurrentUserIdOrSystem() => _userId;
 }

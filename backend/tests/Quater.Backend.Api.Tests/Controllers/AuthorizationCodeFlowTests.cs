@@ -36,6 +36,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using Quater.Backend.Api.Tests.Fixtures;
 using Quater.Backend.Api.Tests.Helpers;
+using Quater.Backend.Core.DTOs;
 using Quater.Backend.Data;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -226,8 +227,9 @@ public sealed class AuthorizationCodeFlowTests : IAsyncLifetime
         userInfo.Should().NotBeNull();
         userInfo!.Id.Should().NotBeEmpty("sub claim should be present as the user ID");
         userInfo.Email.Should().Be(TestEmail, "email claim should match the authenticated user");
-        userInfo.Role.Should().Be(UserRole.Technician.ToString(), "role claim should be Technician");
-        userInfo.LabId.Should().NotBeEmpty("lab_id claim should be present");
+        userInfo.Labs.Should().NotBeEmpty("lab memberships should be present");
+        userInfo.Labs[0].Role.Should().Be(UserRole.Technician, "role claim should be Technician");
+        userInfo.Labs[0].LabId.Should().NotBeEmpty("lab_id claim should be present");
     }
 
     /// <summary>
@@ -712,8 +714,7 @@ public sealed class AuthorizationCodeFlowTests : IAsyncLifetime
         public Guid Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
-        public Guid LabId { get; set; }
+        public List<UserLabDto> Labs { get; set; } = [];
         public bool IsActive { get; set; }
         public DateTime? LastLogin { get; set; }
     }

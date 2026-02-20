@@ -332,7 +332,41 @@ paths:
         style: form
       responses:
         "200":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/UserDto"
           description: OK
+        "401":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Unauthorized
+        "404":
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+          description: Not Found
       summary: Get current user information
       tags:
       - Auth

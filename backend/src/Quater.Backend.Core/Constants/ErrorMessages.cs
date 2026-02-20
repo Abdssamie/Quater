@@ -29,8 +29,16 @@ public static class ErrorMessages
     public const string UserUpdateFailed = "Failed to update user.";
     public const string UserNotLabMember = "User is not a member of the requested lab.";
 
+    // Invitation errors
+    public const string InvitationNotFound = "Invitation not found.";
+    public const string InvitationAlreadyAccepted = "Invitation already accepted.";
+    public const string InvitationExpired = "Invitation has expired.";
+    public const string InvitationRevoked = "Invitation has been revoked.";
+    public const string UserAlreadyExists = "User already exists.";
+    public const string EmailNotConfirmed = "Email is not confirmed.";
+    public const string InvalidInvitationToken = "Invalid invitation token.";
+
     // Authorization errors
     public const string LabContextRequired = "Lab context is required. Please provide X-Lab-Id header.";
     public const string InsufficientLabPermissions = "You do not have sufficient permissions in this lab.";
 }
-

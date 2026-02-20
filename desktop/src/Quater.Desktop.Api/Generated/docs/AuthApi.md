@@ -182,7 +182,7 @@ No authorization required
 
 <a id="apiauthuserinfoget"></a>
 # **ApiAuthUserinfoGet**
-> void ApiAuthUserinfoGet (string? apiVersion = null)
+> UserDto ApiAuthUserinfoGet (string? apiVersion = null)
 
 Get current user information
 
@@ -208,7 +208,8 @@ namespace Example
             try
             {
                 // Get current user information
-                apiInstance.ApiAuthUserinfoGet(apiVersion);
+                UserDto result = apiInstance.ApiAuthUserinfoGet(apiVersion);
+                Debug.WriteLine(result);
             }
             catch (ApiException  e)
             {
@@ -228,7 +229,10 @@ This returns an ApiResponse object which contains the response data, status code
 try
 {
     // Get current user information
-    apiInstance.ApiAuthUserinfoGetWithHttpInfo(apiVersion);
+    ApiResponse<UserDto> response = apiInstance.ApiAuthUserinfoGetWithHttpInfo(apiVersion);
+    Debug.Write("Status Code: " + response.StatusCode);
+    Debug.Write("Response Headers: " + response.Headers);
+    Debug.Write("Response Body: " + response.Data);
 }
 catch (ApiException e)
 {
@@ -246,7 +250,7 @@ catch (ApiException e)
 
 ### Return type
 
-void (empty response body)
+[**UserDto**](UserDto.md)
 
 ### Authorization
 
@@ -255,13 +259,15 @@ No authorization required
 ### HTTP request headers
 
  - **Content-Type**: Not defined
- - **Accept**: Not defined
+ - **Accept**: text/plain, application/json, text/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | OK |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Not Found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

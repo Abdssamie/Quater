@@ -29,6 +29,20 @@ const TOKEN_ENDPOINT = "/api/auth/token"
 const USERINFO_ENDPOINT = "/api/auth/userinfo"
 const LOGOUT_ENDPOINT = "/api/auth/logout"
 
+type AuthCallbacks = {
+  /** Called on 401. Should refresh the access token and return true on success. */
+  onRefreshToken: () => Promise<boolean>
+  /** Called when a refresh attempt fails — clears all local auth state. */
+  onLogout: () => void
+}
+
+// Extend the axios request config type to support a retry flag.
+declare module "axios" {
+  interface InternalAxiosRequestConfig {
+    _retry?: boolean
+  }
+}
+
 export class Api {
   apisauce: ApisauceInstance
   config: ApiConfig
@@ -60,6 +74,48 @@ export class Api {
         }
       }
     })
+  }
+
+  /**
+   * Wire up refresh + logout callbacks and register an axios response interceptor
+   * that automatically retries requests after a successful token refresh on 401.
+   *
+   * Call this once from AuthContext on mount.
+   */
+  setAuthCallbacks(callbacks: AuthCallbacks): void {
+    const axiosInstance = this.apisauce.axiosInstance
+
+    axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const original = error.config
+
+        // Only retry once, and never retry the token endpoint itself
+        // (avoids infinite loops when the refresh token is also invalid).
+        if (
+          error.response?.status === 401 &&
+          !original._retry &&
+          !original.url?.includes(TOKEN_ENDPOINT)
+        ) {
+          original._retry = true
+
+          const refreshed = await callbacks.onRefreshToken()
+          if (refreshed) {
+            // Token has been updated in authStore — pick it up for the retry.
+            const newToken = authStore.getAccessToken()
+            if (newToken) {
+              original.headers["Authorization"] = `Bearer ${newToken}`
+            }
+            return axiosInstance(original)
+          }
+
+          // Refresh failed — force logout so the user is sent back to LoginScreen.
+          callbacks.onLogout()
+        }
+
+        return Promise.reject(error)
+      },
+    )
   }
 
   async exchangeAuthorizationCode(params: {
@@ -96,7 +152,9 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async refreshToken(refreshToken: string): Promise<{ kind: "ok"; data: AuthTokenResponse } | GeneralApiProblem> {
+  async refreshToken(
+    refreshToken: string,
+  ): Promise<{ kind: "ok"; data: AuthTokenResponse } | GeneralApiProblem> {
     const formBody = new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
@@ -135,10 +193,11 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async logout(): Promise<{ kind: "ok"; data: { message: string; tokensRevoked: number } } | GeneralApiProblem> {
-    const response: ApiResponse<{ message: string; tokensRevoked: number }> = await this.apisauce.post(
-      LOGOUT_ENDPOINT,
-    )
+  async logout(): Promise<
+    { kind: "ok"; data: { message: string; tokensRevoked: number } } | GeneralApiProblem
+  > {
+    const response: ApiResponse<{ message: string; tokensRevoked: number }> =
+      await this.apisauce.post(LOGOUT_ENDPOINT)
 
     if (!response.ok) {
       const problem = getGeneralApiProblem(response)
@@ -150,10 +209,10 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async getSamples(pageNumber = 1, pageSize = 50): Promise<
-    | { kind: "ok"; data: SampleDtoPagedResult }
-    | GeneralApiProblem
-  > {
+  async getSamples(
+    pageNumber = 1,
+    pageSize = 50,
+  ): Promise<{ kind: "ok"; data: SampleDtoPagedResult } | GeneralApiProblem> {
     const response: ApiResponse<SampleDtoPagedResult> = await this.apisauce.get("/api/samples", {
       pageNumber,
       pageSize,
@@ -169,10 +228,11 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async getSamplesByLab(labId: string, pageNumber = 1, pageSize = 50): Promise<
-    | { kind: "ok"; data: SampleDtoPagedResult }
-    | GeneralApiProblem
-  > {
+  async getSamplesByLab(
+    labId: string,
+    pageNumber = 1,
+    pageSize = 50,
+  ): Promise<{ kind: "ok"; data: SampleDtoPagedResult } | GeneralApiProblem> {
     const response: ApiResponse<SampleDtoPagedResult> = await this.apisauce.get(
       `/api/samples/by-lab/${labId}`,
       {
@@ -204,7 +264,9 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async createSample(dto: CreateSampleDto): Promise<{ kind: "ok"; data: SampleDto } | GeneralApiProblem> {
+  async createSample(
+    dto: CreateSampleDto,
+  ): Promise<{ kind: "ok"; data: SampleDto } | GeneralApiProblem> {
     const response: ApiResponse<SampleDto> = await this.apisauce.post("/api/samples", dto)
 
     if (!response.ok) {
@@ -244,14 +306,17 @@ export class Api {
     return { kind: "ok" }
   }
 
-  async getParameters(pageNumber = 1, pageSize = 50): Promise<
-    | { kind: "ok"; data: ParameterDtoPagedResult }
-    | GeneralApiProblem
-  > {
-    const response: ApiResponse<ParameterDtoPagedResult> = await this.apisauce.get("/api/parameters", {
-      pageNumber,
-      pageSize,
-    })
+  async getParameters(
+    pageNumber = 1,
+    pageSize = 50,
+  ): Promise<{ kind: "ok"; data: ParameterDtoPagedResult } | GeneralApiProblem> {
+    const response: ApiResponse<ParameterDtoPagedResult> = await this.apisauce.get(
+      "/api/parameters",
+      {
+        pageNumber,
+        pageSize,
+      },
+    )
 
     if (!response.ok) {
       const problem = getGeneralApiProblem(response)
@@ -276,7 +341,9 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async getParameterById(id: string): Promise<{ kind: "ok"; data: ParameterDto } | GeneralApiProblem> {
+  async getParameterById(
+    id: string,
+  ): Promise<{ kind: "ok"; data: ParameterDto } | GeneralApiProblem> {
     const response: ApiResponse<ParameterDto> = await this.apisauce.get(`/api/parameters/${id}`)
 
     if (!response.ok) {
@@ -289,14 +356,17 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async getTestResults(pageNumber = 1, pageSize = 50): Promise<
-    | { kind: "ok"; data: TestResultDtoPagedResult }
-    | GeneralApiProblem
-  > {
-    const response: ApiResponse<TestResultDtoPagedResult> = await this.apisauce.get("/api/testresults", {
-      pageNumber,
-      pageSize,
-    })
+  async getTestResults(
+    pageNumber = 1,
+    pageSize = 50,
+  ): Promise<{ kind: "ok"; data: TestResultDtoPagedResult } | GeneralApiProblem> {
+    const response: ApiResponse<TestResultDtoPagedResult> = await this.apisauce.get(
+      "/api/testresults",
+      {
+        pageNumber,
+        pageSize,
+      },
+    )
 
     if (!response.ok) {
       const problem = getGeneralApiProblem(response)
@@ -331,7 +401,9 @@ export class Api {
     return { kind: "ok", data: response.data }
   }
 
-  async getTestResultById(id: string): Promise<{ kind: "ok"; data: TestResultDto } | GeneralApiProblem> {
+  async getTestResultById(
+    id: string,
+  ): Promise<{ kind: "ok"; data: TestResultDto } | GeneralApiProblem> {
     const response: ApiResponse<TestResultDto> = await this.apisauce.get(`/api/testresults/${id}`)
 
     if (!response.ok) {
@@ -363,7 +435,10 @@ export class Api {
     id: string,
     dto: UpdateTestResultDto,
   ): Promise<{ kind: "ok"; data: TestResultDto } | GeneralApiProblem> {
-    const response: ApiResponse<TestResultDto> = await this.apisauce.put(`/api/testresults/${id}`, dto)
+    const response: ApiResponse<TestResultDto> = await this.apisauce.put(
+      `/api/testresults/${id}`,
+      dto,
+    )
 
     if (!response.ok) {
       const problem = getGeneralApiProblem(response)

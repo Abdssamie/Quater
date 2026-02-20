@@ -405,6 +405,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IParameterService, ParameterService>();
         services.AddScoped<ILabService, LabService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserInvitationService, UserInvitationService>();
         services.AddScoped<IUserLabService, UserLabService>();
         services.AddScoped<IComplianceCalculator, ComplianceCalculator>();
         services.AddScoped<IAuditLogService, AuditLogService>();

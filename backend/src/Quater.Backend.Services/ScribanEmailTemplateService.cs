@@ -56,6 +56,7 @@ public sealed class ScribanEmailTemplateService : IEmailTemplateService
         RegisterTemplate("password-reset", PasswordResetTemplate);
         RegisterTemplate("welcome", WelcomeTemplate);
         RegisterTemplate("security-alert", SecurityAlertTemplate);
+        RegisterTemplate("invitation", InvitationTemplate);
 
         _logger.LogInformation("Initialized {Count} email templates", _templateCache.Count);
     }
@@ -223,6 +224,38 @@ public sealed class ScribanEmailTemplateService : IEmailTemplateService
             <div class="footer">
                 <p>&copy; {{ year }} {{ appname }} Management System</p>
                 <p>This is an automated security notification.</p>
+            </div>
+        </body>
+        </html>
+        """;
+
+    private static readonly string InvitationTemplate = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        """ + BaseStyle + """
+        </head>
+        <body>
+            <div class="header">
+                <h1>{{ appname }}</h1>
+            </div>
+            <div class="content">
+                <h2>You Are Invited</h2>
+                <p>Hello {{ username }},</p>
+                <p>{{ invitedbyname }} has invited you to join {{ appname }}.</p>
+                <p style="text-align: center;">
+                    <a href="{{ invitationurl }}" class="button">Accept Invitation</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 12px;">{{ invitationurl }}</p>
+                <p>This invitation will expire in {{ expirationdays }} days.</p>
+                <p>If you were not expecting this invitation, you can safely ignore this email.</p>
+            </div>
+            <div class="footer">
+                <p>&copy; {{ year }} {{ appname }} Management System</p>
+                <p>This is an automated message. Please do not reply to this email.</p>
             </div>
         </body>
         </html>

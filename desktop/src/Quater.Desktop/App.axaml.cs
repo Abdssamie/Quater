@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Quater.Desktop.Core;
 using Quater.Desktop.Core.Shell;
+using Quater.Desktop.Core.State;
 using Serilog;
 
 namespace Quater.Desktop;
@@ -25,6 +26,9 @@ public partial class App : Application
 
         services
             .AddQuaterLogging()
+            .AddQuaterSettings()
+            .AddQuaterAuth()
+            .AddQuaterApiClients()
             .AddQuaterCore()
             .AddQuaterData()
             .AddQuaterFeatures()
@@ -41,6 +45,8 @@ public partial class App : Application
             Services.RegisterNavigation();
 
             var shellViewModel = Services.GetRequiredService<ShellViewModel>();
+            var appState = Services.GetRequiredService<AppState>();
+            appState.IsAuthenticated = false;
 
             desktop.MainWindow = new MainWindow
             {

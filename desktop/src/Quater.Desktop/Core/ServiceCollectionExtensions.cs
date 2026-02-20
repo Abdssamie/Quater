@@ -1,8 +1,16 @@
+using Duende.IdentityModel.OidcClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Quater.Desktop.Api.Api;
+using Quater.Desktop.Api.Client;
+using Quater.Desktop.Core.Api;
+using Quater.Desktop.Core.Auth.Browser;
+using Quater.Desktop.Core.Auth.Services;
+using Quater.Desktop.Core.Auth.Storage;
 using Quater.Desktop.Core.Dialogs;
 using Quater.Desktop.Core.Navigation;
+using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Data;
 using Serilog;
@@ -34,6 +42,85 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<Features.Dashboard.DashboardViewModel>();
         services.AddTransient<Features.Samples.List.SampleListViewModel>();
+        services.AddTransient<Features.Auth.LoginViewModel>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddQuaterSettings(this IServiceCollection services)
+    {
+        services.AddSingleton<ISettingsStore, JsonSettingsStore>();
+        services.AddSingleton(provider => provider.GetRequiredService<ISettingsStore>().LoadAsync().GetAwaiter().GetResult());
+        services.AddSingleton<SettingsUpdater>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddQuaterAuth(this IServiceCollection services)
+    {
+        services.AddSingleton<ITokenStore, SecureFileTokenStore>();
+
+        services.AddSingleton(provider =>
+        {
+            var settings = provider.GetRequiredService<AppSettings>();
+            var redirectUrl = "http://127.0.0.1:7890/callback";
+            var browser = new LoopbackBrowser(redirectUrl);
+
+            var options = new OidcClientOptions
+            {
+                Authority = settings.BackendUrl,
+                ClientId = "quater-mobile-client",
+                RedirectUri = redirectUrl,
+                Scope = "openid profile email api offline_access",
+                Browser = browser,
+                Policy = new Policy
+                {
+                    RequireIdentityTokenSignature = false
+                }
+            };
+
+            return new OidcClient(options);
+        });
+
+        services.AddSingleton<IAuthService, AuthService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddQuaterApiClients(this IServiceCollection services)
+    {
+        services.AddSingleton<ApiHeaders>();
+
+        services.AddSingleton(provider =>
+        {
+            var apiHeaders = provider.GetRequiredService<ApiHeaders>();
+            var settings = provider.GetRequiredService<AppSettings>();
+
+            Quater.Desktop.Api.Client.ApiClient.AccessTokenProvider = ct => apiHeaders.GetAccessTokenAsync(ct);
+            Quater.Desktop.Api.Client.ApiClient.LabIdProvider = () => apiHeaders.GetLabId();
+
+            var config = new Quater.Desktop.Api.Client.Configuration
+            {
+                BasePath = settings.BackendUrl
+            };
+
+            Quater.Desktop.Api.Client.GlobalConfiguration.Instance = config;
+            return config;
+        });
+
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuthApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.UsersApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.SamplesApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.LabsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.UserLabsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.ParametersApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.TestResultsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuditLogsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.HealthApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.EmailVerificationApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuthorizationApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.PasswordApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton(provider => new Quater.Desktop.Api.Api.VersionApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
 
         return services;
     }

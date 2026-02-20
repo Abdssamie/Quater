@@ -4,9 +4,14 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Quater.Desktop.Features.Samples.List"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:converters="clr-namespace:Quater.Desktop.Converters"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="Quater.Desktop.Features.Samples.List.SampleListView"
              x:DataType="vm:SampleListViewModel">
+
+    <UserControl.Resources>
+        <converters:BoolNotConverter x:Key="BoolNotConverter" />
+    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto, *" Margin="20">
         <suki:GlassCard Grid.Row="0" Margin="0,0,0,15" Padding="15">
@@ -21,12 +26,12 @@
                                     HorizontalAlignment="Stretch" />
 
                 <Button Command="{Binding ApplyFiltersCommand}"
-                        IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource BoolNotConverter}}">
                     Apply Filters
                 </Button>
 
                 <Button Command="{Binding ClearFiltersCommand}"
-                        IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource BoolNotConverter}}">
                     Clear
                 </Button>
 
@@ -57,7 +62,7 @@
                           IsReadOnly="True"
                           AutoGenerateColumns="False"
                           GridLinesVisibility="All"
-                          IsEnabled="{Binding IsLoading, Converter={x:Static BoolConverters.Not}}">
+                          IsEnabled="{Binding IsLoading, Converter={StaticResource BoolNotConverter}}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Binding="{Binding Id}" Header="ID" Width="*" />
                         <DataGridTextColumn Binding="{Binding Type}" Header="Type" Width="*" />

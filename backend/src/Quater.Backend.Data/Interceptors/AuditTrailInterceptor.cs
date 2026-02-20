@@ -158,7 +158,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// <param name="context">The DbContext containing the entities.</param>
     private void CaptureAuditData(DbContext context)
     {
-        var userId = _currentUserService.GetCurrentUserId();
+        var userId = _currentUserService.GetCurrentUserIdOrSystem();
         _logger?.LogDebug("Capturing audit data for user: {UserId}", userId);
 
         var timestamp = DateTime.UtcNow;
@@ -364,4 +364,3 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         public bool IsTruncated { get; init; }
     }
 }
-

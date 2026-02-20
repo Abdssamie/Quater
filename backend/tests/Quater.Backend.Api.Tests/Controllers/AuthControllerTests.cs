@@ -9,6 +9,7 @@ using OpenIddict.Abstractions;
 using Quater.Backend.Api.Tests.Fixtures;
 using Quater.Backend.Api.Tests.Helpers;
 using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.DTOs;
 using Quater.Backend.Data;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -176,8 +177,9 @@ public sealed class AuthControllerTests : IAsyncLifetime
         userInfo.Should().NotBeNull();
         userInfo!.Id.Should().NotBeEmpty();
         userInfo.Email.Should().Be(TestEmail);
-        userInfo.Role.Should().Be(UserRole.Technician.ToString());
-        userInfo.LabId.Should().NotBeEmpty();
+        userInfo.Labs.Should().NotBeEmpty();
+        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
+        userInfo.Labs[0].LabId.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -254,7 +256,8 @@ public sealed class AuthControllerTests : IAsyncLifetime
         userInfo.Should().NotBeNull();
         userInfo!.Id.Should().NotBeEmpty();
         userInfo.Email.Should().Be(TestEmail);
-        userInfo.Role.Should().Be(UserRole.Technician.ToString());
+        userInfo.Labs.Should().NotBeEmpty();
+        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
     }
 
     [Fact]
@@ -464,8 +467,9 @@ public sealed class AuthControllerTests : IAsyncLifetime
         userInfo!.Id.Should().NotBeEmpty();
         userInfo.Email.Should().Be(TestEmail);
         userInfo.UserName.Should().Be(TestEmail);
-        userInfo.Role.Should().Be(UserRole.Technician.ToString());
-        userInfo.LabId.Should().NotBeEmpty();
+        userInfo.Labs.Should().NotBeEmpty();
+        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
+        userInfo.Labs[0].LabId.Should().NotBeEmpty();
         userInfo.IsActive.Should().BeTrue();
         userInfo.LastLogin.Should().NotBeNull();
     }
@@ -533,8 +537,7 @@ public sealed class AuthControllerTests : IAsyncLifetime
         public Guid Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
-        public Guid LabId { get; set; }
+        public List<UserLabDto> Labs { get; set; } = [];
         public bool IsActive { get; set; }
         public DateTime? LastLogin { get; set; }
     }

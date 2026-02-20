@@ -29,4 +29,6 @@ public class User : IdentityUser<Guid>, IConcurrent
     public ICollection<UserLab> UserLabs { get; init; } = [];
     public ICollection<AuditLog> AuditLogs { get; init; } = [];
     public ICollection<AuditLogArchive> AuditLogArchives { get; init; } = [];
+    public ICollection<UserInvitation> SentInvitations { get; init; } = [];
+    public UserInvitation? ReceivedInvitation { get; set; }
 }

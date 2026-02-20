@@ -1,165 +1,183 @@
-import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-// eslint-disable-next-line no-restricted-imports
-import { TextInput, TextStyle, ViewStyle } from "react-native"
+import { FC, useEffect, useState } from "react"
+import { ActivityIndicator, TextStyle, ViewStyle } from "react-native"
+
+import { makeRedirectUri, ResponseType, useAuthRequest } from "expo-auth-session"
+import * as WebBrowser from "expo-web-browser"
 
 import { Button } from "@/components/Button"
-import { PressableIcon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
-import { TextField, type TextFieldAccessoryProps } from "@/components/TextField"
+import Config from "@/config"
 import { useAuth } from "@/context/AuthContext"
-import { api } from "@/services/api"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import { api } from "@/services/api"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+
+// Required on iOS: completes the auth session when the app is brought back
+// into the foreground after the system browser redirect.
+WebBrowser.maybeCompleteAuthSession()
+
+const REDIRECT_URI = makeRedirectUri({
+  scheme: Config.OAUTH_REDIRECT_SCHEME,
+  path: Config.OAUTH_REDIRECT_PATH,
+})
+
+const DISCOVERY = {
+  authorizationEndpoint: `${Config.API_URL}/api/auth/authorize`,
+  tokenEndpoint: `${Config.API_URL}/api/auth/token`,
+}
 
 interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
 
 export const LoginScreen: FC<LoginScreenProps> = () => {
-  const authPasswordInput = useRef<TextInput>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | undefined>()
 
-  const [authPassword, setAuthPassword] = useState("")
-  const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [attemptsCount, setAttemptsCount] = useState(0)
-  const { authEmail, setAuthEmail, setAuthToken, setRefreshToken, setLabId, validationError } = useAuth()
+  const { setAuthToken, setRefreshToken, setTokenExpiry, setLabId, setLabRole } = useAuth()
 
   const {
     themed,
     theme: { colors },
   } = useAppTheme()
 
+  const [request, response, promptAsync] = useAuthRequest(
+    {
+      clientId: Config.OAUTH_CLIENT_ID,
+      redirectUri: REDIRECT_URI,
+      scopes: Config.OAUTH_SCOPES,
+      responseType: ResponseType.Code,
+      usePKCE: true,
+    },
+    DISCOVERY,
+  )
+
+  // Handle the authorization response once the browser redirects back.
   useEffect(() => {
-    // Here is where you could fetch credentials from keychain or storage
-    // and pre-fill the form fields.
-    setAuthEmail("ignite@infinite.red")
-    setAuthPassword("ign1teIsAwes0m3")
-  }, [setAuthEmail])
+    if (!response) return
 
-  const error = isSubmitted ? validationError : ""
-
-  async function login() {
-    setIsSubmitted(true)
-    setAttemptsCount(attemptsCount + 1)
-
-    if (validationError) return
-
-    const result = await api.exchangeAuthorizationCode({
-      code: "",
-      codeVerifier: "",
-      redirectUri: "quater://oauth/callback",
-      clientId: "quater-mobile",
-    })
-
-    if (result.kind !== "ok") {
-      setIsSubmitted(false)
+    if (response.type === "error") {
+      setError(response.error?.message ?? "Authorization failed. Please try again.")
+      setIsLoading(false)
       return
     }
 
-    setAuthToken(result.data.access_token)
-    setRefreshToken(result.data.refresh_token)
-
-    const userInfo = await api.getUserInfo()
-    if (userInfo.kind === "ok") {
-      setLabId(userInfo.data.labId)
+    if (response.type === "cancel") {
+      setIsLoading(false)
+      return
     }
 
-    setIsSubmitted(false)
-    setAuthPassword("")
-    setAuthEmail("")
+    if (response.type !== "success") return
+
+    const { code } = response.params
+    const codeVerifier = request?.codeVerifier
+
+    if (!code || !codeVerifier) {
+      setError("Authorization response is missing required parameters.")
+      setIsLoading(false)
+      return
+    }
+
+    void exchangeCode(code, codeVerifier)
+  }, [response]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function exchangeCode(code: string, codeVerifier: string) {
+    setIsLoading(true)
+    setError(undefined)
+
+    const tokenResult = await api.exchangeAuthorizationCode({
+      code,
+      codeVerifier,
+      redirectUri: REDIRECT_URI,
+      clientId: Config.OAUTH_CLIENT_ID,
+    })
+
+    if (tokenResult.kind !== "ok") {
+      setError("Sign in failed. Please try again.")
+      setIsLoading(false)
+      return
+    }
+
+    const { access_token, refresh_token, expires_in } = tokenResult.data
+    setAuthToken(access_token)
+    if (refresh_token) setRefreshToken(refresh_token)
+    setTokenExpiry(Date.now() + expires_in * 1000)
+
+    const userInfoResult = await api.getUserInfo()
+    if (userInfoResult.kind === "ok") {
+      setLabId(userInfoResult.data.labId)
+      setLabRole(userInfoResult.data.role)
+    }
+
+    setIsLoading(false)
   }
 
-  const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(
-    () =>
-      function PasswordRightAccessory(props: TextFieldAccessoryProps) {
-        return (
-          <PressableIcon
-            icon={isAuthPasswordHidden ? "view" : "hidden"}
-            color={colors.palette.neutral800}
-            containerStyle={props.style}
-            size={20}
-            onPress={() => setIsAuthPasswordHidden(!isAuthPasswordHidden)}
-          />
-        )
-      },
-    [isAuthPasswordHidden, colors.palette.neutral800],
-  )
+  async function handleSignIn() {
+    setError(undefined)
+    setIsLoading(true)
+    await promptAsync()
+    // Loading state is cleared in the useEffect above once response arrives.
+  }
 
   return (
     <Screen
-      preset="auto"
+      preset="fixed"
       contentContainerStyle={themed($screenContentContainer)}
       safeAreaEdges={["top", "bottom"]}
     >
-      <Text testID="login-heading" tx="loginScreen:logIn" preset="heading" style={themed($logIn)} />
-      <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} />
-      {attemptsCount > 2 && (
-        <Text tx="loginScreen:hint" size="sm" weight="light" style={themed($hint)} />
+      <Text preset="heading" tx="loginScreen:logIn" style={themed($heading)} />
+      <Text preset="subheading" tx="loginScreen:enterDetails" style={themed($subheading)} />
+
+      {error !== undefined && (
+        <Text size="sm" style={[themed($errorText), { color: colors.error }]}>
+          {error}
+        </Text>
       )}
 
-      <TextField
-        value={authEmail}
-        onChangeText={setAuthEmail}
-        containerStyle={themed($textField)}
-        autoCapitalize="none"
-        autoComplete="email"
-        autoCorrect={false}
-        keyboardType="email-address"
-        labelTx="loginScreen:emailFieldLabel"
-        placeholderTx="loginScreen:emailFieldPlaceholder"
-        helper={error}
-        status={error ? "error" : undefined}
-        onSubmitEditing={() => authPasswordInput.current?.focus()}
-      />
-
-      <TextField
-        ref={authPasswordInput}
-        value={authPassword}
-        onChangeText={setAuthPassword}
-        containerStyle={themed($textField)}
-        autoCapitalize="none"
-        autoComplete="password"
-        autoCorrect={false}
-        secureTextEntry={isAuthPasswordHidden}
-        labelTx="loginScreen:passwordFieldLabel"
-        placeholderTx="loginScreen:passwordFieldPlaceholder"
-        onSubmitEditing={login}
-        RightAccessory={PasswordRightAccessory}
-      />
-
-      <Button
-        testID="login-button"
-        tx="loginScreen:tapToLogIn"
-        style={themed($tapButton)}
-        preset="reversed"
-        onPress={login}
-      />
+      {isLoading ? (
+        <ActivityIndicator
+          size="large"
+          color={colors.tint}
+          style={themed($activityIndicator)}
+          testID="login-loading"
+        />
+      ) : (
+        <Button
+          testID="login-button"
+          tx="loginScreen:tapToLogIn"
+          style={themed($signInButton)}
+          preset="reversed"
+          disabled={!request}
+          onPress={handleSignIn}
+        />
+      )}
     </Screen>
   )
 }
 
 const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xxl,
+  flex: 1,
+  justifyContent: "center",
   paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.xxl,
 })
 
-const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
+const $heading: ThemedStyle<TextStyle> = ({ spacing }) => ({
   marginBottom: spacing.sm,
 })
 
-const $enterDetails: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
+const $subheading: ThemedStyle<TextStyle> = ({ spacing }) => ({
+  marginBottom: spacing.xl,
 })
 
-const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  color: colors.tint,
+const $errorText: ThemedStyle<TextStyle> = ({ spacing }) => ({
   marginBottom: spacing.md,
 })
 
-const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
+const $activityIndicator: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.xl,
 })
 
-const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+const $signInButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginTop: spacing.xs,
 })

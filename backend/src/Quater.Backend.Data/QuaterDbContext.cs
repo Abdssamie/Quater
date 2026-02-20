@@ -22,6 +22,7 @@ public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<TestResult> TestResults { get; set; } = null!;
     public DbSet<Parameter> Parameters { get; set; } = null!;
     public DbSet<UserLab> UserLabs { get; set; } = null!;
+    public DbSet<UserInvitation> UserInvitations { get; set; } = null!;
 
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
@@ -66,6 +67,34 @@ public class QuaterDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
             // Global query filter to match Lab's soft delete filter
             // This prevents loading UserLab records for soft-deleted Labs
             entity.HasQueryFilter(e => !e.Lab.IsDeleted);
+        });
+
+        modelBuilder.Entity<UserInvitation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            // Unique index on TokenHash for secure token lookup
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            
+            // Indexes for common queries
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ExpiresAt);
+            
+            // Store enum as string for compatibility with SQLite
+            entity.Property(e => e.Status).HasConversion<string>();
+            
+            // One-to-one relationship: User receives one invitation
+            entity.HasOne(e => e.User)
+                .WithOne(u => u.ReceivedInvitation)
+                .HasForeignKey<UserInvitation>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // One-to-many relationship: Admin can send many invitations
+            entity.HasOne(e => e.InvitedBy)
+                .WithMany(u => u.SentInvitations)
+                .HasForeignKey(e => e.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Apply all entity configurations from the current assembly

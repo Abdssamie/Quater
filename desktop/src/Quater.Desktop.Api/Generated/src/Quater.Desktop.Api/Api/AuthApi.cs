@@ -16,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Mime;
 using Quater.Desktop.Api.Client;
+using Quater.Desktop.Api.Model;
 
 namespace Quater.Desktop.Api.Api
 {
@@ -75,8 +76,8 @@ namespace Quater.Desktop.Api.Api
         /// <exception cref="Quater.Desktop.Api.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
-        /// <returns></returns>
-        void ApiAuthUserinfoGet(string? apiVersion = default, int operationIndex = 0);
+        /// <returns>UserDto</returns>
+        UserDto ApiAuthUserinfoGet(string? apiVersion = default, int operationIndex = 0);
 
         /// <summary>
         /// Get current user information
@@ -87,8 +88,8 @@ namespace Quater.Desktop.Api.Api
         /// <exception cref="Quater.Desktop.Api.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
-        /// <returns>ApiResponse of Object(void)</returns>
-        ApiResponse<Object> ApiAuthUserinfoGetWithHttpInfo(string? apiVersion = default, int operationIndex = 0);
+        /// <returns>ApiResponse of UserDto</returns>
+        ApiResponse<UserDto> ApiAuthUserinfoGetWithHttpInfo(string? apiVersion = default, int operationIndex = 0);
         #endregion Synchronous Operations
     }
 
@@ -158,8 +159,8 @@ namespace Quater.Desktop.Api.Api
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns>Task of void</returns>
-        System.Threading.Tasks.Task ApiAuthUserinfoGetAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default);
+        /// <returns>Task of UserDto</returns>
+        System.Threading.Tasks.Task<UserDto> ApiAuthUserinfoGetAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get current user information
@@ -171,8 +172,8 @@ namespace Quater.Desktop.Api.Api
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns>Task of ApiResponse</returns>
-        System.Threading.Tasks.Task<ApiResponse<Object>> ApiAuthUserinfoGetWithHttpInfoAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default);
+        /// <returns>Task of ApiResponse (UserDto)</returns>
+        System.Threading.Tasks.Task<ApiResponse<UserDto>> ApiAuthUserinfoGetWithHttpInfoAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default);
         #endregion Asynchronous Operations
     }
 
@@ -569,10 +570,11 @@ namespace Quater.Desktop.Api.Api
         /// <exception cref="Quater.Desktop.Api.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
-        /// <returns></returns>
-        public void ApiAuthUserinfoGet(string? apiVersion = default, int operationIndex = 0)
+        /// <returns>UserDto</returns>
+        public UserDto ApiAuthUserinfoGet(string? apiVersion = default, int operationIndex = 0)
         {
-            ApiAuthUserinfoGetWithHttpInfo(apiVersion);
+            Quater.Desktop.Api.Client.ApiResponse<UserDto> localVarResponse = ApiAuthUserinfoGetWithHttpInfo(apiVersion);
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -581,8 +583,8 @@ namespace Quater.Desktop.Api.Api
         /// <exception cref="Quater.Desktop.Api.Client.ApiException">Thrown when fails to make API call</exception>
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
-        /// <returns>ApiResponse of Object(void)</returns>
-        public Quater.Desktop.Api.Client.ApiResponse<Object> ApiAuthUserinfoGetWithHttpInfo(string? apiVersion = default, int operationIndex = 0)
+        /// <returns>ApiResponse of UserDto</returns>
+        public Quater.Desktop.Api.Client.ApiResponse<UserDto> ApiAuthUserinfoGetWithHttpInfo(string? apiVersion = default, int operationIndex = 0)
         {
             Quater.Desktop.Api.Client.RequestOptions localVarRequestOptions = new Quater.Desktop.Api.Client.RequestOptions();
 
@@ -591,6 +593,9 @@ namespace Quater.Desktop.Api.Api
 
             // to determine the Accept header
             string[] _accepts = new string[] {
+                "text/plain",
+                "application/json",
+                "text/json"
             };
 
             var localVarContentType = Quater.Desktop.Api.Client.ClientUtils.SelectHeaderContentType(_contentTypes);
@@ -616,7 +621,7 @@ namespace Quater.Desktop.Api.Api
 
 
             // make the HTTP request
-            var localVarResponse = this.Client.Get<Object>("/api/Auth/userinfo", localVarRequestOptions, this.Configuration);
+            var localVarResponse = this.Client.Get<UserDto>("/api/Auth/userinfo", localVarRequestOptions, this.Configuration);
             if (this.ExceptionFactory != null)
             {
                 Exception _exception = this.ExceptionFactory("ApiAuthUserinfoGet", localVarResponse);
@@ -636,10 +641,11 @@ namespace Quater.Desktop.Api.Api
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns>Task of void</returns>
-        public async System.Threading.Tasks.Task ApiAuthUserinfoGetAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default)
+        /// <returns>Task of UserDto</returns>
+        public async System.Threading.Tasks.Task<UserDto> ApiAuthUserinfoGetAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default)
         {
-            await ApiAuthUserinfoGetWithHttpInfoAsync(apiVersion, operationIndex, cancellationToken).ConfigureAwait(false);
+            Quater.Desktop.Api.Client.ApiResponse<UserDto> localVarResponse = await ApiAuthUserinfoGetWithHttpInfoAsync(apiVersion, operationIndex, cancellationToken).ConfigureAwait(false);
+            return localVarResponse.Data;
         }
 
         /// <summary>
@@ -649,8 +655,8 @@ namespace Quater.Desktop.Api.Api
         /// <param name="apiVersion"> (optional)</param>
         /// <param name="operationIndex">Index associated with the operation.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns>Task of ApiResponse</returns>
-        public async System.Threading.Tasks.Task<Quater.Desktop.Api.Client.ApiResponse<Object>> ApiAuthUserinfoGetWithHttpInfoAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default)
+        /// <returns>Task of ApiResponse (UserDto)</returns>
+        public async System.Threading.Tasks.Task<Quater.Desktop.Api.Client.ApiResponse<UserDto>> ApiAuthUserinfoGetWithHttpInfoAsync(string? apiVersion = default, int operationIndex = 0, System.Threading.CancellationToken cancellationToken = default)
         {
 
             Quater.Desktop.Api.Client.RequestOptions localVarRequestOptions = new Quater.Desktop.Api.Client.RequestOptions();
@@ -660,6 +666,9 @@ namespace Quater.Desktop.Api.Api
 
             // to determine the Accept header
             string[] _accepts = new string[] {
+                "text/plain",
+                "application/json",
+                "text/json"
             };
 
             var localVarContentType = Quater.Desktop.Api.Client.ClientUtils.SelectHeaderContentType(_contentTypes);
@@ -684,7 +693,7 @@ namespace Quater.Desktop.Api.Api
 
 
             // make the HTTP request
-            var localVarResponse = await this.AsynchronousClient.GetAsync<Object>("/api/Auth/userinfo", localVarRequestOptions, this.Configuration, cancellationToken).ConfigureAwait(false);
+            var localVarResponse = await this.AsynchronousClient.GetAsync<UserDto>("/api/Auth/userinfo", localVarRequestOptions, this.Configuration, cancellationToken).ConfigureAwait(false);
 
             if (this.ExceptionFactory != null)
             {

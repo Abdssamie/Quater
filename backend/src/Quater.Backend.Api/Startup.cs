@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.MicrosoftExtensions;
+using Quater.Backend.Api.BackgroundServices;
 using Quater.Backend.Api.Extensions;
+using Quater.Backend.Api.Infrastructure;
 using Quater.Backend.Api.Middleware;
 using Quater.Backend.Api.Seeders;
 using Quater.Backend.Core.Interfaces;
@@ -15,15 +17,27 @@ using Quater.Shared.Models;
 
 namespace Quater.Backend.Api;
 
+/// <summary>
+/// Configures services and the application's request pipeline.
+/// </summary>
 public sealed class Startup(IConfiguration configuration, IWebHostEnvironment environment)
 {
     private IConfiguration Configuration { get; } = configuration;
     private IWebHostEnvironment Environment { get; } = environment;
 
+    /// <summary>
+    /// Configures application services including authentication, database, API controllers, and Swagger.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
     public void ConfigureServices(IServiceCollection services)
     {
         // Add services to the container.
-        services.AddControllers();
+        services.AddControllers(options =>
+        {
+            // Use snake_case for route naming (e.g., /api/audit_logs instead of /api/AuditLogs)
+            options.Conventions.Add(new Microsoft.AspNetCore.Mvc.ApplicationModels.RouteTokenTransformerConvention(
+                new SlugifyParameterTransformer()));
+        });
         services.AddRazorPages();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -95,12 +109,18 @@ public sealed class Startup(IConfiguration configuration, IWebHostEnvironment en
         services.AddDatabaseServices(Configuration, Environment);
         services.AddAuthenticationServices(Configuration, Environment);
         services.AddApplicationServices();
+        services.AddHostedService<InvitationExpirationService>();
 
         // NOTE: Quartz.NET and AuditLogArchivalJob removed - audit log archival will be implemented
         // in a future phase when archival strategy is finalized. For now, audit logs are retained
         // indefinitely. Consider implementing database partitioning or manual archival process.
     }
 
+    /// <summary>
+    /// Configures the HTTP request pipeline including middleware, routing, and database seeding.
+    /// </summary>
+    /// <param name="app">The web application to configure.</param>
+    /// <param name="appEnvironment">The hosting environment.</param>
     public void Configure(WebApplication app, IWebHostEnvironment appEnvironment)
     {
         app.ValidateConfiguration();
@@ -125,7 +145,7 @@ public sealed class Startup(IConfiguration configuration, IWebHostEnvironment en
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
+            app.MapSwagger().AllowAnonymous();  // Allow anonymous access to Swagger endpoints
             app.UseSwaggerUI();
         }
 

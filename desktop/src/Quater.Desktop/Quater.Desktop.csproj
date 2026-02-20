@@ -19,6 +19,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Duende.IdentityModel.OidcClient" Version="7.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -33,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quater.Desktop.Data\Quater.Desktop.Data.csproj" />
+    <ProjectReference Include="..\Quater.Desktop.Api\Generated\src\Quater.Desktop.Api\Quater.Desktop.Api.csproj" />
     <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
   </ItemGroup>
 </Project>

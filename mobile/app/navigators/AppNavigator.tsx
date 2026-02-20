@@ -4,7 +4,7 @@
  * Generally speaking, it will contain an auth flow (registration, login, forgot password)
  * and a "main" flow which the user will use once logged in.
  */
-import { NavigationContainer } from "@react-navigation/native"
+import { LinkingOptions, NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 
 import Config from "@/config"
@@ -26,6 +26,26 @@ const exitRoutes = Config.exitRoutes
 
 // Documentation: https://reactnavigation.org/docs/stack-navigator/
 const Stack = createNativeStackNavigator<AppStackParamList>()
+
+/**
+ * Deep link configuration.
+ *
+ * The `quater://` scheme is registered in app.json and is the same scheme used
+ * as the OAuth2 redirect URI (quater://oauth/callback). React Navigation needs
+ * to be aware of the prefix so it does not swallow incoming auth-session links.
+ * The `oauth/callback` path is intentionally left unmapped here — it is handled
+ * entirely by expo-auth-session and never needs to navigate to a screen.
+ */
+const linking: LinkingOptions<AppStackParamList> = {
+  prefixes: [`${Config.OAUTH_REDIRECT_SCHEME}://`],
+  config: {
+    screens: {
+      Welcome: "welcome",
+      Login: "login",
+      Demo: "demo",
+    },
+  },
+}
 
 const AppStack = () => {
   const { isAuthenticated } = useAuth()
@@ -69,7 +89,7 @@ export const AppNavigator = (props: NavigationProps) => {
   useBackButtonHandler((routeName) => exitRoutes.includes(routeName))
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme} {...props}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking} {...props}>
       <ErrorBoundary catchErrors={Config.catchErrors}>
         <AppStack />
       </ErrorBoundary>

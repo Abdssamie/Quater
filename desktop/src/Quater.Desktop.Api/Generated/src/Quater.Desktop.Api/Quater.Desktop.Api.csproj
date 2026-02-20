@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="..\Quater.Desktop.Api.Test\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

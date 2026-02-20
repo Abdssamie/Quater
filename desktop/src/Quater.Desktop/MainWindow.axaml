@@ -6,10 +6,16 @@
                  xmlns:vm="clr-namespace:Quater.Desktop.Core.Shell"
                  xmlns:dashboard="clr-namespace:Quater.Desktop.Features.Dashboard"
                  xmlns:samples="clr-namespace:Quater.Desktop.Features.Samples.List"
+                 xmlns:auth="clr-namespace:Quater.Desktop.Features.Auth"
+                 xmlns:converters="clr-namespace:Quater.Desktop.Converters"
                  mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
                  x:Class="Quater.Desktop.MainWindow"
                  x:DataType="vm:ShellViewModel"
                  Title="Quater - Water Quality Lab Management">
+
+    <suki:SukiWindow.Resources>
+        <converters:BoolInvertConverter x:Key="BoolInvertConverter" />
+    </suki:SukiWindow.Resources>
 
     <suki:SukiWindow.DataTemplates>
         <DataTemplate DataType="{x:Type dashboard:DashboardViewModel}">
@@ -18,32 +24,54 @@
         <DataTemplate DataType="{x:Type samples:SampleListViewModel}">
             <samples:SampleListView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type auth:LoginViewModel}">
+            <auth:LoginView />
+        </DataTemplate>
     </suki:SukiWindow.DataTemplates>
 
-    <suki:SukiSideMenu>
-        <suki:SukiSideMenu.HeaderContent>
-            <StackPanel Spacing="5" Margin="20">
-                <TextBlock Text="QUATER" Classes="h3" FontWeight="Bold" />
-                <TextBlock Text="Lab Manager" FontSize="12" Opacity="0.7" />
-            </StackPanel>
-        </suki:SukiSideMenu.HeaderContent>
+    <Grid>
+        <suki:SukiSideMenu IsVisible="{Binding IsAuthenticated}">
+            <suki:SukiSideMenu.HeaderContent>
+                <StackPanel Spacing="8" Margin="20">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="QUATER" Classes="h3" FontWeight="Bold" />
+                        <TextBlock Text="Lab Manager" FontSize="12" Opacity="0.7" />
+                    </StackPanel>
+                    <StackPanel Spacing="6" IsVisible="{Binding IsLabSelectorVisible}">
+                        <TextBlock Text="Current Lab" FontSize="11" Opacity="0.6" />
+                        <ComboBox ItemsSource="{Binding AvailableLabs}"
+                                  SelectedItem="{Binding SelectedLab}"
+                                  MinWidth="180">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding LabName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </suki:SukiSideMenu.HeaderContent>
 
-        <suki:SukiSideMenuItem Header="Dashboard">
-            <suki:SukiSideMenuItem.Icon>
-                <PathIcon Data="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
-            </suki:SukiSideMenuItem.Icon>
-            <suki:SukiSideMenuItem.PageContent>
-                <ContentControl Content="{Binding CurrentView}" />
-            </suki:SukiSideMenuItem.PageContent>
-        </suki:SukiSideMenuItem>
+            <suki:SukiSideMenuItem Header="Dashboard">
+                <suki:SukiSideMenuItem.Icon>
+                    <PathIcon Data="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <ContentControl Content="{Binding CurrentView}" />
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
 
-        <suki:SukiSideMenuItem Header="Samples">
-            <suki:SukiSideMenuItem.Icon>
-                <PathIcon Data="M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z" />
-            </suki:SukiSideMenuItem.Icon>
-            <suki:SukiSideMenuItem.PageContent>
-                <ContentControl Content="{Binding CurrentView}" />
-            </suki:SukiSideMenuItem.PageContent>
-        </suki:SukiSideMenuItem>
-    </suki:SukiSideMenu>
+            <suki:SukiSideMenuItem Header="Samples"
+                                   IsVisible="{Binding HasSelectedLab}">
+                <suki:SukiSideMenuItem.Icon>
+                    <PathIcon Data="M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z" />
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <ContentControl Content="{Binding CurrentView}" />
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
+        </suki:SukiSideMenu>
+
+        <ContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsAuthenticated, Converter={StaticResource BoolInvertConverter}}" />
+    </Grid>
 </suki:SukiWindow>

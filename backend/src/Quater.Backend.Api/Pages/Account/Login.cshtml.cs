@@ -138,6 +138,14 @@ public sealed class LoginModel(
             return Page();
         }
 
+        if (!user.EmailConfirmed)
+        {
+            await signInManager.SignOutAsync();
+            logger.LogWarning("Login denied: User {Email} has not confirmed email", Email);
+            ErrorMessage = "Please verify your email address before logging in.";
+            return Page();
+        }
+
         logger.LogInformation("User {Email} signed in via login page for OAuth2 flow", Email);
         return LocalRedirect(returnUrl ?? "/");
     }

@@ -29,6 +29,16 @@ public sealed record PasswordResetEmailModel : EmailTemplateModel
 }
 
 /// <summary>
+/// Model for invitation email template
+/// </summary>
+public sealed record InvitationEmailModel : EmailTemplateModel
+{
+    public required string InvitationUrl { get; init; }
+    public required string InvitedByName { get; init; }
+    public int ExpirationDays { get; init; }
+}
+
+/// <summary>
 /// Model for welcome email template
 /// </summary>
 public sealed record WelcomeEmailModel : EmailTemplateModel

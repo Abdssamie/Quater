@@ -1,19 +1,38 @@
-import { createContext, FC, PropsWithChildren, useCallback, useContext, useMemo, useState } from "react"
+import {
+  createContext,
+  FC,
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 
+import { api } from "@/services/api"
 import { authStore } from "@/stores/authStore"
 
 export type AuthContextType = {
   isAuthenticated: boolean
   authToken?: string
-  authEmail?: string
-  labId?: string
   refreshToken?: string
+  labId?: string
+  /** User role within the current lab: "Admin" | "Technician" | "Viewer" */
+  labRole?: string
+  /** Unix timestamp (ms) when the current access token expires */
+  tokenExpiry?: number
   setAuthToken: (token?: string) => void
   setRefreshToken: (token?: string) => void
-  setAuthEmail: (email: string) => void
   setLabId: (labId?: string) => void
+  setLabRole: (role?: string) => void
+  setTokenExpiry: (expiry?: number) => void
+  /**
+   * Attempts to refresh the access token using the stored refresh token.
+   * Updates all token state on success.
+   * Returns true if the refresh succeeded, false otherwise.
+   */
+  refresh: () => Promise<boolean>
   logout: () => void
-  validationError: string
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -28,7 +47,12 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
     authStore.getRefreshToken() ?? undefined,
   )
   const [labId, setLabIdState] = useState<string | undefined>(authStore.getLabId() ?? undefined)
-  const [authEmail, setAuthEmail] = useState<string | undefined>(undefined)
+  const [labRole, setLabRoleState] = useState<string | undefined>(
+    authStore.getLabRole() ?? undefined,
+  )
+  const [tokenExpiry, setTokenExpiryState] = useState<number | undefined>(
+    authStore.getTokenExpiry() ?? undefined,
+  )
 
   const setAuthToken = useCallback((token?: string) => {
     authStore.setAccessToken(token)
@@ -45,34 +69,88 @@ export const AuthProvider: FC<PropsWithChildren<AuthProviderProps>> = ({ childre
     setLabIdState(nextLabId)
   }, [])
 
+  const setLabRole = useCallback((role?: string) => {
+    authStore.setLabRole(role)
+    setLabRoleState(role)
+  }, [])
+
+  const setTokenExpiry = useCallback((expiry?: number) => {
+    authStore.setTokenExpiry(expiry)
+    setTokenExpiryState(expiry)
+  }, [])
+
   const logout = useCallback(() => {
+    // Fire-and-forget: revoke tokens on the server. We clear local state regardless.
+    api.logout().catch(() => {})
     authStore.clear()
     setAuthTokenState(undefined)
     setRefreshTokenState(undefined)
     setLabIdState(undefined)
-    setAuthEmail("")
+    setLabRoleState(undefined)
+    setTokenExpiryState(undefined)
   }, [])
 
-  const validationError = useMemo(() => {
-    if (!authEmail || authEmail.length === 0) return "can't be blank"
-    if (authEmail.length < 6) return "must be at least 6 characters"
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail)) return "must be a valid email address"
-    return ""
-  }, [authEmail])
+  const refresh = useCallback(async (): Promise<boolean> => {
+    const storedRefreshToken = authStore.getRefreshToken()
+    if (!storedRefreshToken) return false
 
-  const value = {
-    isAuthenticated: !!authToken,
-    authToken,
-    refreshToken,
-    authEmail,
-    labId,
-    setAuthToken,
-    setRefreshToken,
-    setAuthEmail,
-    setLabId,
-    logout,
-    validationError,
-  }
+    const result = await api.refreshToken(storedRefreshToken)
+    if (result.kind !== "ok") return false
+
+    const { access_token, refresh_token, expires_in } = result.data
+
+    authStore.setAccessToken(access_token)
+    setAuthTokenState(access_token)
+
+    if (refresh_token) {
+      authStore.setRefreshToken(refresh_token)
+      setRefreshTokenState(refresh_token)
+    }
+
+    const expiresAt = Date.now() + expires_in * 1000
+    authStore.setTokenExpiry(expiresAt)
+    setTokenExpiryState(expiresAt)
+
+    return true
+  }, [])
+
+  // Register the refresh + logout callbacks on the API client once on mount.
+  // The axios interceptor uses these to auto-retry requests on 401.
+  useEffect(() => {
+    api.setAuthCallbacks({ onRefreshToken: refresh, onLogout: logout })
+  }, [refresh, logout])
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      isAuthenticated: !!authToken,
+      authToken,
+      refreshToken,
+      labId,
+      labRole,
+      tokenExpiry,
+      setAuthToken,
+      setRefreshToken,
+      setLabId,
+      setLabRole,
+      setTokenExpiry,
+      refresh,
+      logout,
+    }),
+    [
+      authToken,
+      refreshToken,
+      labId,
+      labRole,
+      tokenExpiry,
+      setAuthToken,
+      setRefreshToken,
+      setLabId,
+      setLabRole,
+      setTokenExpiry,
+      refresh,
+      logout,
+    ],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

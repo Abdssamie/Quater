@@ -9,6 +9,15 @@ public interface ICurrentUserService
     /// <summary>
     /// Gets the current user's ID.
     /// </summary>
-    /// <returns>The user ID. Throws if no user is authenticated.</returns>
+    /// <returns>The user ID.</returns>
+    /// <exception cref="UnauthorizedAccessException">
+    /// Thrown when no user is authenticated or the user ID claim is invalid.
+    /// </exception>
     Guid GetCurrentUserId();
+
+    /// <summary>
+    /// Gets the current user's ID, or returns the system user ID when unauthenticated.
+    /// </summary>
+    /// <returns>The current user ID if authenticated; otherwise the system user ID.</returns>
+    Guid GetCurrentUserIdOrSystem();
 }

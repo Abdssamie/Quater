@@ -1,0 +1,10 @@
+// TODO: Implement integration tests for UserInvitationsController
+// - Test POST /api/invitations (admin only, returns 201)
+// - Test POST /api/invitations (non-admin returns 403)
+// - Test GET /api/invitations/{token} (anonymous, returns 200)
+// - Test POST /api/invitations/accept (anonymous, returns 200)
+// - Test DELETE /api/invitations/{id} (admin only, returns 204)
+// - Test GET /api/invitations (admin only, returns paginated results)
+// - Test rate limiting on accept endpoint (5 req/min)
+// - Test rate limiting on get token endpoint (10 req/min)
+// - Test authorization (non-admins cannot invite/revoke)

@@ -50,7 +50,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -87,7 +87,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         mockEmailQueue.Invocations.Clear(); // Clear any previous invocations
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -115,7 +115,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -150,7 +150,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -180,7 +180,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             UserId = user.Id.ToString(),
             Code = token
         };
-        await _client.PostJsonAsync("/api/email-verification/verify", firstRequest);
+        await _client.PostJsonAsync("/api/email_verification/verify", firstRequest);
 
         // Second verification attempt
         var secondRequest = new VerifyEmailRequest
@@ -190,7 +190,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", secondRequest);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", secondRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -216,7 +216,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -241,7 +241,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -258,7 +258,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -285,7 +285,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         mockEmailQueue.Invocations.Clear(); // Clear any previous invocations
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -324,7 +324,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         mockEmailQueue.Invocations.Clear(); // Clear any previous invocations
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -358,7 +358,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             UserId = user.Id.ToString(),
             Code = token
         };
-        await _client.PostJsonAsync("/api/email-verification/verify", verifyRequest);
+        await _client.PostJsonAsync("/api/email_verification/verify", verifyRequest);
 
         // Get the mocked email queue and clear invocations
         var emailQueue = _fixture.Services.GetRequiredService<IEmailQueue>();
@@ -372,7 +372,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", resendRequest);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", resendRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -404,7 +404,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -420,7 +420,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         };
 
         // Act
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", request);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -444,7 +444,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
                 UserId = user.Id.ToString(),
                 Code = "invalid-token"
             };
-            await _client.PostJsonAsync("/api/email-verification/verify", request);
+            await _client.PostJsonAsync("/api/email_verification/verify", request);
         }
 
         // Act - 11th request should be rate limited
@@ -453,7 +453,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             UserId = user.Id.ToString(),
             Code = "invalid-token"
         };
-        var response = await _client.PostJsonAsync("/api/email-verification/verify", finalRequest);
+        var response = await _client.PostJsonAsync("/api/email_verification/verify", finalRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
@@ -469,7 +469,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
             {
                 Email = "test-rate-limit@example.com"
             };
-            await _client.PostJsonAsync("/api/email-verification/resend", request);
+            await _client.PostJsonAsync("/api/email_verification/resend", request);
         }
 
         // Act - 6th request should be rate limited
@@ -477,7 +477,7 @@ public sealed class EmailVerificationControllerTests(ApiTestFixture fixture) : I
         {
             Email = "test-rate-limit@example.com"
         };
-        var response = await _client.PostJsonAsync("/api/email-verification/resend", finalRequest);
+        var response = await _client.PostJsonAsync("/api/email_verification/resend", finalRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);

@@ -23,8 +23,27 @@ public class CurrentUserService : ICurrentUserService
     /// Gets the current authenticated user's ID.
     /// Uses OpenIddict's 'sub' claim for consistency with JWT access tokens.
     /// </summary>
-    /// <returns>The user ID from claims, or System user ID if not authenticated.</returns>
+    /// <returns>The user ID from claims.</returns>
     public Guid GetCurrentUserId()
+    {
+        var userIdString = _httpContextAccessor.HttpContext?.User?
+            .FindFirstValue(OpenIddictConstants.Claims.Subject);
+
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            throw new UnauthorizedAccessException("Current user is not authenticated.");
+        }
+
+        return Guid.TryParse(userIdString, out var userId)
+            ? userId
+            : throw new UnauthorizedAccessException("Current user ID claim is invalid.");
+    }
+
+    /// <summary>
+    /// Gets the current authenticated user's ID or returns the system user ID.
+    /// </summary>
+    /// <returns>The user ID from claims, or System user ID if not authenticated or invalid.</returns>
+    public Guid GetCurrentUserIdOrSystem()
     {
         var userIdString = _httpContextAccessor.HttpContext?.User?
             .FindFirstValue(OpenIddictConstants.Claims.Subject);
@@ -34,8 +53,8 @@ public class CurrentUserService : ICurrentUserService
             return SystemUser.GetId();
         }
 
-        return Guid.TryParse(userIdString, out var userId) ? userId :
-            // Fallback to system user if parsing fails
-            SystemUser.GetId();
+        return Guid.TryParse(userIdString, out var userId)
+            ? userId
+            : SystemUser.GetId();
     }
 }

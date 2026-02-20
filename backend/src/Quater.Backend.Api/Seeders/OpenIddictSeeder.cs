@@ -35,7 +35,8 @@ public static class OpenIddictSeeder
             RedirectUris =
             {
                 new Uri("quater://oauth/callback"),       // Mobile deep link
-                new Uri("http://127.0.0.1/callback")      // Desktop loopback
+                new Uri("http://127.0.0.1/callback"),     // Desktop loopback
+                new Uri("http://127.0.0.1:7890/callback") // Desktop loopback (non-privileged port)
             },
             Permissions =
             {

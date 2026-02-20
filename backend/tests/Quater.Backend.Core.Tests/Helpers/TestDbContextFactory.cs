@@ -275,4 +275,6 @@ public class TestDatabaseCollection : ICollectionFixture<TestDbContextFactoryFix
 internal class TestCurrentUserService : ICurrentUserService
 {
     public Guid GetCurrentUserId() => SystemUser.GetId();
+
+    public Guid GetCurrentUserIdOrSystem() => SystemUser.GetId();
 }

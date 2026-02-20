@@ -6,8 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Quater.Backend.Api.Attributes;
-using Quater.Shared.Models;
+using Quater.Backend.Core.Constants;
+using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Extensions;
 using Quater.Shared.Enums;
+using Quater.Shared.Models;
 using System.Security.Claims;
 using Microsoft.AspNetCore;
 
@@ -124,13 +127,18 @@ public sealed class AuthController(
             await userManager.UpdateAsync(user);
 
             // Create a fresh claims principal with current user data.
-            // Role and lab context are now determined per-request via middleware
-            // based on the X-Lab-Id header and UserLab table.
+            // Include role + lab_id so downstream services and tests relying on these claims continue to work.
+            var primaryLab = user.UserLabs.FirstOrDefault();
+            var role = primaryLab?.Role ?? UserRole.Viewer;
+            var labId = primaryLab?.LabId ?? Guid.Empty;
+
             var claims = new List<Claim>
             {
                 new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
+                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new(QuaterClaimTypes.Role, role.ToString()),
+                new(QuaterClaimTypes.LabId, labId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -220,13 +228,18 @@ public sealed class AuthController(
             }
 
             // Create a new claims principal with updated claims.
-            // Role and lab context are now determined per-request via middleware
-            // based on the X-Lab-Id header and UserLab table.
+            // Include role + lab_id so downstream services and tests relying on these claims continue to work.
+            var primaryLab = user.UserLabs.FirstOrDefault();
+            var role = primaryLab?.Role ?? UserRole.Viewer;
+            var labId = primaryLab?.LabId ?? Guid.Empty;
+
             var claims = new List<Claim>
             {
                 new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
                 new(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty),
-                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty)
+                new(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty),
+                new(QuaterClaimTypes.Role, role.ToString()),
+                new(QuaterClaimTypes.LabId, labId.ToString())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -318,7 +331,10 @@ public sealed class AuthController(
     /// </summary>
     [HttpGet("userinfo")]
     [Authorize]
-    public async Task<IActionResult> UserInfo()
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserDto>> UserInfo()
     {
         var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         if (string.IsNullOrEmpty(userId))
@@ -328,6 +344,7 @@ public sealed class AuthController(
 
         var user = await userManager.Users
             .Include(u => u.UserLabs)
+            .ThenInclude(ul => ul.Lab)
             .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
 
         if (user == null)
@@ -335,18 +352,6 @@ public sealed class AuthController(
             return NotFound(new { error = "User not found" });
         }
 
-        // Get primary lab for legacy compatibility
-        var primaryLab = user.UserLabs.FirstOrDefault();
-
-        return Ok(new
-        {
-            id = user.Id,
-            email = user.Email,
-            userName = user.UserName,
-            role = (primaryLab?.Role ?? UserRole.Viewer).ToString(),
-            labId = primaryLab?.LabId ?? Guid.Empty,
-            isActive = user.IsActive,
-            lastLogin = user.LastLogin
-        });
+        return Ok(user.ToDto());
     }
 }

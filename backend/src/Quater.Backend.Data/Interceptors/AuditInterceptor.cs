@@ -48,7 +48,7 @@ public class AuditInterceptor : SaveChangesInterceptor
 
     private void ApplyAuditInfo(DbContext context)
     {
-        var userId = _currentUserService.GetCurrentUserId();
+        var userId = _currentUserService.GetCurrentUserIdOrSystem();
         var now = _timeProvider.GetUtcNow().UtcDateTime;
 
         var entries = context.ChangeTracker

@@ -22,6 +22,7 @@ public class QuaterLocalContext : DbContext
     public DbSet<Parameter> Parameters { get; set; } = null!;
     public DbSet<Lab> Labs { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<UserInvitation> UserInvitations { get; set; } = null!;
     public DbSet<UserLab> UserLabs { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<AuditLogArchive> AuditLogArchives { get; set; } = null!;
@@ -85,6 +86,9 @@ public class QuaterLocalContext : DbContext
 
         // Configure User entity
         ConfigureUser(modelBuilder);
+
+        // Configure UserInvitation entity
+        ConfigureUserInvitation(modelBuilder);
 
         // Configure AuditLog entity
         ConfigureAuditLog(modelBuilder);
@@ -559,6 +563,74 @@ public class QuaterLocalContext : DbContext
                 .WithMany(l => l.UserLabs)
                 .HasForeignKey(e => e.LabId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private void ConfigureUserInvitation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserInvitation>(entity =>
+        {
+            entity.ToTable("UserInvitations");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Email)
+                .IsRequired();
+
+            entity.Property(e => e.TokenHash)
+                .IsRequired();
+
+            entity.Property(e => e.ExpiresAt)
+                .IsRequired();
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasConversion<string>();
+
+            entity.Property(e => e.UserId)
+                .IsRequired();
+
+            entity.Property(e => e.InvitedByUserId)
+                .IsRequired();
+
+            entity.Property(e => e.RowVersion)
+                .IsRequired()
+                .IsRowVersion()
+                .IsConcurrencyToken();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedBy)
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt);
+
+            entity.Property(e => e.UpdatedBy);
+
+            entity.HasIndex(e => e.TokenHash)
+                .IsUnique();
+
+            entity.HasIndex(e => e.Email);
+
+            entity.HasIndex(e => e.Status);
+
+            entity.HasIndex(e => e.ExpiresAt);
+
+            entity.HasIndex(e => e.InvitedByUserId);
+
+            entity.HasIndex(e => e.UserId)
+                .IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithOne(u => u.ReceivedInvitation)
+                .HasForeignKey<UserInvitation>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.InvitedBy)
+                .WithMany(u => u.SentInvitations)
+                .HasForeignKey(e => e.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
