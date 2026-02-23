@@ -1,9 +1,13 @@
+using Microsoft.Extensions.Logging;
 using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Auth.Storage;
 
 namespace Quater.Desktop.Core.Api;
 
-public sealed class AccessTokenCache(IAuthService authService, ITokenStore tokenStore) : IAccessTokenCache
+public sealed class AccessTokenCache(
+    IAuthService authService,
+    ITokenStore tokenStore,
+    ILogger<AccessTokenCache> logger) : IAccessTokenCache
 {
     private static readonly TimeSpan RefreshBuffer = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan FallbackDelay = TimeSpan.FromSeconds(30);
@@ -43,11 +47,6 @@ public sealed class AccessTokenCache(IAuthService authService, ITokenStore token
         await _refreshGate.WaitAsync(ct);
         try
         {
-            if (_initialized)
-            {
-                return;
-            }
-
             var token = await authService.GetValidAccessTokenAsync(ct);
             var stored = await tokenStore.GetAsync(ct);
 
@@ -70,8 +69,10 @@ public sealed class AccessTokenCache(IAuthService authService, ITokenStore token
         try
         {
             var result = await authService.RefreshAsync(ct);
+
             if (result.IsError || string.IsNullOrWhiteSpace(result.AccessToken) || result.ExpiresAtUtc is null)
             {
+                logger.LogWarning("Token refresh failed");
                 return;
             }
 

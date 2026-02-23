@@ -61,34 +61,34 @@ public partial class ApiClient
                 var token = tokenProvider(CancellationToken.None).GetAwaiter().GetResult();
                 if (!string.IsNullOrWhiteSpace(token))
                 {
-                    Trace.WriteLine("ApiClient adding Authorization header");
+                    Console.WriteLine("ApiClient adding Authorization header");
                     request.AddOrUpdateHeader(AuthorizationHeader, $"{BearerPrefix} {token}");
                 }
                 else
                 {
-                    Trace.WriteLine("ApiClient missing access token for Authorization header");
+                    Console.WriteLine("ApiClient missing access token for Authorization header");
                 }
             }
             else
             {
-                Trace.WriteLine("ApiClient AccessTokenProvider is not configured");
+                Console.WriteLine("ApiClient AccessTokenProvider is not configured");
             }
 
             var labIdProvider = LabIdProvider;
             var labId = labIdProvider?.Invoke();
             if (labId.HasValue && labId.Value != Guid.Empty)
             {
-                Trace.WriteLine($"ApiClient adding X-Lab-Id header: {labId}");
+                Console.WriteLine($"ApiClient adding X-Lab-Id header: {labId}");
                 request.AddOrUpdateHeader(LabIdHeader, labId.Value.ToString());
             }
             else
             {
-                Trace.WriteLine("ApiClient no lab id available for X-Lab-Id header");
+                Console.WriteLine("ApiClient no lab id available for X-Lab-Id header");
             }
         }
         catch (Exception ex)
         {
-            Trace.WriteLine($"ApiClient.InterceptRequest failed: {ex}");
+            Console.WriteLine($"ApiClient.InterceptRequest failed: {ex}");
         }
     }
 

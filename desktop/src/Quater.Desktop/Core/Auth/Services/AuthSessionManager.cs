@@ -59,23 +59,43 @@ public sealed class AuthSessionManager(
 
     public async Task HandleLoginSuccessAsync(AuthResult result, CancellationToken ct = default)
     {
+        logger.LogInformation("[AuthSessionManager] HandleLoginSuccessAsync started. AuthResult: IsError={IsError}, HasAccessToken={HasToken}", 
+            result.IsError, 
+            !string.IsNullOrWhiteSpace(result.AccessToken));
+        
         if (result.IsError)
         {
+            logger.LogWarning("[AuthSessionManager] AuthResult has error: {Error}", result.Error);
             return;
         }
 
         Quater.Desktop.Api.Client.ApiClient.ResetUnauthorizedSignal();
 
-        logger.LogInformation("HandleLoginSuccessAsync started");
+        logger.LogInformation("[AuthSessionManager] Calling accessTokenCache.InitializeAsync...");
         await accessTokenCache.InitializeAsync(ct);
-        if (string.IsNullOrWhiteSpace(accessTokenCache.CurrentToken))
+        
+        var tokenAfterInit = accessTokenCache.CurrentToken;
+        logger.LogInformation("[AuthSessionManager] After InitializeAsync, CurrentToken is {TokenStatus}", string.IsNullOrWhiteSpace(tokenAfterInit) ? "NULL/EMPTY" : $"length {tokenAfterInit.Length}");
+        
+        if (string.IsNullOrWhiteSpace(tokenAfterInit))
         {
-            logger.LogInformation("Access token not cached, refreshing");
+            logger.LogInformation("[AuthSessionManager] Access token not cached, calling RefreshAsync...");
             await accessTokenCache.RefreshAsync(ct);
+            var tokenAfterRefresh = accessTokenCache.CurrentToken;
+            logger.LogInformation("[AuthSessionManager] After RefreshAsync, CurrentToken is {TokenStatus}", string.IsNullOrWhiteSpace(tokenAfterRefresh) ? "NULL/EMPTY" : $"length {tokenAfterRefresh.Length}");
         }
 
+        // Ensure we have a valid token before making API calls
+        var finalToken = accessTokenCache.CurrentToken;
+        if (string.IsNullOrWhiteSpace(finalToken))
+        {
+            logger.LogError("[AuthSessionManager] No access token available after login");
+            throw new InvalidOperationException("Authentication failed: No access token available");
+        }
+
+        logger.LogInformation("[AuthSessionManager] Creating UsersApi client...");
         var usersApi = apiClientFactory.GetUsersApi();
-        logger.LogInformation("Calling ApiUsersMeGetAsync after login");
+        logger.LogInformation("[AuthSessionManager] Calling ApiUsersMeGetAsync...");
         UserDto userInfo;
         try
         {

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SESSION="quater-dev"
+
+tmux new-session -d -s "$SESSION" -n "backend"
+
+tmux send-keys -t "$SESSION:backend" "cd /home/abdssamie/ChemforgeProjects/Quater/backend/src/Quater.Backend.Api" C-m
+tmux send-keys -t "$SESSION:backend" "dotnet run" C-m
+
+tmux split-window -h -t "$SESSION:backend"
+
+tmux send-keys -t "$SESSION:backend" "cd /home/abdssamie/ChemforgeProjects/Quater/desktop/src/Quater.Desktop" C-m
+tmux send-keys -t "$SESSION:backend" "dotnet run" C-m
+
+tmux select-pane -t "$SESSION:backend.0" -L
+
+tmux attach-session -t "$SESSION"

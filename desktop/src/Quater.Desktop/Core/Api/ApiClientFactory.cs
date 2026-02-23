@@ -1,4 +1,5 @@
 using Quater.Desktop.Api.Api;
+using Quater.Desktop.Api.Client;
 
 namespace Quater.Desktop.Core.Api;
 
