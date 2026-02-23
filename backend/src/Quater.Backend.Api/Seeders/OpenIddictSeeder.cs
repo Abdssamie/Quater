@@ -10,6 +10,7 @@ public static class OpenIddictSeeder
     /// <summary>
     /// Seeds the default OpenIddict client application for mobile/desktop apps.
     /// Uses authorization code flow with PKCE (public client, no client secret).
+    /// Updates existing client if redirect URIs have changed.
     /// </summary>
     public static async Task SeedAsync(IServiceProvider serviceProvider)
     {
@@ -17,13 +18,6 @@ public static class OpenIddictSeeder
 
         // Get client configuration from environment variables
         var clientId = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_ID") ?? "quater-mobile-client";
-
-        // Check if client already exists
-        var existingClient = await manager.FindByClientIdAsync(clientId);
-        if (existingClient != null)
-        {
-            return; // Client already exists
-        }
 
         // Create OpenIddict application descriptor for public client with authorization code + PKCE
         var descriptor = new OpenIddictApplicationDescriptor
@@ -57,6 +51,17 @@ public static class OpenIddictSeeder
             }
         };
 
-        await manager.CreateAsync(descriptor);
+        // Check if client already exists
+        var existingClient = await manager.FindByClientIdAsync(clientId);
+        if (existingClient != null)
+        {
+            // Update existing client to ensure redirect URIs are current
+            await manager.UpdateAsync(existingClient, descriptor);
+        }
+        else
+        {
+            // Create new client
+            await manager.CreateAsync(descriptor);
+        }
     }
 }

@@ -30,6 +30,9 @@ public sealed partial class AppState : ObservableObject
     private bool _isAuthenticated;
 
     [ObservableProperty]
+    private string _authNotice = string.Empty;
+
+    [ObservableProperty]
     private Guid _currentLabId;
 
     [ObservableProperty]

@@ -1,19 +1,19 @@
-using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Quater.Desktop.Core;
+using Quater.Desktop.Core.Settings;
+using Quater.Desktop.Core.Splash;
 using Quater.Desktop.Core.Shell;
-using Quater.Desktop.Core.State;
 using Serilog;
 
 namespace Quater.Desktop;
 
-public partial class App : Application
+public class App : Application
 {
-    public IServiceProvider Services { get; private set; } = null!;
+    private IServiceProvider Services { get; set; } = null!;
 
     public override void Initialize()
     {
@@ -22,6 +22,22 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // Load settings BEFORE building service provider so API clients get correct configuration
+        var settingsStore = new JsonSettingsStore();
+        var settings = settingsStore.LoadAsync().GetAwaiter().GetResult();
+        
+        // Set GlobalConfiguration BEFORE API clients are created
+        var apiBasePath = settings.ApiBasePath;
+        if (!string.IsNullOrWhiteSpace(apiBasePath))
+        {
+            var config = new Quater.Desktop.Api.Client.Configuration
+            {
+                BasePath = apiBasePath
+            };
+            Quater.Desktop.Api.Client.GlobalConfiguration.Instance = config;
+            Log.Information("Set GlobalConfiguration.Instance.BasePath to {BasePath}", config.BasePath);
+        }
+
         var services = new ServiceCollection();
 
         services
@@ -32,30 +48,61 @@ public partial class App : Application
             .AddQuaterCore()
             .AddQuaterData()
             .AddQuaterFeatures()
-            .AddSingleton<ShellViewModel>();
+            .AddQuaterStartup()
+            .AddSingleton<SplashViewModel>()
+            .AddSingleton<ShellViewModel>()
+            .AddSingleton<MainWindowViewModel>();
 
         Services = services.BuildServiceProvider();
+        Log.Information("Service provider built");
 
         Services.InitializeDatabase();
+        Log.Information("Database initialized");
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            BindingPlugins.DataValidators.RemoveAt(0);
+            Log.Information("Desktop lifetime detected");
+            DisableAvaloniaDataAnnotationValidation();
 
-            Services.RegisterNavigation();
+            Log.Information("Getting MainWindowViewModel");
+            var mainVm = Services.GetRequiredService<MainWindowViewModel>();
+            Log.Information("Creating MainWindow");
+            var mainWindow = new MainWindow { DataContext = mainVm };
+            
+            desktop.MainWindow = mainWindow;
+            Log.Information("Showing main window");
+            mainWindow.Show();
 
-            var shellViewModel = Services.GetRequiredService<ShellViewModel>();
-            var appState = Services.GetRequiredService<AppState>();
-            appState.IsAuthenticated = false;
-
-            desktop.MainWindow = new MainWindow
+            // Start initialization after window is shown
+            Log.Information("Main window shown, starting initialization");
+            var splashVm = Services.GetRequiredService<SplashViewModel>();
+            
+            // Run initialization on UI thread
+            Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
             {
-                DataContext = shellViewModel
-            };
+                Log.Information("Calling SplashViewModel.InitializeAsync");
+                await splashVm.InitializeAsync();
+            });
 
             desktop.Exit += (_, _) => Log.CloseAndFlush();
         }
+        else
+        {
+            Log.Warning("ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime");
+        }
 
+        Log.Information("Calling base.OnFrameworkInitializationCompleted");
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void DisableAvaloniaDataAnnotationValidation()
+    {
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
     }
 }

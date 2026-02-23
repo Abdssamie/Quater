@@ -1,92 +1,91 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Quater.Desktop.Api.Api;
+using Microsoft.Extensions.Logging;
 using Quater.Desktop.Core;
 using Quater.Desktop.Core.Auth.Services;
-using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
 
 namespace Quater.Desktop.Features.Auth;
 
 public sealed partial class LoginViewModel : ViewModelBase
 {
-    private readonly IAuthService _authService;
-    private readonly AppState _appState;
-    private readonly IAuthApi _authApi;
-    private readonly SettingsUpdater _settingsUpdater;
+   private readonly IAuthService _authService;
+   private readonly AuthSessionManager _authSessionManager;
+   private readonly ILogger<LoginViewModel> _logger;
+   private CancellationTokenSource? _loginCts;
 
-    [ObservableProperty]
-    private bool _isLoading;
+   [ObservableProperty]
+   private bool _isLoading;
 
-    [ObservableProperty]
-    private string _errorMessage = string.Empty;
+   [ObservableProperty]
+   private string _errorMessage = string.Empty;
 
-    public LoginViewModel(IAuthService authService, AppState appState, IAuthApi authApi, SettingsUpdater settingsUpdater)
+    public LoginViewModel(
+       IAuthService authService,
+       AppState appState,
+       AuthSessionManager authSessionManager,
+       ILogger<LoginViewModel> logger)
     {
-        _authService = authService;
-        _appState = appState;
-        _authApi = authApi;
-        _settingsUpdater = settingsUpdater;
-    }
+       _authService = authService;
+       _authSessionManager = authSessionManager;
+       _logger = logger;
 
-    [RelayCommand]
-    private async Task SignIn()
-    {
-        try
-        {
-            IsLoading = true;
-            ErrorMessage = string.Empty;
+      if (!string.IsNullOrWhiteSpace(appState.AuthNotice))
+      {
+         ErrorMessage = appState.AuthNotice;
+         appState.AuthNotice = string.Empty;
+      }
+   }
 
-            var result = await _authService.LoginAsync();
-            if (result.IsError)
-            {
-                ErrorMessage = result.Error ?? "Authentication failed.";
-                return;
-            }
+   [RelayCommand]
+   private async Task SignIn()
+   {
+      try
+      {
+         IsLoading = true;
+         ErrorMessage = string.Empty;
 
-            var userInfo = await _authApi.ApiAuthUserinfoGetAsync();
-            _appState.CurrentUser = userInfo;
-            _appState.AvailableLabs = userInfo.Labs ?? [];
+         _loginCts?.Cancel();
+         _loginCts?.Dispose();
+         _loginCts = new CancellationTokenSource();
 
-            var defaultLabId = SelectDefaultLabId(userInfo);
-            if (defaultLabId.HasValue)
-            {
-                _appState.CurrentLabId = defaultLabId.Value;
-                _appState.CurrentLabName = userInfo.Labs?.FirstOrDefault(lab => lab.LabId == defaultLabId)?.LabName ?? string.Empty;
-                _settingsUpdater.Current.LastUsedLabId = defaultLabId.Value;
-                await _settingsUpdater.SaveAsync();
-            }
+         _logger.LogInformation("Starting login flow");
+         var result = await _authService.LoginAsync(_loginCts.Token);
+         if (result.IsError)
+         {
+            ErrorMessage = result.Error ?? "Authentication failed.";
+            _logger.LogWarning("Login failed: {Error}", ErrorMessage);
+            return;
+         }
 
-            _appState.IsAuthenticated = true;
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
+         await _authSessionManager.HandleLoginSuccessAsync(result);
+      }
+      catch (OperationCanceledException)
+      {
+         ErrorMessage = "Sign-in canceled. Please try again.";
+         _logger.LogWarning("Login canceled by user");
+      }
+      catch (Exception ex)
+      {
+         ErrorMessage = ex.Message;
+         _logger.LogError(ex, "Login failed with exception");
+      }
+      finally
+      {
+         _loginCts?.Dispose();
+         _loginCts = null;
+         IsLoading = false;
+      }
+   }
 
-    private Guid? SelectDefaultLabId(Quater.Desktop.Api.Model.UserDto userInfo)
-    {
-        if (userInfo.Labs == null || userInfo.Labs.Count == 0)
-        {
-            return null;
-        }
+   [RelayCommand]
+   private void CancelSignIn()
+   {
+      if (!IsLoading)
+      {
+         return;
+      }
 
-        var lastUsedLabId = _settingsUpdater.Current.LastUsedLabId;
-        if (lastUsedLabId.HasValue && userInfo.Labs.Any(lab => lab.LabId == lastUsedLabId.Value))
-        {
-            return lastUsedLabId.Value;
-        }
-
-        if (userInfo.Labs.Count == 1)
-        {
-            return userInfo.Labs[0].LabId;
-        }
-
-        return null;
-    }
+      _loginCts?.Cancel();
+   }
 }

@@ -1,12 +1,16 @@
-using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
+using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core.Dialogs;
 
-public sealed class SukiDialogService(ILogger<SukiDialogService> logger) : IDialogService
+public sealed class SukiDialogService(
+    ILogger<SukiDialogService> logger,
+    ISukiToastManager toastManager) : IDialogService
 {
-    public Task<bool> ShowConfirmationAsync(string title, string message)
+    public Task<bool> ShowConfirmationAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel")
     {
+        _ = confirmText;
+        _ = cancelText;
         logger.LogInformation("Confirmation requested: {Title} - {Message}", title, message);
         return Task.FromResult(true);
     }
@@ -25,6 +29,23 @@ public sealed class SukiDialogService(ILogger<SukiDialogService> logger) : IDial
 
     public void ShowToast(string message, NotificationType type = NotificationType.Information)
     {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        var toastType = type switch
+        {
+            NotificationType.Success => Avalonia.Controls.Notifications.NotificationType.Success,
+            NotificationType.Warning => Avalonia.Controls.Notifications.NotificationType.Warning,
+            NotificationType.Error => Avalonia.Controls.Notifications.NotificationType.Error,
+            _ => Avalonia.Controls.Notifications.NotificationType.Information
+        };
+
+        toastManager.CreateToast()
+            .WithContent(message)
+            .OfType(toastType)
+            .Queue();
         logger.LogInformation("[{Type}] {Message}", type, message);
     }
 

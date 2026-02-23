@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DLL="$ROOT_DIR/../backend/src/Quater.Backend.Api/bin/Debug/net10.0/Quater.Backend.Api.dll"
 OPENAPI_JSON="$ROOT_DIR/openapi.json"
-OUTPUT_DIR="$ROOT_DIR/src/Quater.Desktop.Api/Generated"
+OUTPUT_DIR="$ROOT_DIR/src/Quater.Desktop.Api/Generated/.temp"
 
 if [[ ! -f "$BACKEND_DLL" ]]; then
   echo "Backend DLL not found at: $BACKEND_DLL"
@@ -19,7 +19,17 @@ ASPNETCORE_ENVIRONMENT=Development dotnet swagger tofile \
  bunx @openapitools/openapi-generator-cli generate \
   -i "$OPENAPI_JSON" \
   -g csharp \
-  --additional-properties=packageName=Quater.Desktop.Api,targetFramework=net10.0,netCoreProjectFile=true,library=restsharp \
+  --additional-properties=packageName=Quater.Desktop.Api,targetFramework=net10.0,netCoreProjectFile=true,library=restsharp,sourceFolder=. \
   -o "$OUTPUT_DIR"
 
-echo "OpenAPI client generated in $OUTPUT_DIR"
+# Move generated code to proper location (flatten structure)
+mkdir -p "$ROOT_DIR/src/Quater.Desktop.Api/Generated"
+rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Api"
+rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Client"
+rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Model"
+mv "$OUTPUT_DIR/Quater.Desktop.Api/Api" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
+mv "$OUTPUT_DIR/Quater.Desktop.Api/Client" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
+mv "$OUTPUT_DIR/Quater.Desktop.Api/Model" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
+rm -rf "$OUTPUT_DIR"
+
+echo "OpenAPI client generated in $ROOT_DIR/src/Quater.Desktop.Api/Generated"

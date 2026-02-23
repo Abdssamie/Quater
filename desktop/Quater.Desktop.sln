@@ -5,11 +5,13 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Desktop.Tests", "Quater.Desktop.Tests\Quater.Desktop.Tests.csproj", "{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Desktop", "src\Quater.Desktop\Quater.Desktop.csproj", "{FCBDFD4D-3C51-44AD-AD36-8B9575864AC8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Desktop.Data", "src\Quater.Desktop.Data\Quater.Desktop.Data.csproj", "{FC0E7078-43C3-404D-AD6D-D813CE8373F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Desktop.Api", "src\Quater.Desktop.Api\Generated\src\Quater.Desktop.Api\Quater.Desktop.Api.csproj", "{7F6E05F8-72AF-4D89-82CB-8D6354E14F80}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Desktop.Api", "src\Quater.Desktop.Api\Generated\Quater.Desktop.Api.csproj", "{7F6E05F8-72AF-4D89-82CB-8D6354E14F80}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quater.Shared", "..\shared\Quater.Shared.csproj", "{8F9F3440-75E6-4637-81B0-63093A7FEA46}"
 EndProject
@@ -71,6 +73,18 @@ Global
 		{8F9F3440-75E6-4637-81B0-63093A7FEA46}.Release|x64.Build.0 = Release|Any CPU
 		{8F9F3440-75E6-4637-81B0-63093A7FEA46}.Release|x86.ActiveCfg = Release|Any CPU
 		{8F9F3440-75E6-4637-81B0-63093A7FEA46}.Release|x86.Build.0 = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|x64.Build.0 = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Debug|x86.Build.0 = Debug|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|x64.ActiveCfg = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|x64.Build.0 = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|x86.ActiveCfg = Release|Any CPU
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,5 +93,6 @@ Global
 		{FCBDFD4D-3C51-44AD-AD36-8B9575864AC8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{FC0E7078-43C3-404D-AD6D-D813CE8373F1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{7F6E05F8-72AF-4D89-82CB-8D6354E14F80} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{248C2EAD-2BBE-45D4-AC03-1B2A87CA904C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

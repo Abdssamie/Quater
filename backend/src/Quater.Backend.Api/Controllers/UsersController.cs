@@ -66,6 +66,19 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     }
 
     /// <summary>
+    /// Get current authenticated user's profile
+    /// </summary>
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserDto>> GetCurrentUser(CancellationToken ct = default)
+    {
+        var userId = User.GetUserIdOrThrow();
+        var user = await userService.GetByIdAsync(userId, ct);
+        return Ok(user);
+    }
+
+    /// <summary>
     /// Get user by ID
     /// </summary>
     [HttpGet("{id}")]

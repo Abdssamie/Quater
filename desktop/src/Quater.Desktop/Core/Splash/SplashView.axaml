@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:splash="clr-namespace:Quater.Desktop.Core.Splash"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Quater.Desktop.Core.Splash.SplashView"
+             x:DataType="splash:SplashViewModel">
+    
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="20" HorizontalAlignment="Center">
+            <TextBlock Text="QUATER" 
+                       FontSize="48" 
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            
+            <TextBlock Text="Water Quality Lab Management" 
+                       FontSize="16" 
+                       Opacity="0.7"
+                       HorizontalAlignment="Center" />
+            
+            <ProgressBar IsIndeterminate="True" 
+                         Width="300"
+                         Margin="0,20,0,0" />
+            
+            <TextBlock Text="{Binding Status}" 
+                       FontSize="14"
+                       HorizontalAlignment="Center"
+                       Opacity="0.8" />
+        </StackPanel>
+    </Grid>
+</UserControl>

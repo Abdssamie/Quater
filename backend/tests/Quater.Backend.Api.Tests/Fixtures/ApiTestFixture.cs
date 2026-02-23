@@ -27,8 +27,6 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Environment.SetEnvironmentVariable("SYSTEM_ADMIN_USER_ID", "eb4b0ebc-7a02-43ca-a858-656bd7e4357f");
-
         // Start PostgreSQL container
         _postgresContainer = new PostgreSqlBuilder()
             .WithImage("postgres:16-alpine")
@@ -62,7 +60,6 @@ public class ApiTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 // Database (will be overridden with test container)
                 ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=test;Username=test;Password=test",
-                ["SYSTEM_ADMIN_USER_ID"] = "eb4b0ebc-7a02-43ca-a858-656bd7e4357f",
                 // OpenIddict
                 ["OpenIddict:Issuer"] = "https://localhost:5001",
                 ["OpenIddict:Audience"] = "quater-api",

@@ -165,10 +165,12 @@ public static class DatabaseSeeder
     /// Seeds the default admin user and lab.
     /// 
     /// PRODUCTION SAFETY:
-    /// - In Production/Staging: ADMIN_DEFAULT_PASSWORD environment variable is REQUIRED
-    ///   The application will fail to start if not provided, preventing auto-generated passwords
-    /// - In Development: Password is auto-generated if not provided (displayed in logs)
+    /// - In Production/Staging: ADMIN_EMAIL and ADMIN_DEFAULT_PASSWORD environment variables are REQUIRED
+    ///   The application will fail to start if not provided
+    /// - In Development: Email defaults to "admin@quater.local" and password is auto-generated if not provided
     /// - Admin user is only created once; subsequent runs are skipped gracefully
+    /// 
+    /// NOTE: The admin user ID is separate from the System ID (used for background operations)
     /// </summary>
     private static async Task SeedAdminUserAsync(
         QuaterDbContext context,
@@ -176,30 +178,37 @@ public static class DatabaseSeeder
         IConfiguration configuration,
         ILogger logger)
     {
-        // Check if admin user already exists by ID
-        var systemUserId = SystemUser.GetId();
-        var adminUser = await userManager.FindByIdAsync(systemUserId.ToString());
-        if (adminUser != null)
-        {
-            logger.LogDebug("Admin user already exists with ID {UserId}", systemUserId);
-            return; // Admin already exists
-        }
-
-        // Also check if a user with the admin email already exists (handles ID changes)
-        var existingAdminByEmail = await userManager.FindByEmailAsync("admin@quater.local");
-        if (existingAdminByEmail != null)
-        {
-            logger.LogWarning(
-                "Admin user already exists with email {Email} but different ID. " +
-                "This may indicate SYSTEM_ADMIN_USER_ID was changed. Existing admin will be used.",
-                "admin@quater.local");
-            return; // Admin already exists with different ID
-        }
-
         // Check environment
         var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Production";
         var isProduction = environment.Equals("Production", StringComparison.OrdinalIgnoreCase);
         var isStaging = environment.Equals("Staging", StringComparison.OrdinalIgnoreCase);
+
+        // Get admin email from environment variable
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+        
+        if (string.IsNullOrEmpty(adminEmail))
+        {
+            if (isProduction || isStaging)
+            {
+                // In Production/Staging: FAIL FAST - require explicit email
+                throw new InvalidOperationException(
+                    "ADMIN_EMAIL environment variable is required in Production/Staging environments. " +
+                    "Please set this variable before starting the application. " +
+                    "Example: ADMIN_EMAIL=admin@yourdomain.com");
+            }
+
+            // In Development: Use default email
+            adminEmail = "admin@quater.local";
+            logger.LogInformation("Using default admin email: {Email}", adminEmail);
+        }
+
+        // Check if admin user already exists by email
+        var existingAdminByEmail = await userManager.FindByEmailAsync(adminEmail);
+        if (existingAdminByEmail != null)
+        {
+            logger.LogDebug("Admin user already exists with email {Email}", adminEmail);
+            return; // Admin already exists
+        }
 
         // Get admin password from environment variable
         var adminPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
@@ -219,7 +228,7 @@ public static class DatabaseSeeder
             adminPassword = GenerateSecurePassword();
             logger.LogWarning("=".PadRight(80, '='));
             logger.LogWarning("IMPORTANT: Default admin password generated!");
-            logger.LogWarning("Email: admin@quater.local");
+            logger.LogWarning("Email: {Email}", adminEmail);
             logger.LogWarning("Password: {Password}", adminPassword);
             logger.LogWarning("Please change this password immediately after first login.");
             logger.LogWarning("Set ADMIN_DEFAULT_PASSWORD environment variable to use a custom password.");
@@ -236,18 +245,19 @@ public static class DatabaseSeeder
             Id = Guid.NewGuid(),
             Name = "Default Laboratory",
             Location = "Main Office",
-            ContactInfo = "admin@quater.local",
+            ContactInfo = adminEmail,
             IsActive = true,
         };
 
         await context.Labs.AddAsync(defaultLab);
 
-        // Create admin user
+        // Create admin user with a new GUID (separate from System ID)
+        var adminUserId = Guid.NewGuid();
         var admin = new User
         {
-            Id = systemUserId,
-            UserName = "admin@quater.local",
-            Email = "admin@quater.local",
+            Id = adminUserId,
+            UserName = adminEmail,
+            Email = adminEmail,
             EmailConfirmed = true,
             IsActive = true,
             UserLabs =
@@ -267,7 +277,7 @@ public static class DatabaseSeeder
             throw new InvalidOperationException($"Failed to create admin user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
 
-        logger.LogInformation("Admin user created successfully with ID {UserId}", systemUserId);
+        logger.LogInformation("Admin user created successfully with email {Email} and ID {UserId}", adminEmail, adminUserId);
     }
 
     /// <summary>

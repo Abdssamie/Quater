@@ -34,7 +34,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quater.Desktop.Data\Quater.Desktop.Data.csproj" />
-    <ProjectReference Include="..\Quater.Desktop.Api\Generated\src\Quater.Desktop.Api\Quater.Desktop.Api.csproj" />
+    <ProjectReference Include="..\Quater.Desktop.Api\Generated\Quater.Desktop.Api.csproj" />
     <ProjectReference Include="../../../shared/Quater.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Core\Api\ApiClientHooks.cs" />
   </ItemGroup>
 </Project>

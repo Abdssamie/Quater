@@ -327,14 +327,15 @@ public sealed class AuthController(
     // via SetRevocationEndpointUris configuration. No custom controller action needed.
 
     /// <summary>
-    /// Get current user information
+    /// OIDC standard UserInfo endpoint - returns only standard OIDC claims
+    /// For full user profile data, use /api/users/me instead
     /// </summary>
     [HttpGet("userinfo")]
     [Authorize]
-    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserInfoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> UserInfo()
+    public async Task<ActionResult<UserInfoResponse>> UserInfo()
     {
         var userId = User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         if (string.IsNullOrEmpty(userId))
@@ -342,16 +343,20 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var user = await userManager.Users
-            .Include(u => u.UserLabs)
-            .ThenInclude(ul => ul.Lab)
-            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+        var user = await userManager.FindByIdAsync(userId);
 
         if (user == null)
         {
             return NotFound(new { error = "User not found" });
         }
 
-        return Ok(user.ToDto());
+        // Return only standard OIDC claims
+        return Ok(new UserInfoResponse
+        {
+            Sub = user.Id.ToString(),
+            Name = user.UserName,
+            Email = user.Email,
+            EmailVerified = user.EmailConfirmed
+        });
     }
 }

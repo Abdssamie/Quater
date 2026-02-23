@@ -209,7 +209,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureTestResult(ModelBuilder modelBuilder)
+    private static void ConfigureTestResult(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TestResult>(entity =>
         {
@@ -324,7 +324,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureParameter(ModelBuilder modelBuilder)
+    private static void ConfigureParameter(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Parameter>(entity =>
         {
@@ -399,7 +399,7 @@ public class QuaterLocalContext : DbContext
 
 
 
-    private void ConfigureLab(ModelBuilder modelBuilder)
+    private static void ConfigureLab(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Lab>(entity =>
         {
@@ -461,7 +461,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureUser(ModelBuilder modelBuilder)
+    private static void ConfigureUser(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
         {
@@ -634,7 +634,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureAuditLog(ModelBuilder modelBuilder)
+    private static void ConfigureAuditLog(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AuditLog>(entity =>
         {
@@ -684,7 +684,7 @@ public class QuaterLocalContext : DbContext
         });
     }
 
-    private void ConfigureAuditLogArchive(ModelBuilder modelBuilder)
+    private static void ConfigureAuditLogArchive(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AuditLogArchive>(entity =>
         {

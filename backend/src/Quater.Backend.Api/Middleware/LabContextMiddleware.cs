@@ -26,7 +26,7 @@ public sealed class LabContextMiddleware(
         // Detect system admin — bypasses lab membership check and RLS
         if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
         {
-            if (userGuid == SystemUser.GetId())
+            if (userGuid == Quater.Backend.Core.Constants.System.GetId())
             {
                 labContext.SetSystemAdmin();
 

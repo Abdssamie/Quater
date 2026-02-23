@@ -8,14 +8,13 @@ public sealed class SukiNavigationService(IServiceProvider serviceProvider) : IN
     private readonly Dictionary<Type, NavigationItem> _routes = new();
     private readonly ObservableCollection<NavigationItem> _navigationItems = [];
 
-    private ViewModelBase? _currentView;
     public ViewModelBase? CurrentView
     {
-        get => _currentView;
+        get;
         private set
         {
-            if (_currentView == value) return;
-            _currentView = value;
+            if (field == value) return;
+            field = value;
             CurrentViewChanged?.Invoke(this, value!);
         }
     }
@@ -29,14 +28,15 @@ public sealed class SukiNavigationService(IServiceProvider serviceProvider) : IN
         var vmType = typeof(TViewModel);
         _routes[vmType] = item;
 
-        if (!_navigationItems.Contains(item))
-        {
-            _navigationItems.Add(item);
-            var sorted = _navigationItems.OrderBy(x => x.Order).ToList();
-            _navigationItems.Clear();
-            foreach (var navItem in sorted)
-                _navigationItems.Add(navItem);
-        }
+        if (_navigationItems.Contains(item)) return;
+        
+        _navigationItems.Add(item);
+        var sorted = _navigationItems.OrderBy(x => x.Order).ToList();
+        
+        _navigationItems.Clear();
+        
+        foreach (var navItem in sorted)
+            _navigationItems.Add(navItem);
     }
 
     public void NavigateTo<TViewModel>() where TViewModel : ViewModelBase

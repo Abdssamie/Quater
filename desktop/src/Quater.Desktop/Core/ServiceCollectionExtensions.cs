@@ -1,19 +1,19 @@
-using Duende.IdentityModel.OidcClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Quater.Desktop.Api.Api;
 using Quater.Desktop.Api.Client;
 using Quater.Desktop.Core.Api;
-using Quater.Desktop.Core.Auth.Browser;
 using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Auth.Storage;
 using Quater.Desktop.Core.Dialogs;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
+using Quater.Desktop.Core.Startup;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Data;
 using Serilog;
+using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core;
 
@@ -21,8 +21,10 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddQuaterCore(this IServiceCollection services)
     {
+        services.AddLogging(builder => builder.AddSerilog());
         services.AddSingleton<AppState>();
         services.AddSingleton<INavigationService, SukiNavigationService>();
+        services.AddSingleton<ISukiToastManager, SukiToastManager>();
         services.AddSingleton<IDialogService, SukiDialogService>();
 
         return services;
@@ -31,7 +33,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuaterData(this IServiceCollection services, string dbPath = "Data Source=quater.db")
     {
         services.AddDbContext<QuaterLocalContext>(options =>
-            Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(options, dbPath));
+            options.UseSqlite(dbPath));
 
         services.AddScoped<Data.Repositories.ISampleRepository, Data.Repositories.SampleRepository>();
 
@@ -43,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Dashboard.DashboardViewModel>();
         services.AddTransient<Features.Samples.List.SampleListViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
+        services.AddTransient<Features.Onboarding.OnboardingViewModel>();
 
         return services;
     }
@@ -50,7 +53,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuaterSettings(this IServiceCollection services)
     {
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
-        services.AddSingleton(provider => provider.GetRequiredService<ISettingsStore>().LoadAsync().GetAwaiter().GetResult());
+        services.AddSingleton<AppSettings>();
         services.AddSingleton<SettingsUpdater>();
 
         return services;
@@ -59,85 +62,51 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuaterAuth(this IServiceCollection services)
     {
         services.AddSingleton<ITokenStore, SecureFileTokenStore>();
-
-        services.AddSingleton(provider =>
-        {
-            var settings = provider.GetRequiredService<AppSettings>();
-            var redirectUrl = "http://127.0.0.1:7890/callback";
-            var browser = new LoopbackBrowser(redirectUrl);
-
-            var options = new OidcClientOptions
-            {
-                Authority = settings.BackendUrl,
-                ClientId = "quater-mobile-client",
-                RedirectUri = redirectUrl,
-                Scope = "openid profile email api offline_access",
-                Browser = browser,
-                Policy = new Policy
-                {
-                    RequireIdentityTokenSignature = false
-                }
-            };
-
-            return new OidcClient(options);
-        });
+        services.AddSingleton<OidcClientFactory>();
 
         services.AddSingleton<IAuthService, AuthService>();
+        services.AddSingleton<AuthSessionManager>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddQuaterStartup(this IServiceCollection services)
+    {
+        services.AddSingleton<IApplicationStartupService, ApplicationStartupService>();
         return services;
     }
 
     public static IServiceCollection AddQuaterApiClients(this IServiceCollection services)
     {
         services.AddSingleton<ApiHeaders>();
+        services.AddSingleton<IAccessTokenCache, AccessTokenCache>();
 
         services.AddSingleton(provider =>
         {
             var apiHeaders = provider.GetRequiredService<ApiHeaders>();
-            var settings = provider.GetRequiredService<AppSettings>();
 
-            Quater.Desktop.Api.Client.ApiClient.AccessTokenProvider = ct => apiHeaders.GetAccessTokenAsync(ct);
-            Quater.Desktop.Api.Client.ApiClient.LabIdProvider = () => apiHeaders.GetLabId();
+            ApiClient.AccessTokenProvider = ct => apiHeaders.GetAccessTokenAsync(ct);
+            ApiClient.LabIdProvider = () => apiHeaders.GetLabId();
 
-            var config = new Quater.Desktop.Api.Client.Configuration
-            {
-                BasePath = settings.BackendUrl
-            };
-
-            Quater.Desktop.Api.Client.GlobalConfiguration.Instance = config;
-            return config;
+            return apiHeaders;
         });
 
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuthApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.UsersApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.SamplesApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.LabsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.UserLabsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.ParametersApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.TestResultsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuditLogsApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.HealthApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.EmailVerificationApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.AuthorizationApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.PasswordApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
-        services.AddSingleton(provider => new Quater.Desktop.Api.Api.VersionApi(provider.GetRequiredService<Quater.Desktop.Api.Client.Configuration>()));
+        services.AddSingleton<IApiClientFactory, ApiClientFactory>();
 
         return services;
     }
-
     public static IServiceCollection AddQuaterLogging(this IServiceCollection services)
     {
         Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File("logs/log-.txt", rollingInterval: Serilog.RollingInterval.Day)
+            .WriteTo.File("logs/quater-.log", rollingInterval: RollingInterval.Day)
             .CreateLogger();
-
-        services.AddLogging(builder => builder.AddSerilog(dispose: true));
 
         return services;
     }
 
-    public static IServiceProvider InitializeDatabase(this IServiceProvider services)
+    public static void InitializeDatabase(this IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<QuaterLocalContext>();
@@ -150,28 +119,5 @@ public static class ServiceCollectionExtensions
         {
             Log.Error(ex, "Database migration failed");
         }
-
-        return services;
-    }
-
-    public static IServiceProvider RegisterNavigation(this IServiceProvider services)
-    {
-        var nav = services.GetRequiredService<INavigationService>();
-
-        nav.RegisterRoute<Features.Dashboard.DashboardViewModel>(new(
-            "Dashboard",
-            "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z",
-            typeof(Features.Dashboard.DashboardViewModel),
-            0
-        ));
-
-        nav.RegisterRoute<Features.Samples.List.SampleListViewModel>(new(
-            "Samples",
-            "M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z",
-            typeof(Features.Samples.List.SampleListViewModel),
-            1
-        ));
-
-        return services;
     }
 }

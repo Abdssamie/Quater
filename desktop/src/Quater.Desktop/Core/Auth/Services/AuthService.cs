@@ -5,18 +5,19 @@ namespace Quater.Desktop.Core.Auth.Services;
 
 public sealed class AuthService : IAuthService
 {
-    private readonly OidcClient _oidcClient;
+    private readonly OidcClientFactory _oidcClientFactory;
     private readonly ITokenStore _tokenStore;
 
-    public AuthService(OidcClient oidcClient, ITokenStore tokenStore)
+    public AuthService(OidcClientFactory oidcClientFactory, ITokenStore tokenStore)
     {
-        _oidcClient = oidcClient;
+        _oidcClientFactory = oidcClientFactory;
         _tokenStore = tokenStore;
     }
 
     public async Task<AuthResult> LoginAsync(CancellationToken ct = default)
     {
-        var result = await _oidcClient.LoginAsync(new LoginRequest(), ct);
+        var oidcClient = _oidcClientFactory.Create();
+        var result = await oidcClient.LoginAsync(new LoginRequest(), ct);
         if (result.IsError)
         {
             return new AuthResult(true, result.Error, null, null, null);
@@ -35,7 +36,8 @@ public sealed class AuthService : IAuthService
             return new AuthResult(true, "No stored refresh token", null, null, null);
         }
 
-        var result = await _oidcClient.RefreshTokenAsync(existing.RefreshToken, cancellationToken: ct);
+        var oidcClient = _oidcClientFactory.Create();
+        var result = await oidcClient.RefreshTokenAsync(existing.RefreshToken, cancellationToken: ct);
         if (result.IsError)
         {
             return new AuthResult(true, result.Error, null, null, null);

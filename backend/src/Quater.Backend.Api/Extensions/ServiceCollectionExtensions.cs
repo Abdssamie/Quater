@@ -224,6 +224,14 @@ public static class ServiceCollectionExtensions
             options.Cookie.SecurePolicy = environment.IsDevelopment() || environment.IsEnvironment("Testing")
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
+            
+            // Return 302 redirect instead of 401 for unauthenticated requests
+            // This ensures browsers follow the redirect to the login page
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            };
         });
 
         // Configure authentication to use OpenIddict validation for Bearer tokens
@@ -250,6 +258,10 @@ public static class ServiceCollectionExtensions
                        .SetTokenEndpointUris("/api/auth/token")
                        .SetUserInfoEndpointUris("/api/auth/userinfo")
                        .SetRevocationEndpointUris("/api/auth/revoke");
+                
+                // Enable discovery endpoint for clients to fetch signing keys
+                // This is required for desktop/mobile clients to validate identity tokens
+                // Endpoint: /.well-known/openid-configuration (automatically enabled by OpenIddict)
 
                 // Enable OAuth2/OIDC flows
                 options.AllowAuthorizationCodeFlow();

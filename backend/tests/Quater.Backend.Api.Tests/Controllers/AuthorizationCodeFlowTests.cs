@@ -225,11 +225,10 @@ public sealed class AuthorizationCodeFlowTests : IAsyncLifetime
         var userInfo = JsonSerializer.Deserialize<UserInfoResponse>(json, JsonOptions);
 
         userInfo.Should().NotBeNull();
-        userInfo!.Id.Should().NotBeEmpty("sub claim should be present as the user ID");
+        userInfo!.Sub.Should().NotBeNullOrEmpty("sub claim should be present as the user ID");
         userInfo.Email.Should().Be(TestEmail, "email claim should match the authenticated user");
-        userInfo.Labs.Should().NotBeEmpty("lab memberships should be present");
-        userInfo.Labs[0].Role.Should().Be(UserRole.Technician, "role claim should be Technician");
-        userInfo.Labs[0].LabId.Should().NotBeEmpty("lab_id claim should be present");
+        userInfo.Name.Should().Be(TestEmail, "name claim should match the username");
+        userInfo.EmailVerified.Should().BeTrue("email should be verified");
     }
 
     /// <summary>
@@ -711,12 +710,10 @@ public sealed class AuthorizationCodeFlowTests : IAsyncLifetime
 
     private sealed class UserInfoResponse
     {
-        public Guid Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public List<UserLabDto> Labs { get; set; } = [];
-        public bool IsActive { get; set; }
-        public DateTime? LastLogin { get; set; }
+        public string Sub { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public bool EmailVerified { get; set; }
     }
 
     #endregion

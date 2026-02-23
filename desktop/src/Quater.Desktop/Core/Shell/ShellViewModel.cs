@@ -1,11 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Quater.Desktop.Api.Model;
-using Quater.Desktop.Core;
+using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.Auth;
+using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core.Shell;
 
@@ -15,6 +17,10 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly AppState _appState;
     private readonly IServiceProvider _serviceProvider;
     private readonly SettingsUpdater _settingsUpdater;
+    private readonly ISettingsStore _settingsStore;
+    private readonly AuthSessionManager _authSessionManager;
+
+    public ISukiToastManager ToastManager { get; }
 
     [ObservableProperty]
     private ViewModelBase? _currentView;
@@ -34,20 +40,28 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private UserLabDto? _selectedLab;
 
-    public IReadOnlyList<NavigationItem> NavigationItems => _navigationService.NavigationItems;
-
     public IReadOnlyList<UserLabDto> AvailableLabs => _appState.AvailableLabs;
 
     public bool HasSelectedLab => _appState.CurrentLabId != Guid.Empty;
 
     public bool IsLabSelectorVisible => _appState.AvailableLabs.Count > 1;
 
-    public ShellViewModel(INavigationService navigationService, AppState appState, IServiceProvider serviceProvider, SettingsUpdater settingsUpdater)
+    public ShellViewModel(
+        INavigationService navigationService,
+        AppState appState,
+        IServiceProvider serviceProvider,
+        SettingsUpdater settingsUpdater,
+        ISukiToastManager toastManager,
+        ISettingsStore settingsStore,
+        AuthSessionManager authSessionManager)
     {
         _navigationService = navigationService;
         _appState = appState;
         _serviceProvider = serviceProvider;
         _settingsUpdater = settingsUpdater;
+        ToastManager = toastManager;
+        _settingsStore = settingsStore;
+        _authSessionManager = authSessionManager;
 
         _navigationService.CurrentViewChanged += (_, vm) => CurrentView = vm;
         _appState.PropertyChanged += (_, args) =>
@@ -69,6 +83,7 @@ public sealed partial class ShellViewModel : ViewModelBase
                     _appState.CurrentLabId = Guid.Empty;
                     _appState.CurrentLabName = string.Empty;
                 }
+
                 if (_appState.AvailableLabs.Count == 1)
                 {
                     SelectedLab = _appState.AvailableLabs[0];
@@ -84,6 +99,12 @@ public sealed partial class ShellViewModel : ViewModelBase
         CurrentLabName = _appState.CurrentLabName;
         SelectedLab = _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
         UpdateAuthState();
+    }
+
+    public override async Task InitializeAsync(CancellationToken ct = default)
+    {
+        UpdateAuthState();
+        await Task.CompletedTask;
     }
 
     partial void OnSelectedLabChanged(UserLabDto? value)
@@ -118,6 +139,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         await _settingsUpdater.SaveAsync();
     }
 
+
     private void UpdateAuthState()
     {
         IsAuthenticated = _appState.IsAuthenticated;
@@ -135,5 +157,11 @@ public sealed partial class ShellViewModel : ViewModelBase
     public void NavigateTo(NavigationItem item)
     {
         _navigationService.NavigateTo(item);
+    }
+
+    [RelayCommand]
+    private async Task Logout()
+    {
+        await _authSessionManager.HandleLogoutAsync();
     }
 }

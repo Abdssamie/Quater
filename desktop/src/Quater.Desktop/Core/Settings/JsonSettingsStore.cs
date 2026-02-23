@@ -16,14 +16,14 @@ public sealed class JsonSettingsStore : ISettingsStore
             return new AppSettings();
         }
 
-        var json = await File.ReadAllTextAsync(SettingsPath, ct);
+        var json = await File.ReadAllTextAsync(SettingsPath, ct).ConfigureAwait(false);
         return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
     }
 
     public async Task SaveAsync(AppSettings settings, CancellationToken ct = default)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(SettingsPath, json, ct);
-    }
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+            var json = JsonSerializer.Serialize(settings, JsonSerializerOptions.Default);
+            await File.WriteAllTextAsync(SettingsPath, json, ct).ConfigureAwait(false);
+        }
 }

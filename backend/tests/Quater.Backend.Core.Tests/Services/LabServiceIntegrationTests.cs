@@ -69,7 +69,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         var persisted = await _context.Labs.FindAsync(result.Id);
         persisted.Should().NotBeNull();
         persisted!.Name.Should().Be(dto.Name);
-        persisted.CreatedBy.Should().Be(SystemUser.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
+        persisted.CreatedBy.Should().Be(Quater.Backend.Core.Constants.System.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class LabServiceIntegrationTests : IAsyncLifetime
         // Verify persistence
         var persisted = await _context.Labs.FindAsync(lab.Id);
         persisted!.Name.Should().Be(dto.Name);
-        persisted.UpdatedBy.Should().Be(SystemUser.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
+        persisted.UpdatedBy.Should().Be(Quater.Backend.Core.Constants.System.GetId()); // Set by AuditInterceptor (no ICurrentUserService in tests)
     }
 
     [Fact]

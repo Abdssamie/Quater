@@ -50,11 +50,11 @@ public class CurrentUserService : ICurrentUserService
 
         if (string.IsNullOrEmpty(userIdString))
         {
-            return SystemUser.GetId();
+            return Quater.Backend.Core.Constants.System.GetId();
         }
 
         return Guid.TryParse(userIdString, out var userId)
             ? userId
-            : SystemUser.GetId();
+            : Quater.Backend.Core.Constants.System.GetId();
     }
 }

@@ -59,7 +59,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         auditLog.Should().NotBeNull();
         auditLog!.Action.Should().Be(AuditAction.Create);
         auditLog.EntityType.Should().Be(EntityType.Sample);
-        auditLog.UserId.Should().Be(SystemUser.GetId()); // Default when no ICurrentUserService
+        auditLog.UserId.Should().Be(Quater.Backend.Core.Constants.System.GetId()); // Default when no ICurrentUserService
         auditLog.NewValue.Should().NotBeNullOrEmpty();
         auditLog.OldValue.Should().BeNull();
     }
@@ -457,7 +457,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             .FirstOrDefaultAsync(a => a.EntityId == sample.Id);
 
         auditLog.Should().NotBeNull();
-        auditLog!.UserId.Should().Be(SystemUser.GetId());
+        auditLog!.UserId.Should().Be(Quater.Backend.Core.Constants.System.GetId());
     }
 
     [Fact]
@@ -753,7 +753,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     {
         var connectionString = $"{_fixture.Factory.ConnectionString};Include Error Detail=true";
 
-        var mockUserService = new MockCurrentUserService(SystemUser.GetId());
+        var mockUserService = new MockCurrentUserService();
         var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>()
             .UseNpgsql(connectionString)
             .EnableSensitiveDataLogging()
@@ -767,21 +767,4 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
     }
 
     #endregion
-}
-
-/// <summary>
-/// Mock implementation of ICurrentUserService for testing.
-/// </summary>
-public class MockCurrentUserService : ICurrentUserService
-{
-    private readonly Guid _userId;
-
-    public MockCurrentUserService(Guid userId)
-    {
-        _userId = userId;
-    }
-
-    public Guid GetCurrentUserId() => _userId;
-
-    public Guid GetCurrentUserIdOrSystem() => _userId;
 }

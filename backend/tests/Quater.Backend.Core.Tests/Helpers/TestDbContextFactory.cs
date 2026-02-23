@@ -51,8 +51,6 @@ public class TestDbContextFactory : IAsyncLifetime
         {
             if (_isInitialized) return;
 
-            Environment.SetEnvironmentVariable("SYSTEM_ADMIN_USER_ID", "eb4b0ebc-7a02-43ca-a858-656bd7e4357f");
-
             await _container.StartAsync();
             _connectionString = _container.GetConnectionString();
             _isInitialized = true;
@@ -138,8 +136,8 @@ public class TestDbContextFactory : IAsyncLifetime
 
         if (withInterceptors)
         {
-            // Create a mock user service that returns SystemUser.GetId()
-            var mockUserService = new TestCurrentUserService();
+            // Create a mock user service that returns System.GetId()
+            var mockUserService = new MockCurrentUserService();
 
             optionsBuilder.AddInterceptors(
                 new SoftDeleteInterceptor(),
@@ -168,9 +166,8 @@ public class TestDbContextFactory : IAsyncLifetime
 
     private async Task SeedSystemUserAsync(QuaterDbContext context)
     {
-        // For tests, use a hardcoded system admin ID
-        // In production, this comes from SYSTEM_ADMIN_USER_ID environment variable
-        var systemUserId = new Guid("eb4b0ebc-7a02-43ca-a858-656bd7e4357f");
+        // Use the system ID from the System constant
+        var systemUserId = Quater.Backend.Core.Constants.System.GetId();
         var systemUserExists = await context.Users.AnyAsync(u => u.Id == systemUserId);
         if (systemUserExists) return;
 
@@ -270,11 +267,18 @@ public class TestDatabaseCollection : ICollectionFixture<TestDbContextFactoryFix
 
 /// <summary>
 /// Mock implementation of ICurrentUserService for testing.
-/// Returns SystemUser.GetId() to simulate system operations.
+/// Can be configured to return a specific user ID or defaults to System.GetId().
 /// </summary>
-internal class TestCurrentUserService : ICurrentUserService
+internal sealed class MockCurrentUserService : ICurrentUserService
 {
-    public Guid GetCurrentUserId() => SystemUser.GetId();
+    private readonly Guid _userId;
 
-    public Guid GetCurrentUserIdOrSystem() => SystemUser.GetId();
+    public MockCurrentUserService(Guid? userId = null)
+    {
+        _userId = userId ?? Quater.Backend.Core.Constants.System.GetId();
+    }
+
+    public Guid GetCurrentUserId() => _userId;
+
+    public Guid GetCurrentUserIdOrSystem() => _userId;
 }

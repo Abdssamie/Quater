@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.Onboarding"
+             xmlns:converters="clr-namespace:Quater.Desktop.Converters"
+             mc:Ignorable="d"
+             x:Class="Quater.Desktop.Features.Onboarding.OnboardingView"
+             x:DataType="vm:OnboardingViewModel">
+
+    <UserControl.Resources>
+        <converters:BoolInvertConverter x:Key="BoolInvertConverter" />
+        <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Border Padding="32" CornerRadius="16" Background="#FFFFFF" BorderBrush="#E3E6E8" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+            <StackPanel Spacing="20">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Welcome to Quater" FontSize="26" FontWeight="Bold" />
+                    <TextBlock Text="Choose where to connect for sign-in and sync." Opacity="0.7" />
+                </StackPanel>
+
+                <Border Background="#F7F7F8" CornerRadius="10" Padding="16" BorderBrush="#E6E8EA" BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <RadioButton Content="Quater Cloud" GroupName="ServerChoice" IsChecked="{Binding UseCloud}" />
+                        <TextBlock Text="Managed hosting with automatic updates." Opacity="0.7" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#FFFFFF" CornerRadius="10" Padding="16" BorderBrush="#E6E8EA" BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <RadioButton Content="Self-hosted" GroupName="ServerChoice" IsChecked="{Binding UseCloud, Converter={StaticResource BoolInvertConverter}}" />
+                        <TextBlock Text="Connect to your own server." Opacity="0.7" />
+                        <TextBox Text="{Binding CustomUrl}" Watermark="http://127.0.0.1:5198" IsEnabled="{Binding UseCloud, Converter={StaticResource BoolInvertConverter}}" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#C0392B" TextWrapping="Wrap"
+                           IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotEmptyConverter}}" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                    <Button Content="Continue" Command="{Binding ContinueCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

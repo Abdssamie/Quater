@@ -175,11 +175,10 @@ public sealed class AuthControllerTests : IAsyncLifetime
         });
 
         userInfo.Should().NotBeNull();
-        userInfo!.Id.Should().NotBeEmpty();
+        userInfo!.Sub.Should().NotBeNullOrEmpty();
         userInfo.Email.Should().Be(TestEmail);
-        userInfo.Labs.Should().NotBeEmpty();
-        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
-        userInfo.Labs[0].LabId.Should().NotBeEmpty();
+        userInfo.Name.Should().Be(TestEmail);
+        userInfo.EmailVerified.Should().BeTrue();
     }
 
     [Fact]
@@ -254,10 +253,10 @@ public sealed class AuthControllerTests : IAsyncLifetime
         });
 
         userInfo.Should().NotBeNull();
-        userInfo!.Id.Should().NotBeEmpty();
+        userInfo!.Sub.Should().NotBeNullOrEmpty();
         userInfo.Email.Should().Be(TestEmail);
-        userInfo.Labs.Should().NotBeEmpty();
-        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
+        userInfo.Name.Should().Be(TestEmail);
+        userInfo.EmailVerified.Should().BeTrue();
     }
 
     [Fact]
@@ -464,14 +463,10 @@ public sealed class AuthControllerTests : IAsyncLifetime
         });
 
         userInfo.Should().NotBeNull();
-        userInfo!.Id.Should().NotBeEmpty();
+        userInfo!.Sub.Should().NotBeNullOrEmpty();
         userInfo.Email.Should().Be(TestEmail);
-        userInfo.UserName.Should().Be(TestEmail);
-        userInfo.Labs.Should().NotBeEmpty();
-        userInfo.Labs[0].Role.Should().Be(UserRole.Technician);
-        userInfo.Labs[0].LabId.Should().NotBeEmpty();
-        userInfo.IsActive.Should().BeTrue();
-        userInfo.LastLogin.Should().NotBeNull();
+        userInfo.Name.Should().Be(TestEmail);
+        userInfo.EmailVerified.Should().BeTrue();
     }
 
     [Fact]
@@ -534,12 +529,10 @@ public sealed class AuthControllerTests : IAsyncLifetime
 
     private sealed class UserInfoResponse
     {
-        public Guid Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public List<UserLabDto> Labs { get; set; } = [];
-        public bool IsActive { get; set; }
-        public DateTime? LastLogin { get; set; }
+        public string Sub { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public bool EmailVerified { get; set; }
     }
 
     #endregion

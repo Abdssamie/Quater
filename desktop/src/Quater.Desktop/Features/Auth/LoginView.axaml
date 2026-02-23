@@ -21,7 +21,10 @@
                     <TextBlock Text="Sign in to continue" Opacity="0.7" />
                 </StackPanel>
 
-                <Button Content="Sign in with Quater" Command="{Binding SignInCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInvertConverter}}" />
+                <StackPanel Spacing="8">
+                    <Button Content="Sign in" Command="{Binding SignInCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource BoolInvertConverter}}" />
+                    <Button Content="Cancel" Command="{Binding CancelSignInCommand}" IsVisible="{Binding IsLoading}" />
+                </StackPanel>
 
                 <TextBlock Text="Signing you in..." IsVisible="{Binding IsLoading}" Opacity="0.6" />
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="#C0392B" TextWrapping="Wrap" IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotEmptyConverter}}" />

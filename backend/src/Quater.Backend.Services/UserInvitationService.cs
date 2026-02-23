@@ -277,7 +277,7 @@ public sealed class UserInvitationService(
     public async Task ExpireOldInvitationsAsync(CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        var currentUserId = SystemUser.GetId();
+        var currentUserId = Quater.Backend.Core.Constants.System.GetId();
 
         var expiredInvitations = await context.UserInvitations
             .Where(i => i.Status == InvitationStatus.Pending && i.ExpiresAt < now)

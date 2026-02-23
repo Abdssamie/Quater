@@ -2,7 +2,7 @@ namespace Quater.Desktop.Core.Dialogs;
 
 public interface IDialogService
 {
-    Task<bool> ShowConfirmationAsync(string title, string message);
+    Task<bool> ShowConfirmationAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel");
     Task ShowAlertAsync(string title, string message);
     Task<string?> ShowInputAsync(string title, string message, string defaultValue = "");
     
