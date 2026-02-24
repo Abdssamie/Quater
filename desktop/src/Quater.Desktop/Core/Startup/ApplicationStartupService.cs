@@ -22,15 +22,15 @@ public sealed class ApplicationStartupService(
            var settings = await settingsStore.LoadAsync(ct);
            appSettings.BackendUrl = settings.BackendUrl;
            appSettings.IsOnboarded = settings.IsOnboarded;
-           logger.LogInformation("Initialized settings");
+            logger.LogInformation("Initialized settings");
 
             // Update API client configuration with loaded backend URL
-            var apiBasePath = settings.ApiBasePath;
-            if (!string.IsNullOrWhiteSpace(apiBasePath))
+            var backendUrl = settings.BackendUrl;
+            if (!string.IsNullOrWhiteSpace(backendUrl))
             {
                 var config = new Quater.Desktop.Api.Client.Configuration
                 {
-                    BasePath = apiBasePath
+                    BasePath = backendUrl
                 };
                 Quater.Desktop.Api.Client.GlobalConfiguration.Instance = config;
             }

@@ -9,24 +9,4 @@ public sealed class AppSettings
     public bool IsOnboarded { get; set; }
 
     public bool HasBackendUrl => !string.IsNullOrWhiteSpace(BackendUrl);
-
-    public string ApiBasePath
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(BackendUrl))
-            {
-                return string.Empty;
-            }
-
-            var trimmed = BackendUrl.Trim();
-            if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
-            {
-                return string.Empty;
-            }
-
-            var authority = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
-            return authority;
-        }
-    }
 }

@@ -27,12 +27,12 @@ public class App : Application
         var settings = settingsStore.LoadAsync().GetAwaiter().GetResult();
         
         // Set GlobalConfiguration BEFORE API clients are created
-        var apiBasePath = settings.ApiBasePath;
-        if (!string.IsNullOrWhiteSpace(apiBasePath))
+        var backendUrl = settings.BackendUrl;
+        if (!string.IsNullOrWhiteSpace(backendUrl))
         {
             var config = new Quater.Desktop.Api.Client.Configuration
             {
-                BasePath = apiBasePath
+                BasePath = backendUrl
             };
             Quater.Desktop.Api.Client.GlobalConfiguration.Instance = config;
             Log.Information("Set GlobalConfiguration.Instance.BasePath to {BasePath}", config.BasePath);

@@ -20,10 +20,9 @@ public sealed class SettingsUpdater(
         }
 
         settings.BackendUrl = normalized;
-        var apiBasePath = settings.ApiBasePath;
-        if (!string.IsNullOrWhiteSpace(apiBasePath))
+        if (!string.IsNullOrWhiteSpace(normalized))
         {
-            var apiConfiguration = new Desktop.Api.Client.Configuration { BasePath = apiBasePath };
+            var apiConfiguration = new Desktop.Api.Client.Configuration { BasePath = normalized };
             Desktop.Api.Client.GlobalConfiguration.Instance = apiConfiguration;
         }
         return store.SaveAsync(settings, ct);
