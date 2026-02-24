@@ -12,3 +12,8 @@
 
 - **Primary constructors** (C# 14) for DI
 - **Use**: `string.Empty`, `[]` (collection expressions), `CancellationToken ct = default`
+
+## Desktop Settings
+
+- **BackendUrl**: Already normalized to authority part (scheme + host + port) during onboarding
+- Use `BackendUrl` directly for API client configuration - no additional normalization needed
