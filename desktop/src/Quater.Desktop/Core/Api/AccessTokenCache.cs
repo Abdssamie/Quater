@@ -16,7 +16,6 @@ public sealed class AccessTokenCache(
     private readonly object _sync = new();
     private CancellationTokenSource? _autoRefreshCts;
     private Task? _autoRefreshTask;
-    private bool _initialized;
     private string? _currentToken;
     private DateTime? _expiresAtUtc;
 
@@ -54,7 +53,6 @@ public sealed class AccessTokenCache(
             {
                 _currentToken = token;
                 _expiresAtUtc = stored?.ExpiresAtUtc;
-                _initialized = true;
             }
         }
         finally
@@ -80,7 +78,6 @@ public sealed class AccessTokenCache(
             {
                 _currentToken = result.AccessToken;
                 _expiresAtUtc = result.ExpiresAtUtc;
-                _initialized = true;
             }
         }
         finally
@@ -119,7 +116,6 @@ public sealed class AccessTokenCache(
         {
             _currentToken = null;
             _expiresAtUtc = null;
-            _initialized = false;
         }
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Exceptions;
@@ -13,19 +14,27 @@ namespace Quater.Backend.Services;
 
 public class UserService(
     QuaterDbContext context,
-    UserManager<User> userManager
-    ) : IUserService
+    UserManager<User> userManager,
+    ILogger<UserService> logger) : IUserService
 {
     public async Task<UserDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
+        Console.WriteLine($"[UserService.GetByIdAsync] Querying for user with ID: {id}");
+        logger.LogInformation("[UserService.GetByIdAsync] Querying for user with ID: {UserId}", id);
+        
         var user = await context.Users
             .AsNoTracking()
             .Include(u => u.UserLabs)
             .ThenInclude(ul => ul.Lab)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
+        logger.LogInformation("[UserService.GetByIdAsync] Query result: {Result}", user == null ? "NULL" : $"Found (UserName: {user.UserName})");
+
         if (user == null)
+        {
+            logger.LogWarning("[UserService.GetByIdAsync] User not found with ID: {UserId}", id);
             throw new NotFoundException(ErrorMessages.UserNotFound);
+        }
 
         return user.ToDto();
     }

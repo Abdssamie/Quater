@@ -26,7 +26,7 @@ public sealed class AppSettings
             }
 
             var authority = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
-            return $"{authority}/api";
+            return authority;
         }
     }
 }

@@ -40,6 +40,9 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
+            // Always write to console for visibility
+            Console.WriteLine($"[GlobalExceptionHandler] UNHANDLED EXCEPTION: {ex.Message}\nPath: {context.Request.Path}\n{ex.StackTrace}");
+            _logger.LogError(ex, "[GlobalExceptionHandler] Unhandled exception: {Message}. Path: {Path}", ex.Message, context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }

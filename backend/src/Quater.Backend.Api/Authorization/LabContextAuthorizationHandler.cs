@@ -36,10 +36,13 @@ public class LabContextAuthorizationHandler(
         AuthorizationHandlerContext context,
         LabContextRoleRequirement requirement)
     {
+        logger.LogInformation("[LabContextAuthorizationHandler] Handling authorization. Requirement: {RequiredRole}", 
+            requirement.MinimumRole);
+        
         // System admins bypass all lab-specific authorization
         if (labContext.IsSystemAdmin)
         {
-            logger.LogDebug("Authorization succeeded: System admin bypass");
+            logger.LogInformation("[LabContextAuthorizationHandler] Authorization succeeded: System admin bypass");
             context.Succeed(requirement);
             return;
         }
@@ -47,7 +50,7 @@ public class LabContextAuthorizationHandler(
         // If no lab context is set, fail with message
         if (!labContext.CurrentLabId.HasValue)
         {
-            logger.LogWarning("Authorization failed: No lab context provided");
+            logger.LogWarning("[LabContextAuthorizationHandler] Authorization failed: No lab context provided");
             context.Fail(new AuthorizationFailureReason(this, ErrorMessages.LabContextRequired));
             return;
         }

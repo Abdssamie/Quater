@@ -68,14 +68,40 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     /// <summary>
     /// Get current authenticated user's profile
     /// </summary>
+    /// <remarks>
+    /// This endpoint only requires authentication (not lab membership) because:
+    /// 1. Users need to fetch their profile before selecting a lab
+    /// 2. The profile contains the list of labs the user has access to
+    /// </remarks>
     [HttpGet("me")]
+    [Authorize] // Override class-level policy - only authentication required, not lab membership
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserDto>> GetCurrentUser(CancellationToken ct = default)
     {
+        Console.WriteLine("[UsersController.GetCurrentUser] Request received");
+        logger.LogInformation("[UsersController.GetCurrentUser] Request received");
+        
         var userId = User.GetUserIdOrThrow();
-        var user = await userService.GetByIdAsync(userId, ct);
-        return Ok(user);
+        Console.WriteLine($"[UsersController.GetCurrentUser] Extracted userId: {userId}");
+        logger.LogInformation("[UsersController.GetCurrentUser] Extracted userId: {UserId}", userId);
+        
+        try
+        {
+            var user = await userService.GetByIdAsync(userId, ct);
+            logger.LogInformation("[UsersController.GetCurrentUser] User found: {UserName}", user.UserName);
+            return Ok(user);
+        }
+        catch (NotFoundException ex)
+        {
+            logger.LogWarning("[UsersController.GetCurrentUser] User not found for userId: {UserId}. Message: {Message}", userId, ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "[UsersController.GetCurrentUser] Error fetching user for userId: {UserId}", userId);
+            throw;
+        }
     }
 
     /// <summary>

@@ -73,10 +73,29 @@ public class RateLimitingMiddleware
     }
 
     /// <summary>
+    /// Paths that should be excluded from rate limiting.
+    /// These are typically OIDC/OAuth discovery endpoints that clients need to access frequently.
+    /// </summary>
+    private static readonly string[] ExcludedPaths =
+    [
+        "/.well-known/openid-configuration",
+        "/.well-known/jwks",
+        "/.well-known/oauth-authorization-server"
+    ];
+
+    /// <summary>
     /// Invokes the middleware to apply rate limiting.
     /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
+        // Skip rate limiting for excluded paths (OIDC discovery, auth endpoints)
+        var path = context.Request.Path.Value ?? string.Empty;
+        if (ExcludedPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+        {
+            await _next(context);
+            return;
+        }
+
         // Check for endpoint-specific rate limit attribute
         var endpoint = context.GetEndpoint();
         var endpointRateLimit = endpoint?.Metadata.GetMetadata<EndpointRateLimitAttribute>();

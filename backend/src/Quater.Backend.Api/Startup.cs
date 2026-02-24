@@ -125,6 +125,14 @@ public sealed class Startup(IConfiguration configuration, IWebHostEnvironment en
     {
         app.ValidateConfiguration();
 
+        // Add simple request logging FIRST for visibility
+        app.Use(async (context, next) =>
+        {
+            Console.WriteLine($"[Request] {context.Request.Method} {context.Request.Path}{context.Request.QueryString}");
+            await next();
+            Console.WriteLine($"[Response] {context.Response.StatusCode}");
+        });
+
         // Add global exception handler (must be first in pipeline)
         app.UseGlobalExceptionHandler();
         app.UseForwardedHeaders();

@@ -22,7 +22,13 @@ public sealed class LabContextMiddleware(
         ILabContextAccessor labContext)
     {
         var userId = context.User.FindFirstValue(OpenIddictConstants.Claims.Subject);
-
+        var path = context.Request.Path.Value;
+        
+        // Always write to console for visibility
+        Console.WriteLine($"[LabContextMiddleware] Request: {context.Request.Method} {path}, UserId: {userId ?? "NULL"}, IsAuthenticated: {context.User.Identity?.IsAuthenticated ?? false}");
+        logger.LogInformation("[LabContextMiddleware] Request: {Method} {Path}, UserId: {UserId}, IsAuthenticated: {IsAuth}", 
+            context.Request.Method, path, userId ?? "NULL", context.User.Identity?.IsAuthenticated ?? false);
+        
         // Detect system admin — bypasses lab membership check and RLS
         if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
         {

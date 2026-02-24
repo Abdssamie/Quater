@@ -79,20 +79,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddQuaterApiClients(this IServiceCollection services)
     {
         services.AddSingleton<IAccessTokenCache, AccessTokenCache>();
-
-        services.AddSingleton<ApiHeaders>(provider =>
-        {
-            var headers = new ApiHeaders(
-                provider.GetRequiredService<IAccessTokenCache>(),
-                provider.GetRequiredService<AppState>(),
-                provider.GetRequiredService<ILogger<ApiHeaders>>());
-
-            ApiClient.AccessTokenProvider = ct => headers.GetAccessTokenAsync(ct);
-            ApiClient.LabIdProvider = () => headers.GetLabId();
-
-            return headers;
-        });
-
         services.AddSingleton<IApiClientFactory, ApiClientFactory>();
 
         return services;
