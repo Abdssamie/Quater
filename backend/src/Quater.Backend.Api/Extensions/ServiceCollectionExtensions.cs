@@ -399,5 +399,9 @@ public static class ServiceCollectionExtensions
 
         // Register Lab Context Accessor (scoped per request)
         services.AddScoped<ILabContextAccessor, LabContextAccessor>();
+
+        // NOTE: DPoPProofValidator (Services/Security/DPoPProofValidator.cs) is NOT registered here.
+        // DPoP (RFC 9449) proof-of-possession is NOT YET IMPLEMENTED — see P1-03.
+        // When implemented, register: services.AddScoped<IDPoPProofValidator, DPoPProofValidator>();
     }
 }
