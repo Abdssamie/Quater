@@ -8,7 +8,6 @@ using OpenIddict.Validation.AspNetCore;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
-using Quater.Backend.Data.Constants;
 using Quater.Backend.Data.Interceptors;
 using Quater.Backend.Infrastructure.Email;
 using Quater.Backend.Services;
@@ -119,10 +118,13 @@ public static class ServiceCollectionExtensions
             return new AuditTrailInterceptor(currentUserService, ipAddress);
         });
 
-        // Add DbContext with factory pattern for RLS session variable management
+        // Register RlsSessionInterceptor as scoped — it depends on ILabContextAccessor (scoped)
+        // and must fire on every connection open to set PostgreSQL RLS session variables.
+        services.AddScoped<RlsSessionInterceptor>();
+
+        // Add DbContext with factory pattern so scoped interceptors can be injected
         services.AddScoped<QuaterDbContext>(serviceProvider =>
         {
-            var labContextAccessor = serviceProvider.GetRequiredService<ILabContextAccessor>();
             var config = serviceProvider.GetRequiredService<IConfiguration>();
 
             var connectionString = config.GetConnectionString("DefaultConnection")
@@ -137,44 +139,17 @@ public static class ServiceCollectionExtensions
             // Register the entity sets needed by OpenIddict
             optionsBuilder.UseOpenIddict();
 
-            // Add interceptors
+            // Add interceptors — RlsSessionInterceptor sets PostgreSQL session variables
+            // (app.current_lab_id, app.is_system_admin) on every connection open so that
+            // RLS policies evaluate against the correct per-request context.
             var softDeleteInterceptor = serviceProvider.GetRequiredService<SoftDeleteInterceptor>();
             var auditInterceptor = serviceProvider.GetRequiredService<AuditInterceptor>();
             var auditTrailInterceptor = serviceProvider.GetRequiredService<AuditTrailInterceptor>();
+            var rlsSessionInterceptor = serviceProvider.GetRequiredService<RlsSessionInterceptor>();
 
-            optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+            optionsBuilder.AddInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor, rlsSessionInterceptor);
 
-            // Create the DbContext instance
-            var context = new QuaterDbContext(optionsBuilder.Options);
-
-            // Set RLS session variables immediately based on lab context
-            // Only execute SQL if there's an actual context (system admin or lab context)
-            // If no context is set, skip SQL execution (this is normal during initialization)
-            if (labContextAccessor is { IsSystemAdmin: false, CurrentLabId: null }) return context;
-            try
-            {
-                if (labContextAccessor.IsSystemAdmin)
-                {
-                    // System admin: bypass RLS
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", "true");
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", string.Empty);
-                }
-                else if (labContextAccessor.CurrentLabId.HasValue)
-                {
-                    // Lab context exists: set lab ID and clear system admin flag
-                    var labId = labContextAccessor.CurrentLabId.Value;
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.CurrentLabIdVariable}', {{0}}, false)", labId);
-                    context.Database.ExecuteSqlRaw($"SELECT set_config('{RlsConstants.IsSystemAdminVariable}', {{0}}, false)", string.Empty);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    "Failed to set RLS session variables. Ensure PostgreSQL connection is healthy and user has permissions.",
-                    ex);
-            }
-
-            return context;
+            return new QuaterDbContext(optionsBuilder.Options);
         });
     }
 
