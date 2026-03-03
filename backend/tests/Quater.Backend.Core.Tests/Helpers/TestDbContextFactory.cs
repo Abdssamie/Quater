@@ -126,6 +126,28 @@ public class TestDbContextFactory : IAsyncLifetime
         await SeedSystemUserAsync(context);
     }
 
+    /// <summary>
+    /// Creates a new DbContext with only the <see cref="RlsSessionInterceptor"/> registered,
+    /// using the provided <paramref name="labContextAccessor"/>. Use this to test that
+    /// PostgreSQL session variables are set correctly on connection open.
+    /// </summary>
+    public QuaterDbContext CreateContextWithRlsInterceptor(ILabContextAccessor labContextAccessor)
+    {
+        EnsureInitialized();
+
+        var connectionString = $"{ConnectionString};Include Error Detail=true";
+
+        var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>()
+            .UseNpgsql(connectionString)
+            .EnableSensitiveDataLogging();
+
+        optionsBuilder.AddInterceptors(new RlsSessionInterceptor(labContextAccessor));
+
+        var context = new QuaterDbContext(optionsBuilder.Options);
+        context.Database.EnsureCreated();
+        return context;
+    }
+
     private QuaterDbContext CreateContextInternal(bool withInterceptors)
     {
         var connectionString = $"{ConnectionString};Include Error Detail=true";

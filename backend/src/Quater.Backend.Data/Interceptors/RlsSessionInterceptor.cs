@@ -51,27 +51,12 @@ public sealed class RlsSessionInterceptor(
 
     /// <summary>
     /// Synchronously executes the RLS SET commands on the given connection.
+    /// Delegates to the async path via GetAwaiter().GetResult() — acceptable here because
+    /// <see cref="ConnectionOpened"/> is invoked synchronously by the Npgsql driver and
+    /// blocking is unavoidable in this code path.
     /// </summary>
-    private void SetRlsVariables(DbConnection connection)
-    {
-        if (!TryBuildCommands(out var isSystemAdmin, out var labIdValue))
-            return;
-
-        try
-        {
-            ExecuteSetCommand(connection, RlsConstants.IsSystemAdminVariable,
-                isSystemAdmin ? "true" : "false");
-            ExecuteSetCommand(connection, RlsConstants.CurrentLabIdVariable, labIdValue);
-        }
-        catch (Exception ex)
-        {
-            logger?.LogError(ex,
-                "Failed to set RLS session variables (is_system_admin={IsSystemAdmin}, lab_id={LabId}). " +
-                "RLS policies may not function correctly.",
-                isSystemAdmin, labIdValue);
-            throw;
-        }
-    }
+    private void SetRlsVariables(DbConnection connection) =>
+        SetRlsVariablesAsync(connection, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously executes the RLS SET commands on the given connection.
@@ -127,30 +112,9 @@ public sealed class RlsSessionInterceptor(
     }
 
     /// <summary>
-    /// Executes a synchronous <c>SET</c> command using <c>set_config</c>.
+    /// Executes an asynchronous <c>set_config</c> command on the given connection.
     /// Uses parameterized <c>set_config</c> to avoid SQL injection.
-    /// </summary>
-    private static void ExecuteSetCommand(DbConnection connection, string variableName, string value)
-    {
-        using var cmd = connection.CreateCommand();
-        // set_config(setting_name, new_value, is_local) — false = session scope
-        cmd.CommandText = "SELECT set_config(@name, @value, false)";
-        var nameParam = cmd.CreateParameter();
-        nameParam.ParameterName = "@name";
-        nameParam.Value = variableName;
-        cmd.Parameters.Add(nameParam);
-
-        var valueParam = cmd.CreateParameter();
-        valueParam.ParameterName = "@value";
-        valueParam.Value = value;
-        cmd.Parameters.Add(valueParam);
-
-        cmd.ExecuteNonQuery();
-    }
-
-    /// <summary>
-    /// Executes an asynchronous <c>SET</c> command using <c>set_config</c>.
-    /// Uses parameterized <c>set_config</c> to avoid SQL injection.
+    /// The sync path delegates here via <c>GetAwaiter().GetResult()</c>.
     /// </summary>
     private static async Task ExecuteSetCommandAsync(
         DbConnection connection,
