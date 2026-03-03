@@ -73,8 +73,11 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
         if (sample == null)
             return false;
 
-        // Use EF Core's Remove which triggers soft delete via interceptor or direct update
-        context.Samples.Remove(sample);
+        // Soft delete: mark as deleted instead of physically removing the row
+        typeof(Sample)
+            .GetProperty(nameof(Sample.IsDeleted))!
+            .SetValue(sample, true);
+        sample.DeletedAt = DateTime.UtcNow;
 
         // Set shadow property to indicate needs sync
         context.Entry(sample).Property("IsSynced").CurrentValue = false;

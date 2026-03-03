@@ -173,6 +173,9 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.DeletedBy);
 
+            // Global query filter: automatically exclude soft-deleted samples from all queries
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             entity.Property(e => e.LabId)
                 .IsRequired();
 
