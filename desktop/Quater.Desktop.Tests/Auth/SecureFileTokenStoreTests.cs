@@ -157,15 +157,24 @@ public sealed class SecureFileTokenStoreTests : IDisposable
         var keyPath = Path.Combine(_tempDir, "quater-keystore");
         var keyBytes = await File.ReadAllBytesAsync(keyPath);
 
-        // Key material must be at least 32 bytes (256 bits)
-        // On Windows with DPAPI the file stores the protected blob; on Linux it stores the raw key (or wrapped)
+        // Key file must hold at least 32 bytes of material (DPAPI blob is larger on Windows)
         Assert.True(keyBytes.Length >= 32, "Key file must contain at least 32 bytes of key material");
 
-        // Must NOT contain predictable seed strings
-        var raw = System.Text.Encoding.UTF8.GetString(keyBytes);
-        Assert.DoesNotContain(Environment.MachineName, raw);
-        Assert.DoesNotContain(Environment.UserName, raw);
-        Assert.DoesNotContain("quater", raw);
+        // Key must not be all-zeros
+        Assert.False(keyBytes.All(b => b == 0), "Key file must not be all-zeros");
+
+        // Key must NOT equal the legacy SHA256(MachineName+UserName+"quater") derivation
+        var legacySeed = System.Text.Encoding.UTF8.GetBytes(
+            Environment.MachineName + ":" + Environment.UserName + ":quater");
+        var legacyKey = SHA256.HashData(legacySeed);
+
+        // On Linux/macOS the key file is exactly 32 bytes; compare directly.
+        // On Windows the file is a DPAPI blob (larger), so the lengths already differ.
+        if (keyBytes.Length == legacyKey.Length)
+        {
+            Assert.False(keyBytes.SequenceEqual(legacyKey),
+                "Key must not be derived from predictable MachineName+UserName seed");
+        }
     }
 
     [Fact]
@@ -212,6 +221,57 @@ public sealed class SecureFileTokenStoreTests : IDisposable
             if (Directory.Exists(dir2))
                 Directory.Delete(dir2, recursive: true);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Stale-state cleanup (corrupt key file)
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetAsync_WithCorruptKeyFile_DeletesBothFilesAndReturnsNull()
+    {
+        // Arrange: create a valid token file, then overwrite the key file with garbage
+        var store = CreateStore();
+        await store.SaveAsync(SampleToken());
+
+        var tokenPath = Path.Combine(_tempDir, "tokens.dat");
+        var keyPath   = Path.Combine(_tempDir, "quater-keystore");
+
+        // Corrupt the key file (wrong length triggers CryptographicException on Linux/macOS;
+        // DPAPI failure on Windows also throws CryptographicException)
+        await File.WriteAllBytesAsync(keyPath, [0x00, 0x01, 0x02]); // 3 bytes – invalid
+
+        // Act
+        var result = await store.GetAsync();
+
+        // Assert: both files deleted, store returns null (will re-generate key on next save)
+        Assert.Null(result);
+        Assert.False(File.Exists(tokenPath), "Token file must be deleted when key file is corrupt");
+        Assert.False(File.Exists(keyPath),   "Key file must be deleted when it is corrupt");
+    }
+
+    [Fact]
+    public async Task SaveAsync_AfterCorruptKeyFileCleanup_RecreatesKeyAndSucceeds()
+    {
+        // Arrange: set up a corrupt key file with no token file
+        var keyPath   = Path.Combine(_tempDir, "quater-keystore");
+        var tokenPath = Path.Combine(_tempDir, "tokens.dat");
+        await File.WriteAllBytesAsync(keyPath, [0xDE, 0xAD]); // corrupt
+
+        var store = CreateStore();
+
+        // Act: SaveAsync must detect the corrupt key, wipe state, then rethrow.
+        // On the *second* call (after cleanup) it should succeed end-to-end.
+        await Assert.ThrowsAnyAsync<CryptographicException>(() => store.SaveAsync(SampleToken()));
+
+        // Both files were deleted by the first (failing) SaveAsync
+        Assert.False(File.Exists(keyPath),   "Corrupt key file must be deleted by SaveAsync");
+        Assert.False(File.Exists(tokenPath), "Partial token file must not exist after failed save");
+
+        // Second save regenerates everything cleanly
+        await store.SaveAsync(SampleToken());
+        var retrieved = await store.GetAsync();
+        Assert.NotNull(retrieved);
     }
 
     // -----------------------------------------------------------------------

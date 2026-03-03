@@ -51,9 +51,20 @@ public sealed class SecureFileTokenStore : ITokenStore
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_tokenPath)!);
 
-        var key     = LoadOrCreateKey();
-        var json    = JsonSerializer.Serialize(data);
-        var payload = Encrypt(Encoding.UTF8.GetBytes(json), key);
+        byte[] payload;
+        try
+        {
+            var key = LoadOrCreateKey();
+            var json = JsonSerializer.Serialize(data);
+            payload = Encrypt(Encoding.UTF8.GetBytes(json), key);
+        }
+        catch (CryptographicException)
+        {
+            // Corrupt key file (e.g., DPAPI failure): wipe both files so a fresh
+            // key is generated on the next attempt, rather than looping forever.
+            DeleteStaleState();
+            throw;
+        }
 
         await File.WriteAllBytesAsync(_tokenPath, payload, ct);
         SetRestrictedPermissions(_tokenPath);
@@ -74,8 +85,10 @@ public sealed class SecureFileTokenStore : ITokenStore
         }
         catch (CryptographicException)
         {
-            // Legacy AES-CBC or corrupted file: delete and force re-login.
-            File.Delete(_tokenPath);
+            // Legacy AES-CBC file, tampered ciphertext, or corrupt key file:
+            // wipe both files and force re-login. A fresh key will be generated
+            // on the next SaveAsync call.
+            DeleteStaleState();
             return null;
         }
 
@@ -203,5 +216,17 @@ public sealed class SecureFileTokenStore : ITokenStore
         {
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
+    }
+
+    /// <summary>
+    /// Deletes both the token file and the key file so that the next operation
+    /// starts completely fresh. Called whenever a <see cref="CryptographicException"/>
+    /// indicates that the on-disk state is unrecoverable (corrupt key, tampered
+    /// ciphertext, legacy AES-CBC format, etc.).
+    /// </summary>
+    private void DeleteStaleState()
+    {
+        if (File.Exists(_tokenPath)) File.Delete(_tokenPath);
+        if (File.Exists(_keyPath))   File.Delete(_keyPath);
     }
 }
