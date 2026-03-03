@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Exceptions;
 using Quater.Backend.Core.Extensions;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Data;
@@ -18,8 +19,27 @@ namespace Quater.Backend.Services;
 /// <summary>
 /// Service for querying audit logs (read-only)
 /// </summary>
-public class AuditLogService(QuaterDbContext context) : IAuditLogService
+public class AuditLogService(
+    QuaterDbContext context,
+    ILabContextAccessor labContextAccessor) : IAuditLogService
 {
+    /// <summary>
+    /// Returns a subquery of user IDs that belong to the current lab.
+    /// Used to scope audit log queries to the current tenant.
+    /// AuditLog has no direct LabId column; tenancy is derived via the UserLab join table.
+    /// </summary>
+    private IQueryable<Guid> LabUserIds =>
+        context.UserLabs
+            .Where(ul => ul.LabId == labContextAccessor.CurrentLabId!.Value)
+            .Select(ul => ul.UserId);
+
+    /// <summary>
+    /// Returns true when the caller is a system admin (sees all logs) or when no lab
+    /// context is set (unauthenticated / service-level calls — let the auth middleware handle access).
+    /// </summary>
+    private bool SkipTenantFilter =>
+        labContextAccessor.IsSystemAdmin || !labContextAccessor.CurrentLabId.HasValue;
+
     /// <inheritdoc/>
     public async Task<PagedResult<AuditLogDto>> GetAllAsync(
         int pageNumber = 1,
@@ -29,6 +49,11 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
         var query = context.AuditLogs
             .AsNoTracking()
             .Where(a => !a.IsArchived);
+
+        if (!SkipTenantFilter)
+        {
+            query = query.Where(a => LabUserIds.Contains(a.UserId));
+        }
 
         var totalCount = await query.CountAsync(ct);
 
@@ -58,6 +83,11 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
             .AsNoTracking()
             .Where(a => a.EntityId == entityId && !a.IsArchived);
 
+        if (!SkipTenantFilter)
+        {
+            query = query.Where(a => LabUserIds.Contains(a.UserId));
+        }
+
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
@@ -86,6 +116,11 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
             .AsNoTracking()
             .Where(a => a.UserId == userId && !a.IsArchived);
 
+        if (!SkipTenantFilter)
+        {
+            query = query.Where(a => LabUserIds.Contains(a.UserId));
+        }
+
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
@@ -113,6 +148,11 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
         if (!filter.IncludeArchived)
         {
             query = query.Where(a => !a.IsArchived);
+        }
+
+        if (!SkipTenantFilter)
+        {
+            query = query.Where(a => LabUserIds.Contains(a.UserId));
         }
 
         // Apply filters
@@ -172,6 +212,21 @@ public class AuditLogService(QuaterDbContext context) : IAuditLogService
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == id, ct);
 
-        return auditLog?.ToDto();
+        if (auditLog is null)
+            return null;
+
+        // For non-admin lab users, verify the log belongs to a user in the current lab.
+        // Return null (→ 404) rather than the record to prevent information leakage.
+        if (!SkipTenantFilter)
+        {
+            var belongsToLab = await context.UserLabs
+                .AnyAsync(ul => ul.UserId == auditLog.UserId
+                             && ul.LabId == labContextAccessor.CurrentLabId!.Value, ct);
+
+            if (!belongsToLab)
+                return null;
+        }
+
+        return auditLog.ToDto();
     }
 }
