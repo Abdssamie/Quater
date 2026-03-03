@@ -1,30 +1,75 @@
+using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
+using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core.Dialogs;
 
 public sealed class SukiDialogService(
     ILogger<SukiDialogService> logger,
-    ISukiToastManager toastManager) : IDialogService
+    ISukiToastManager toastManager,
+    ISukiDialogManager dialogManager) : IDialogService
 {
-    public Task<bool> ShowConfirmationAsync(string title, string message, string confirmText = "OK", string cancelText = "Cancel")
+    public async Task<bool> ShowConfirmationAsync(
+        string title,
+        string message,
+        string confirmText = "OK",
+        string cancelText = "Cancel")
     {
-        _ = confirmText;
-        _ = cancelText;
-        logger.LogInformation("Confirmation requested: {Title} - {Message}", title, message);
-        return Task.FromResult(true);
+        logger.LogInformation("Showing confirmation dialog: {Title}", title);
+
+        // TryShowAsync must be called on UI thread because it drives Avalonia's
+        // dialog host which interacts with the visual tree.
+        return await Dispatcher.UIThread.InvokeAsync(() =>
+            dialogManager
+                .CreateDialog()
+                .WithTitle(title)
+                .WithContent(message)
+                .WithYesNoResult(confirmText, cancelText)
+                .TryShowAsync());
     }
 
-    public Task ShowAlertAsync(string title, string message)
+    public async Task ShowAlertAsync(string title, string message)
     {
-        logger.LogInformation("Alert: {Title} - {Message}", title, message);
-        return Task.CompletedTask;
+        logger.LogInformation("Showing alert dialog: {Title}", title);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+            dialogManager
+                .CreateDialog()
+                .WithTitle(title)
+                .WithContent(message)
+                .WithOkResult("OK")
+                .TryShowAsync());
     }
 
-    public Task<string?> ShowInputAsync(string title, string message, string defaultValue = "")
+    public async Task<string?> ShowInputAsync(string title, string message, string defaultValue = "")
     {
-        logger.LogInformation("Input requested: {Title} - {Message}", title, message);
-        return Task.FromResult<string?>(defaultValue);
+        logger.LogInformation("Showing input dialog: {Title}", title);
+
+        var completion = new TaskCompletionSource<string?>();
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var textBox = new TextBox
+            {
+                Text = defaultValue,
+                Watermark = message,
+                MinWidth = 300,
+            };
+
+            dialogManager
+                .CreateDialog()
+                .WithTitle(title)
+                .WithContent(textBox)
+                .WithActionButton("OK", _ => completion.TrySetResult(textBox.Text), dismissOnClick: true)
+                .WithActionButton("Cancel", _ => completion.TrySetResult(null), dismissOnClick: true)
+                .OnDismissed(_ => completion.TrySetResult(null))
+                .TryShow();
+        });
+
+        return await completion.Task;
     }
 
     public void ShowToast(string message, NotificationType type = NotificationType.Information)

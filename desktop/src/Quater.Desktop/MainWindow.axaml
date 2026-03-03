@@ -98,6 +98,7 @@
 
     <suki:SukiWindow.Hosts>
         <suki:SukiToastHost Manager="{Binding ToastManager}" />
+        <suki:SukiDialogHost Manager="{Binding DialogManager}" />
     </suki:SukiWindow.Hosts>
 
     <ContentControl Content="{Binding CurrentContent}" />
