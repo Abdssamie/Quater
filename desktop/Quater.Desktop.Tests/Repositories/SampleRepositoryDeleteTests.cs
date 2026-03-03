@@ -166,4 +166,22 @@ public sealed class SampleRepositoryDeleteTests : IDisposable
         // Assert
         Assert.False(result, "DeleteAsync should return false when the sample does not exist.");
     }
+
+    [Fact]
+    public async Task DeleteAsync_AlreadyDeletedSample_ReturnsFalse()
+    {
+        // Arrange
+        var sampleId = (await SeedSampleAsync()).Id;
+
+        // First delete — must succeed
+        var firstResult = await _repository.DeleteAsync(sampleId);
+        Assert.True(firstResult, "First delete should succeed.");
+
+        // Act — second delete on the same ID
+        var secondResult = await _repository.DeleteAsync(sampleId);
+
+        // Assert: the global query filter excludes soft-deleted rows from GetByIdAsync,
+        // so the repository correctly treats the already-deleted sample as "not found".
+        Assert.False(secondResult, "Deleting an already-deleted sample should return false (idempotent not-found).");
+    }
 }

@@ -71,9 +71,9 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
     public DateTime? UpdatedAt { get; private set; }
     public Guid? UpdatedBy { get; private set; }
 
-    // ISoftDelete interface properties
-    public DateTime? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; }
+    // ISoftDelete interface properties — mutated only through MarkDeleted()
+    public DateTime? DeletedAt { get; private set; }
+    public string? DeletedBy { get; private set; }
 
     // IConcurrent interface properties
     [Timestamp]
