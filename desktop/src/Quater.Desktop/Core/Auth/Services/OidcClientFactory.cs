@@ -14,15 +14,13 @@ public sealed class OidcClientFactory(AppSettings appSettings)
         var options = new OidcClientOptions
         {
             Authority = appSettings.BackendUrl,
-            ClientId = "quater-mobile-client",
+            ClientId = appSettings.ClientId,
             RedirectUri = redirectUrl,
             Scope = "openid profile email api offline_access",
             Browser = browser,
             Policy = new Policy
             {
-                // Disable identity token signature validation for development
-                // TODO: Enable this in production once discovery endpoint is properly configured
-                RequireIdentityTokenSignature = false
+                RequireIdentityTokenSignature = true
             }
         };
 

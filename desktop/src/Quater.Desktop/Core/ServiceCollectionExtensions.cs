@@ -13,6 +13,7 @@ using Quater.Desktop.Core.Startup;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Data;
 using Serilog;
+using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core;
@@ -25,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AppState>();
         services.AddSingleton<INavigationService, SukiNavigationService>();
         services.AddSingleton<ISukiToastManager, SukiToastManager>();
+        services.AddSingleton<ISukiDialogManager, SukiDialogManager>();
         services.AddSingleton<IDialogService, SukiDialogService>();
 
         return services;

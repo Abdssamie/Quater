@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Quater.Desktop.Core;
 using Quater.Desktop.Core.Splash;
+using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
 namespace Quater.Desktop;
@@ -14,13 +15,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private ViewModelBase _currentContent;
 
     public ISukiToastManager ToastManager { get; }
+    public ISukiDialogManager DialogManager { get; }
 
     public MainWindowViewModel(
         ISukiToastManager toastManager,
+        ISukiDialogManager dialogManager,
         SplashViewModel splashVm,
         ILogger<MainWindowViewModel> logger)
     {
         ToastManager = toastManager;
+        DialogManager = dialogManager;
         _currentContent = splashVm;
         _logger = logger;
 

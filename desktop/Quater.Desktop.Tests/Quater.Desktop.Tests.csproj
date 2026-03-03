@@ -20,7 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\src\Quater.Desktop\Quater.Desktop.csproj" />
+    <ProjectReference Include="..\src\Quater.Desktop.Data\Quater.Desktop.Data.csproj" />
   </ItemGroup>
 
 </Project>
