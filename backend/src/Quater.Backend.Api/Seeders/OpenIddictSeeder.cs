@@ -8,7 +8,7 @@ namespace Quater.Backend.Api.Seeders;
 public static class OpenIddictSeeder
 {
     /// <summary>
-    /// Seeds the default OpenIddict client application for mobile/desktop apps.
+    /// Seeds the default OpenIddict client application for desktop apps.
     /// Uses authorization code flow with PKCE (public client, no client secret).
     /// Updates existing client if redirect URIs have changed.
     /// </summary>
@@ -17,18 +17,18 @@ public static class OpenIddictSeeder
         var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
         // Get client configuration from environment variables
-        var clientId = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_ID") ?? "quater-mobile-client";
+        var clientId = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_ID") ?? "quater-desktop-client";
 
         // Create OpenIddict application descriptor for public client with authorization code + PKCE
         var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
-            DisplayName = "Quater Mobile/Desktop Client",
+            DisplayName = "Quater Desktop Client",
             ClientType = OpenIddictConstants.ClientTypes.Public,
             ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
             RedirectUris =
             {
-                new Uri("quater://oauth/callback"),       // Mobile deep link
+                new Uri("quater://oauth/callback"),       // Mobile deep link (retained for mobile app compatibility)
                 new Uri("http://127.0.0.1/callback"),     // Desktop loopback
                 new Uri("http://127.0.0.1:7890/callback") // Desktop loopback (non-privileged port)
             },
