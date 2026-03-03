@@ -80,6 +80,10 @@ public partial class ApiClient
                 request.AddOrUpdateHeader(LabIdHeader, labId.Value.ToString());
             }
         }
+        catch (OperationCanceledException)
+        {
+            throw; // respect cooperative cancellation
+        }
         catch (Exception)
         {
             // Swallow to avoid breaking the request pipeline; auth failures will be
