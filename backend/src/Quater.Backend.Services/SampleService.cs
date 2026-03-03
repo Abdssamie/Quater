@@ -13,7 +13,8 @@ namespace Quater.Backend.Services;
 
 public class SampleService(
     QuaterDbContext context,
-    IValidator<Sample> validator) : ISampleService
+    IValidator<Sample> validator,
+    ILabContextAccessor labContextAccessor) : ISampleService
 {
     public async Task<SampleDto> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -32,8 +33,15 @@ public class SampleService(
     {
         var query = context.Samples
             .AsNoTracking()
-            .Where(s => !s.IsDeleted)
-            .OrderByDescending(s => s.CollectionDate);
+            .Where(s => !s.IsDeleted);
+
+        // Apply tenant filter when a lab context is active (non-admin requests)
+        if (labContextAccessor.CurrentLabId.HasValue)
+        {
+            query = query.Where(s => s.LabId == labContextAccessor.CurrentLabId.Value);
+        }
+
+        query = query.OrderByDescending(s => s.CollectionDate);
 
         var totalCount = await query.CountAsync(ct);
 
@@ -156,7 +164,7 @@ public class SampleService(
         CollectorName = sample.CollectorName,
         Notes = sample.Notes,
         Status = sample.Status,
-        Version = 1, // Placeholder for backward compatibility - actual concurrency uses RowVersion
+        Version = sample.RowVersion is { Length: >= 4 } ? BitConverter.ToInt32(sample.RowVersion, 0) : 0,
         LastModified = sample.UpdatedAt ?? sample.CreatedAt,
         LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
         IsDeleted = sample.IsDeleted,

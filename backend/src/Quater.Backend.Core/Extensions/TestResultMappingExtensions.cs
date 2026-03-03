@@ -28,7 +28,7 @@ public static class TestResultMappingExtensions
             TechnicianName = testResult.TechnicianName,
             TestMethod = testResult.TestMethod,
             ComplianceStatus = testResult.ComplianceStatus,
-            Version = 1, // Version removed from model, using constant for backward compatibility
+            Version = testResult.RowVersion is { Length: >= 4 } ? BitConverter.ToInt32(testResult.RowVersion, 0) : 0,
             LastModified = testResult.UpdatedAt ?? testResult.CreatedAt,
             LastModifiedBy = testResult.UpdatedBy ?? testResult.CreatedBy,
             IsDeleted = testResult.IsDeleted,

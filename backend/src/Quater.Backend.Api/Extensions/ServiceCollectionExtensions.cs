@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -385,6 +386,7 @@ public static class ServiceCollectionExtensions
         services.AddValidatorsFromAssemblyContaining<Core.Validators.SampleValidator>();
         services.AddScoped<IValidator<Lab>, Core.Validators.LabValidator>();
         services.AddScoped<IValidator<Parameter>, Core.Validators.ParameterValidator>();
+        services.AddFluentValidationAutoValidation();
 
         // Register Services
         services.AddScoped<ISampleService, SampleService>();

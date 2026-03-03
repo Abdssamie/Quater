@@ -29,7 +29,7 @@ public class ParameterService(
     {
         var parameter = await context.Parameters
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Name == name, ct);
+            .FirstOrDefaultAsync(p => p.Name == name && !p.IsDeleted && p.IsActive, ct);
 
         if (parameter == null)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);
@@ -41,6 +41,7 @@ public class ParameterService(
     {
         var query = context.Parameters
             .AsNoTracking()
+            .Where(p => !p.IsDeleted)
             .OrderBy(p => p.Name);
 
         var totalCount = await query.CountAsync(ct);
@@ -103,6 +104,9 @@ public class ParameterService(
     {
         var existing = await context.Parameters.FindAsync([id], ct);
         if (existing == null)
+            throw new NotFoundException(ErrorMessages.ParameterNotFound);
+
+        if (existing.IsDeleted)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);
 
         // Check for duplicate name (excluding current parameter)
