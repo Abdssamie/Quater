@@ -20,30 +20,53 @@ public sealed class LoopbackBrowser : IBrowser
 
     public async Task<BrowserResult> InvokeAsync(BrowserOptions options, CancellationToken ct = default)
     {
+        if (ct.IsCancellationRequested)
+            return new BrowserResult { ResultType = BrowserResultType.UserCancel };
+
         using var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{_port}{CallbackPath}");
         listener.Start();
 
-        Process.Start(new ProcessStartInfo
+        try
         {
-            FileName = options.StartUrl,
-            UseShellExecute = true
-        });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = options.StartUrl,
+                UseShellExecute = true
+            });
 
-        var context = await listener.GetContextAsync();
-        var response = context.Response;
-        var responseHtml = "<html><head><title>Quater</title></head><body>Authentication complete. You can close this window.</body></html>";
-        var buffer = Encoding.UTF8.GetBytes(responseHtml);
-        response.ContentLength64 = buffer.Length;
-        response.ContentType = "text/html";
-        await response.OutputStream.WriteAsync(buffer, 0, buffer.Length, ct);
-        response.OutputStream.Close();
+            var contextTask = listener.GetContextAsync();
+            var cancelTask = Task.Delay(Timeout.Infinite, ct);
+            var winner = await Task.WhenAny(contextTask, cancelTask);
+            if (winner == cancelTask)
+            {
+                listener.Stop();
+                _ = contextTask.ContinueWith(
+                    static t => _ = t.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted);
+                return new BrowserResult { ResultType = BrowserResultType.UserCancel };
+            }
 
-        var result = context.Request.Url?.ToString() ?? string.Empty;
-        return new BrowserResult
+            var context = await contextTask;
+            var response = context.Response;
+            var responseHtml = "<html><head><title>Quater</title></head><body>Authentication complete. You can close this window.</body></html>";
+            var buffer = Encoding.UTF8.GetBytes(responseHtml);
+            response.ContentLength64 = buffer.Length;
+            response.ContentType = "text/html";
+            await response.OutputStream.WriteAsync(buffer.AsMemory(), ct);
+            response.OutputStream.Close();
+
+            var result = context.Request.Url?.ToString() ?? string.Empty;
+            return new BrowserResult
+            {
+                ResultType = BrowserResultType.Success,
+                Response = result
+            };
+        }
+        catch (OperationCanceledException)
         {
-            ResultType = BrowserResultType.Success,
-            Response = result
-        };
+            listener.Stop();
+            return new BrowserResult { ResultType = BrowserResultType.UserCancel };
+        }
     }
 }
