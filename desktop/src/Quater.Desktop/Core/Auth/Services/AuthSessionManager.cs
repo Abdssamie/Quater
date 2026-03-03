@@ -20,7 +20,7 @@ public sealed class AuthSessionManager(
     ILogger<AuthSessionManager> logger)
 {
     private const string SessionExpiredMessage = "Session expired. Please sign in again.";
-    private bool _isHandlingUnauthorized;
+    private int _isHandlingUnauthorizedInt;
 
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -160,12 +160,13 @@ public sealed class AuthSessionManager(
 
     public async Task HandleUnauthorizedAsync(CancellationToken ct = default)
     {
-        if (_isHandlingUnauthorized)
+        // Interlocked.CompareExchange atomically sets the flag to 1 only when it was 0,
+        // eliminating the TOCTOU race of a bool check-then-set.
+        if (Interlocked.CompareExchange(ref _isHandlingUnauthorizedInt, 1, 0) != 0)
         {
             return;
         }
 
-        _isHandlingUnauthorized = true;
         try
         {
             await HandleLogoutAsync(ct);
@@ -174,7 +175,7 @@ public sealed class AuthSessionManager(
         }
         finally
         {
-            _isHandlingUnauthorized = false;
+            Interlocked.Exchange(ref _isHandlingUnauthorizedInt, 0);
         }
     }
 

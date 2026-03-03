@@ -66,7 +66,9 @@ public partial class ApiClient
                 // async refresh whose continuation tries to resume on the same UI thread.
                 // Task.Run schedules the work on the thread pool where there is no
                 // SynchronizationContext, so continuations are free to run on any thread.
-                var token = Task.Run(() => tokenProvider(CancellationToken.None)).GetAwaiter().GetResult();
+                // A 10-second timeout prevents indefinite blocking if the token refresh hangs.
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var token = Task.Run(() => tokenProvider(cts.Token)).GetAwaiter().GetResult();
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     request.AddOrUpdateHeader(AuthorizationHeader, $"{BearerPrefix} {token}");

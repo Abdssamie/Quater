@@ -22,6 +22,9 @@ public sealed class SukiDialogService(
 
         // TryShowAsync must be called on UI thread because it drives Avalonia's
         // dialog host which interacts with the visual tree.
+        // Note: although InvokeAsync<Task<bool>> nominally returns DispatcherOperation<Task<bool>>,
+        // Avalonia's DispatcherOperation awaiter automatically unwraps Task<T> results, so a
+        // single await here correctly suspends until the dialog is dismissed — no .Unwrap() needed.
         return await Dispatcher.UIThread.InvokeAsync(() =>
             dialogManager
                 .CreateDialog()
@@ -35,6 +38,9 @@ public sealed class SukiDialogService(
     {
         logger.LogInformation("Showing alert dialog: {Title}", title);
 
+        // Note: although InvokeAsync<Task<bool>> nominally returns DispatcherOperation<Task<bool>>,
+        // Avalonia's DispatcherOperation awaiter automatically unwraps Task<T> results, so a
+        // single await here correctly suspends until the dialog is dismissed — no .Unwrap() needed.
         await Dispatcher.UIThread.InvokeAsync(() =>
             dialogManager
                 .CreateDialog()

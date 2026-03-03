@@ -25,10 +25,11 @@ public sealed class LoopbackBrowser : IBrowser
 
         using var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{_port}{CallbackPath}");
-        listener.Start();
 
         try
         {
+            listener.Start();
+
             Process.Start(new ProcessStartInfo
             {
                 FileName = options.StartUrl,
@@ -42,7 +43,7 @@ public sealed class LoopbackBrowser : IBrowser
             {
                 listener.Stop();
                 _ = contextTask.ContinueWith(
-                    static t => _ = t.Exception,
+                    static t => t.Exception?.Handle(_ => true),
                     TaskContinuationOptions.OnlyOnFaulted);
                 return new BrowserResult { ResultType = BrowserResultType.UserCancel };
             }
@@ -67,6 +68,11 @@ public sealed class LoopbackBrowser : IBrowser
         {
             listener.Stop();
             return new BrowserResult { ResultType = BrowserResultType.UserCancel };
+        }
+        catch
+        {
+            listener.Stop();
+            throw;
         }
     }
 }
