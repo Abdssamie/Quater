@@ -29,7 +29,7 @@ public class ParameterService(
     {
         var parameter = await context.Parameters
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Name == name, ct);
+            .FirstOrDefaultAsync(p => p.Name == name && !p.IsDeleted && p.IsActive, ct);
 
         if (parameter == null)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);
@@ -39,6 +39,7 @@ public class ParameterService(
 
     public async Task<PagedResult<ParameterDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
     {
+        // IsDeleted filter applied via global query filter in ParameterConfiguration.
         var query = context.Parameters
             .AsNoTracking()
             .OrderBy(p => p.Name);
@@ -102,6 +103,7 @@ public class ParameterService(
     public async Task<ParameterDto> UpdateAsync(Guid id, UpdateParameterDto dto, CancellationToken ct = default)
     {
         var existing = await context.Parameters.FindAsync([id], ct);
+        // FindAsync respects the global IsDeleted query filter, so deleted records are already excluded above.
         if (existing == null)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);
 

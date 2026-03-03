@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
 using Quater.Backend.Core.Exceptions;
+using Quater.Backend.Core.Tests.Data;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Core.Validators;
 using Quater.Backend.Data;
@@ -36,7 +37,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new SampleValidator(_timeProvider);
-        _service = new SampleService(_context, validator);
+        _service = new SampleService(_context, validator, new MockLabContextAccessor());
     }
 
     public async Task DisposeAsync()
