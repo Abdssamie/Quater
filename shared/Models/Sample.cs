@@ -82,4 +82,17 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
     // Navigation properties
     public Lab Lab { get; set; } = null!;
     public ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
+
+    // Domain methods
+
+    /// <summary>
+    /// Marks this sample as soft-deleted.
+    /// </summary>
+    /// <param name="deletedBy">Identifier of the actor performing the deletion, or <c>null</c> when unavailable.</param>
+    public void MarkDeleted(string? deletedBy = null)
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        DeletedBy = deletedBy;
+    }
 }

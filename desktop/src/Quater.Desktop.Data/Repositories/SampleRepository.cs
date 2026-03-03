@@ -73,11 +73,9 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
         if (sample == null)
             return false;
 
-        // Soft delete: mark as deleted instead of physically removing the row
-        typeof(Sample)
-            .GetProperty(nameof(Sample.IsDeleted))!
-            .SetValue(sample, true);
-        sample.DeletedAt = DateTime.UtcNow;
+        // Soft delete: mark as deleted instead of physically removing the row.
+        // DeletedBy is null because DeleteAsync has no caller-identity parameter.
+        sample.MarkDeleted(deletedBy: null);
 
         // Set shadow property to indicate needs sync
         context.Entry(sample).Property("IsSynced").CurrentValue = false;
