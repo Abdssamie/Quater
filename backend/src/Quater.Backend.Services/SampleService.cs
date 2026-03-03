@@ -35,10 +35,12 @@ public class SampleService(
             .AsNoTracking()
             .Where(s => !s.IsDeleted);
 
-        // Apply tenant filter when a lab context is active (non-admin requests)
-        if (labContextAccessor.CurrentLabId.HasValue)
+        // Apply tenant filter when a lab context is active (non-admin requests).
+        // Mirrors AuditLogService.SkipTenantFilter: skip for system admins and unauthenticated contexts.
+        var skipFilter = labContextAccessor.IsSystemAdmin || !labContextAccessor.CurrentLabId.HasValue;
+        if (!skipFilter)
         {
-            query = query.Where(s => s.LabId == labContextAccessor.CurrentLabId.Value);
+            query = query.Where(s => s.LabId == labContextAccessor.CurrentLabId!.Value);
         }
 
         query = query.OrderByDescending(s => s.CollectionDate);

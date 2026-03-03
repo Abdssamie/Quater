@@ -28,9 +28,9 @@ public class LabService(
 
     public async Task<PagedResult<LabDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
     {
+        // IsDeleted filter applied via global query filter in LabConfiguration.
         var query = context.Labs
             .AsNoTracking()
-            .Where(l => !l.IsDeleted)
             .OrderBy(l => l.Name);
 
         var totalCount = await query.CountAsync(ct);

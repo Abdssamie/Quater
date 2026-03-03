@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Quater.Backend.Core.DTOs;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -27,7 +28,9 @@ public static class SampleMappingExtensions
             CollectorName = sample.CollectorName,
             Notes = sample.Notes,
             Status = sample.Status,
-            Version = sample.RowVersion is { Length: >= 4 } ? BitConverter.ToInt32(sample.RowVersion, 0) : 0,
+            Version = sample.RowVersion is { Length: >= 4 }
+                ? BinaryPrimitives.ReadInt32BigEndian(sample.RowVersion.AsSpan(0, 4))
+                : 0,
             LastModified = sample.UpdatedAt ?? sample.CreatedAt,
             LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
             IsDeleted = sample.IsDeleted,

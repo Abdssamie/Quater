@@ -39,9 +39,9 @@ public class ParameterService(
 
     public async Task<PagedResult<ParameterDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
     {
+        // IsDeleted filter applied via global query filter in ParameterConfiguration.
         var query = context.Parameters
             .AsNoTracking()
-            .Where(p => !p.IsDeleted)
             .OrderBy(p => p.Name);
 
         var totalCount = await query.CountAsync(ct);
@@ -103,10 +103,8 @@ public class ParameterService(
     public async Task<ParameterDto> UpdateAsync(Guid id, UpdateParameterDto dto, CancellationToken ct = default)
     {
         var existing = await context.Parameters.FindAsync([id], ct);
+        // FindAsync respects the global IsDeleted query filter, so deleted records are already excluded above.
         if (existing == null)
-            throw new NotFoundException(ErrorMessages.ParameterNotFound);
-
-        if (existing.IsDeleted)
             throw new NotFoundException(ErrorMessages.ParameterNotFound);
 
         // Check for duplicate name (excluding current parameter)

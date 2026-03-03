@@ -27,6 +27,7 @@ public class AuditLogService(
     /// Returns a subquery of user IDs that belong to the current lab.
     /// Used to scope audit log queries to the current tenant.
     /// AuditLog has no direct LabId column; tenancy is derived via the UserLab join table.
+    /// Note: relies on the global IsDeleted query filter in LabConfiguration to exclude deleted labs.
     /// </summary>
     private IQueryable<Guid> LabUserIds =>
         context.UserLabs
