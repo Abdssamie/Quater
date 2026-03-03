@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.Constants;
@@ -166,7 +167,7 @@ public class SampleService(
         CollectorName = sample.CollectorName,
         Notes = sample.Notes,
         Status = sample.Status,
-        Version = sample.RowVersion is { Length: >= 4 } ? BitConverter.ToInt32(sample.RowVersion, 0) : 0,
+        Version = sample.RowVersion is { Length: >= 4 } ? BinaryPrimitives.ReadInt32BigEndian(sample.RowVersion.AsSpan(0, 4)) : 0,
         LastModified = sample.UpdatedAt ?? sample.CreatedAt,
         LastModifiedBy = sample.UpdatedBy ?? sample.CreatedBy,
         IsDeleted = sample.IsDeleted,
