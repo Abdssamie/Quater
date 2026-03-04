@@ -29,6 +29,7 @@ public class TestResultService(
 
         var parameterName = await context.Parameters
             .AsNoTracking()
+            .IgnoreQueryFilters()
             .Where(p => p.Id == testResult.Measurement.ParameterId)
             .Select(p => p.Name)
             .FirstOrDefaultAsync(ct);
@@ -90,6 +91,7 @@ public class TestResultService(
         var parameterIds = items.Select(tr => tr.Measurement.ParameterId).Distinct().ToList();
         var parameterDict = await context.Parameters
             .AsNoTracking()
+            .IgnoreQueryFilters()
             .Where(p => parameterIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, p => p.Name, ct);
 
