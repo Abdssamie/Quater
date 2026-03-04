@@ -12,6 +12,7 @@ using Quater.Desktop.Core.State;
 
 namespace Quater.Desktop.Tests.Auth;
 
+[Collection("UIThread")]
 public sealed class AuthSessionManagerTests
 {
     [Fact]
@@ -236,6 +237,40 @@ public sealed class AuthSessionManagerTests
         Assert.Equal("Session expired. Please sign in again.", appState.AuthNotice);
         accessTokenCache.Verify(cache => cache.Clear(), Times.Once);
         accessTokenCache.Verify(cache => cache.StopAutoRefresh(), Times.Once);
+        authService.Verify(service => service.LogoutAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleUnauthorizedAsync_SecondCallDoesNotRunBeforeStateUpdates()
+    {
+        var authService = new Mock<IAuthService>();
+        var accessTokenCache = new Mock<IAccessTokenCache>();
+        var apiClientFactory = new Mock<IApiClientFactory>();
+        var dialogService = new Mock<IDialogService>();
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentUser = new UserDto(userName: "tester", email: "tester@example.com", labs: []),
+            AvailableLabs = [new UserLabDto(labId: Guid.NewGuid(), labName: "Lab")],
+            CurrentLabId = Guid.NewGuid(),
+            CurrentLabName = "Lab",
+            AuthNotice = string.Empty
+        };
+        var settingsUpdater = new SettingsUpdater(Mock.Of<ISettingsStore>(), new AppSettings());
+        var logger = new Logger<AuthSessionManager>(new LoggerFactory());
+
+        var manager = new AuthSessionManager(
+            authService.Object,
+            accessTokenCache.Object,
+            apiClientFactory.Object,
+            appState,
+            settingsUpdater,
+            dialogService.Object,
+            logger);
+
+        await manager.HandleUnauthorizedAsync();
+        await manager.HandleUnauthorizedAsync();
+
         authService.Verify(service => service.LogoutAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

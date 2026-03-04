@@ -32,7 +32,7 @@ public sealed class AuthSessionManager(
             if (string.IsNullOrWhiteSpace(token))
             {
                 logger.LogWarning("No access token available during initialization");
-                Dispatcher.UIThread.Post(() => appState.IsAuthenticated = false);
+                await InvokeOnUiThreadAsync(() => appState.IsAuthenticated = false);
                 return;
             }
 
@@ -40,7 +40,7 @@ public sealed class AuthSessionManager(
             logger.LogInformation("Calling ApiUsersMeGetAsync during initialization");
             var userInfo = await usersApi.ApiUsersMeGetAsync(cancellationToken: ct);
             var (defaultLabId, labName) = ComputeDefaultLab(userInfo);
-            Dispatcher.UIThread.Post(() =>
+            await InvokeOnUiThreadAsync(() =>
             {
                 appState.CurrentUser = userInfo;
                 appState.AvailableLabs = userInfo.Labs;
@@ -58,12 +58,12 @@ public sealed class AuthSessionManager(
         catch (ApiException ex)
         {
             logger.LogError(ex, "ApiUsersMeGetAsync failed with status {StatusCode}. Content: {Content}", ex.ErrorCode, ex.ErrorContent);
-            Dispatcher.UIThread.Post(() => appState.IsAuthenticated = false);
+            await InvokeOnUiThreadAsync(() => appState.IsAuthenticated = false);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "AuthSessionManager.InitializeAsync failed");
-            Dispatcher.UIThread.Post(() => appState.IsAuthenticated = false);
+            await InvokeOnUiThreadAsync(() => appState.IsAuthenticated = false);
         }
     }
 
@@ -124,7 +124,7 @@ public sealed class AuthSessionManager(
             await settingsUpdater.SaveAsync(ct);
         }
 
-        Dispatcher.UIThread.Post(() =>
+        await InvokeOnUiThreadAsync(() =>
         {
             appState.CurrentUser = userInfo;
             appState.AvailableLabs = userInfo.Labs;
@@ -145,7 +145,7 @@ public sealed class AuthSessionManager(
     {
         Quater.Desktop.Api.Client.ApiClient.ResetUnauthorizedSignal();
         await authService.LogoutAsync(ct);
-        Dispatcher.UIThread.Post(() =>
+        await InvokeOnUiThreadAsync(() =>
         {
             appState.CurrentUser = null;
             appState.AvailableLabs = [];
@@ -170,15 +170,31 @@ public sealed class AuthSessionManager(
         try
         {
             await HandleLogoutAsync(ct);
-            Dispatcher.UIThread.Post(() => appState.AuthNotice = SessionExpiredMessage);
-            dialogService.ShowWarning(SessionExpiredMessage);
         }
-        finally
+        catch
         {
             Interlocked.Exchange(ref _isHandlingUnauthorizedInt, 0);
+            throw;
         }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            appState.AuthNotice = SessionExpiredMessage;
+            dialogService.ShowWarning(SessionExpiredMessage);
+            Interlocked.Exchange(ref _isHandlingUnauthorizedInt, 0);
+        });
     }
 
+    private static async Task InvokeOnUiThreadAsync(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(action);
+    }
     private (Guid? LabId, string LabName) ComputeDefaultLab(UserDto userInfo)
     {
         var defaultLabId = SelectDefaultLabId(userInfo);

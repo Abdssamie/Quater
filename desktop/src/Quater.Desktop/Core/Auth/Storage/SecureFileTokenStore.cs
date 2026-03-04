@@ -31,8 +31,8 @@ public sealed class SecureFileTokenStore : ITokenStore
     // Default constructor: uses the standard AppData location (production usage).
     public SecureFileTokenStore()
         : this(Path.Combine(
-              Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-              "Quater"))
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Quater"))
     {
     }
 
@@ -100,6 +100,9 @@ public sealed class SecureFileTokenStore : ITokenStore
     {
         if (File.Exists(_tokenPath))
             File.Delete(_tokenPath);
+
+        if (File.Exists(_keyPath))
+            File.Delete(_keyPath);
 
         return Task.CompletedTask;
     }

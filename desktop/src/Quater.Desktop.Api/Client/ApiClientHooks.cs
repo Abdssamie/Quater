@@ -53,7 +53,7 @@ public partial class ApiClient
 
     private static int _unauthorizedSignaled;
 
-    partial void InterceptRequest(RestRequest request)
+    internal static void ApplyRequestHeaders(RestRequest request)
     {
         try
         {
@@ -84,13 +84,14 @@ public partial class ApiClient
         }
         catch (OperationCanceledException)
         {
-            throw; // respect cooperative cancellation
-        }
-        catch (Exception)
-        {
             // Swallow to avoid breaking the request pipeline; auth failures will be
             // surfaced by the 401/403 response handling in InterceptResponse.
         }
+    }
+
+    partial void InterceptRequest(RestRequest request)
+    {
+        ApplyRequestHeaders(request);
     }
 
     partial void InterceptResponse(RestRequest request, RestResponse response)
