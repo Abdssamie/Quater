@@ -27,4 +27,9 @@ public interface IUserLabService
     /// Gets all users in a specific lab.
     /// </summary>
     Task<IEnumerable<UserDto>> GetUsersByLabAsync(Guid labId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Adds a user to multiple labs with specified roles.
+    /// </summary>
+    Task<IEnumerable<UserLabDto>> AddUserToLabsAsync(Guid userId, IEnumerable<(Guid LabId, UserRole Role)> assignments, CancellationToken ct = default);
 }

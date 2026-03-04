@@ -97,4 +97,69 @@ public class UserLabService(QuaterDbContext context) : IUserLabService
 
         return users.Select(u => u.ToDto());
     }
+
+    public async Task<IEnumerable<UserLabDto>> AddUserToLabsAsync(
+        Guid userId,
+        IEnumerable<(Guid LabId, UserRole Role)> assignments,
+        CancellationToken ct = default)
+    {
+        var assignmentList = assignments.ToList();
+        if (assignmentList.Count == 0)
+            return [];
+
+        // Verify user exists
+        var userExists = await context.Users.AnyAsync(u => u.Id == userId, ct);
+        if (!userExists)
+            throw new NotFoundException(ErrorMessages.UserNotFound);
+
+        var labIds = assignmentList.Select(a => a.LabId).ToList();
+        if (labIds.Distinct().Count() != labIds.Count)
+            throw new BadRequestException("Duplicate lab assignments are not allowed");
+
+        // Verify all labs exist
+        var labs = await context.Labs
+            .AsNoTracking()
+            .Where(l => labIds.Contains(l.Id) && !l.IsDeleted)
+            .ToDictionaryAsync(l => l.Id, ct);
+
+        if (labs.Count != labIds.Distinct().Count())
+            throw new NotFoundException(ErrorMessages.LabNotFound);
+
+        // Check for existing memberships
+        var existingLabIds = await context.UserLabs
+            .Where(ul => ul.UserId == userId && labIds.Contains(ul.LabId))
+            .Select(ul => ul.LabId)
+            .ToListAsync(ct);
+
+        if (existingLabIds.Count > 0)
+            throw new ConflictException("User is already a member of one or more of these labs");
+
+        var assignedAt = DateTime.UtcNow;
+        var userLabs = assignmentList.Select(a => new UserLab
+        {
+            UserId = userId,
+            LabId = a.LabId,
+            Role = a.Role,
+            AssignedAt = assignedAt
+        }).ToList();
+
+        context.UserLabs.AddRange(userLabs);
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        {
+            throw new ConflictException("One or more lab assignments already exist for this user.");
+        }
+
+        return userLabs.Select(ul => new UserLabDto
+        {
+            LabId = ul.LabId,
+            LabName = labs[ul.LabId].Name,
+            Role = ul.Role,
+            AssignedAt = ul.AssignedAt
+        });
+    }
 }
