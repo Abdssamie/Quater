@@ -206,6 +206,9 @@ public class QuaterLocalContext : DbContext
                 .WithOne(e => e.Sample)
                 .HasForeignKey(e => e.SampleId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Global query filter for soft delete
+            entity.HasQueryFilter(e => !e.IsDeleted && e.DeletedAt == null);
         });
     }
 
@@ -321,6 +324,9 @@ public class QuaterLocalContext : DbContext
             // Composite index for sync queries
             entity.HasIndex("IsSynced", nameof(TestResult.UpdatedAt))
                 .HasDatabaseName("IX_TestResults_IsSynced_UpdatedAt");
+
+            // Global query filter for soft delete
+            entity.HasQueryFilter(e => !e.IsDeleted && e.DeletedAt == null && !e.Sample.IsDeleted && e.Sample.DeletedAt == null);
         });
     }
 
@@ -394,6 +400,9 @@ public class QuaterLocalContext : DbContext
 
             entity.HasIndex("IsSynced")
                 .HasDatabaseName("IX_Parameters_IsSynced");
+
+            // Global query filter for soft delete
+            entity.HasQueryFilter(e => !e.IsDeleted && e.DeletedAt == null);
         });
     }
 
@@ -458,6 +467,9 @@ public class QuaterLocalContext : DbContext
 
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("IX_Labs_IsActive");
+
+            // Global query filter for soft delete
+            entity.HasQueryFilter(e => !e.IsDeleted && e.DeletedAt == null);
         });
     }
 
