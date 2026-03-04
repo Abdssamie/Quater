@@ -7,6 +7,7 @@ namespace Quater.Desktop.Tests.Api;
 /// <summary>
 /// Tests for ApiClientHooks deadlock prevention and behaviour.
 /// </summary>
+[Collection("ApiClientHooks")]
 public sealed class ApiClientHooksTests
 {
     /// <summary>

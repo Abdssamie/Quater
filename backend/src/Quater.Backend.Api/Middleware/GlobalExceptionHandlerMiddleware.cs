@@ -75,6 +75,11 @@ public class GlobalExceptionHandlerMiddleware
                 exception.Message,
                 null
             ),
+            DbUpdateException { InnerException: Npgsql.PostgresException { SqlState: "23505" } } => (
+                HttpStatusCode.Conflict,
+                "A data conflict occurred. The record may already exist.",
+                null
+            ),
             DbUpdateConcurrencyException => (
                 HttpStatusCode.Conflict,
                 "The record was modified by another user. Please refresh and try again.",

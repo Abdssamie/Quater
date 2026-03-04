@@ -37,7 +37,7 @@ public class SampleServiceIntegrationTests : IAsyncLifetime
         _context = _fixture.Container.CreateSeededDbContext();
         _timeProvider = new FakeTimeProvider();
         var validator = new SampleValidator(_timeProvider);
-        _service = new SampleService(_context, validator, new MockLabContextAccessor());
+        _service = new SampleService(_context, validator, new Quater.Backend.Core.Tests.Data.MockLabContextAccessor());
     }
 
     public async Task DisposeAsync()

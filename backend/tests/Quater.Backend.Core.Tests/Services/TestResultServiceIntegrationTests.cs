@@ -126,6 +126,23 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByIdAsync_SoftDeletedParameter_ResolvesParameterName()
+    {
+        // Arrange
+        var existing = _context.TestResults.First();
+        var parameter = _context.Parameters.Find(existing.Measurement.ParameterId)!;
+
+        _context.Entry(parameter).Property(nameof(Parameter.IsDeleted)).CurrentValue = true;
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetByIdAsync(existing.Id);
+
+        // Assert
+        result.ParameterName.Should().Be(parameter.Name);
+    }
+
+    [Fact]
     public async Task GetBySampleIdAsync_ReturnsResultsForSample()
     {
         // Arrange
@@ -138,6 +155,24 @@ public class TestResultServiceIntegrationTests : IAsyncLifetime
         // Assert
         result.Items.Should().HaveCount(count);
         result.Items.All(tr => tr.SampleId == sample.Id).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetBySampleIdAsync_SoftDeletedParameter_ResolvesParameterNames()
+    {
+        // Arrange
+        var sample = _context.Samples.First();
+        var existing = _context.TestResults.First(tr => tr.SampleId == sample.Id);
+        var parameter = _context.Parameters.Find(existing.Measurement.ParameterId)!;
+
+        _context.Entry(parameter).Property(nameof(Parameter.IsDeleted)).CurrentValue = true;
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetBySampleIdAsync(sample.Id);
+
+        // Assert
+        result.Items.Single(tr => tr.Id == existing.Id).ParameterName.Should().Be(parameter.Name);
     }
 
     [Fact]

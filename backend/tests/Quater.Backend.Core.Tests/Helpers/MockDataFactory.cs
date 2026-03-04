@@ -154,8 +154,7 @@ public static class MockDataFactory
         {
             Id = Guid.NewGuid(),
             SampleId = sampleId,
-            Measurement = new Quater.Shared.ValueObjects.Measurement(parameter, value, parameter.Unit),
-            Parameter = parameter,  // Explicitly set navigation property
+            Measurement = new Quater.Shared.ValueObjects.Measurement(parameter.Id, value, parameter.Unit),
             ComplianceStatus = complianceStatus,
             TestMethod = method,
             TechnicianName = "Test Technician",

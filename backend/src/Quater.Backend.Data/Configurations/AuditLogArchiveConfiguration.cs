@@ -20,14 +20,16 @@ public class AuditLogArchiveConfiguration : IEntityTypeConfiguration<AuditLogArc
 
         entity.Property(e => e.EntityType)
             .IsRequired()
-            .HasMaxLength(50);
+            .HasMaxLength(50)
+            .HasConversion<string>();
 
         entity.Property(e => e.EntityId)
             .IsRequired();
 
         entity.Property(e => e.Action)
             .IsRequired()
-            .HasMaxLength(20);
+            .HasMaxLength(20)
+            .HasConversion<string>();
 
         entity.Property(e => e.OldValue);
 

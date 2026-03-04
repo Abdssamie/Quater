@@ -118,6 +118,11 @@ public static class ServiceCollectionExtensions
             var ipAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
             return new AuditTrailInterceptor(currentUserService, ipAddress);
         });
+        services.AddScoped<RlsConnectionInterceptor>(sp =>
+        {
+            var labContextAccessor = sp.GetRequiredService<ILabContextAccessor>();
+            return new RlsConnectionInterceptor(labContextAccessor);
+        });
 
         // Register RlsSessionInterceptor as scoped — it depends on ILabContextAccessor (scoped)
         // and must fire on every connection open to set PostgreSQL RLS session variables.
@@ -200,7 +205,7 @@ public static class ServiceCollectionExtensions
             options.Cookie.SecurePolicy = environment.IsDevelopment() || environment.IsEnvironment("Testing")
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
-            
+
             // Return 302 redirect instead of 401 for unauthenticated requests
             // This ensures browsers follow the redirect to the login page
             options.Events.OnRedirectToLogin = context =>
@@ -234,7 +239,7 @@ public static class ServiceCollectionExtensions
                        .SetTokenEndpointUris("/api/auth/token")
                        .SetUserInfoEndpointUris("/api/auth/userinfo")
                        .SetRevocationEndpointUris("/api/auth/revoke");
-                
+
                 // Enable discovery endpoint for clients to fetch signing keys
                 // This is required for desktop/mobile clients to validate identity tokens
                 // Endpoint: /.well-known/openid-configuration (automatically enabled by OpenIddict)

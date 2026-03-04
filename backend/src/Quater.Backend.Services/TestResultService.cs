@@ -20,8 +20,8 @@ public class TestResultService(
     {
         var testResult = await context.TestResults
             .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(tr => tr.Id == id && !tr.IsDeleted)
+            .IgnoreQueryFilters()  // Ignore soft-delete filters to load owned Measurement
+            .Where(tr => tr.Id == id && !tr.IsDeleted)  // Manually filter TestResult
             .FirstOrDefaultAsync(ct);
 
         if (testResult == null)
@@ -78,7 +78,7 @@ public class TestResultService(
         var query = context.TestResults
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Where(tr => tr.SampleId == sampleId && !tr.IsDeleted)
+            .Where(tr => tr.SampleId == sampleId && !tr.IsDeleted)  // Manually filter TestResult
             .OrderByDescending(tr => tr.TestDate);
 
         var totalCount = await query.CountAsync(ct);

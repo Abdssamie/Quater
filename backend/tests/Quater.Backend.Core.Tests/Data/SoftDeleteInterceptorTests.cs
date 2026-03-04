@@ -1,7 +1,9 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
+using Quater.Backend.Data.Interceptors;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using Xunit;
@@ -76,6 +78,45 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
         deletedSample!.DeletedAt.Should().NotBeNull();
         deletedSample.DeletedAt.Should().BeOnOrAfter(beforeDelete);
         deletedSample.DeletedAt.Should().BeOnOrBefore(afterDelete);
+    }
+
+    [Fact]
+    public async Task Delete_SetsDeletedByToCurrentUserId()
+    {
+        // Arrange - Create the test user first to satisfy FK constraint
+        var labId = await GetFirstLabIdAsync();
+        var testUserId = Guid.Parse("550e8400-e29b-41d4-a716-446655440003");
+        var testUser = new User
+        {
+            Id = testUserId,
+            UserName = "softdeleteuser",
+            NormalizedUserName = "SOFTDELETEUSER",
+            Email = "softdeleteuser@example.com",
+            NormalizedEmail = "SOFTDELETEUSER@EXAMPLE.COM",
+            EmailConfirmed = true,
+            UserLabs = [ new UserLab { LabId = labId, Role = UserRole.Technician } ],
+            IsActive = true,
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            SecurityStamp = Guid.NewGuid().ToString()
+        };
+        _context.Users.Add(testUser);
+        await _context.SaveChangesAsync();
+
+        var mockUserService = new MockCurrentUserService(testUserId);
+        using var customContext = CreateContextWithUserService(mockUserService);
+
+        var sample = MockDataFactory.CreateSample(labId);
+        customContext.Samples.Add(sample);
+        await customContext.SaveChangesAsync();
+
+        // Act
+        customContext.Samples.Remove(sample);
+        await customContext.SaveChangesAsync();
+
+        // Assert
+        var deletedSample = await customContext.Samples.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == sample.Id);
+        deletedSample.Should().NotBeNull();
+        deletedSample!.DeletedBy.Should().Be(testUserId.ToString());
     }
 
     [Fact]
@@ -433,5 +474,21 @@ public class SoftDeleteInterceptorTests : IAsyncLifetime
         _context.Labs.Add(newLab);
         await _context.SaveChangesAsync();
         return newLab.Id;
+    }
+
+    private QuaterDbContext CreateContextWithUserService(ICurrentUserService userService)
+    {
+        var connectionString = $"{_fixture.Factory.ConnectionString};Include Error Detail=true";
+
+        var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>()
+            .UseNpgsql(connectionString)
+            .EnableSensitiveDataLogging()
+            .AddInterceptors(
+                new SoftDeleteInterceptor(userService),
+                new AuditTrailInterceptor(userService));
+
+        var context = new QuaterDbContext(optionsBuilder.Options);
+        context.Database.EnsureCreated();
+        return context;
     }
 }
