@@ -1,11 +1,13 @@
 using System;
 using System.Threading;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using RestSharp;
 
 namespace Quater.Desktop.Api.Client;
 
+/// <summary>
+/// Event arguments for an unauthorized (401/403) API response.
+/// </summary>
 public sealed class ApiUnauthorizedEventArgs : EventArgs
 {
     /// <summary>
@@ -51,45 +53,45 @@ public partial class ApiClient
 
     private static int _unauthorizedSignaled;
 
-    partial void InterceptRequest(RestRequest request)
+    internal static void ApplyRequestHeaders(RestRequest request)
     {
         try
         {
             var tokenProvider = AccessTokenProvider;
             if (tokenProvider is not null)
             {
-                var token = tokenProvider(CancellationToken.None).GetAwaiter().GetResult();
+                // Run on the thread pool to avoid deadlock when called from the UI thread.
+                // A direct .GetAwaiter().GetResult() on the UI thread (Avalonia dispatcher
+                // SynchronizationContext) can deadlock when the token provider triggers an
+                // async refresh whose continuation tries to resume on the same UI thread.
+                // Task.Run schedules the work on the thread pool where there is no
+                // SynchronizationContext, so continuations are free to run on any thread.
+                // A 10-second timeout prevents indefinite blocking if the token refresh hangs.
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var token = Task.Run(() => tokenProvider(cts.Token)).GetAwaiter().GetResult();
                 if (!string.IsNullOrWhiteSpace(token))
                 {
-                    Console.WriteLine("ApiClient adding Authorization header");
                     request.AddOrUpdateHeader(AuthorizationHeader, $"{BearerPrefix} {token}");
                 }
-                else
-                {
-                    Console.WriteLine("ApiClient missing access token for Authorization header");
-                }
-            }
-            else
-            {
-                Console.WriteLine("ApiClient AccessTokenProvider is not configured");
             }
 
             var labIdProvider = LabIdProvider;
             var labId = labIdProvider?.Invoke();
             if (labId.HasValue && labId.Value != Guid.Empty)
             {
-                Console.WriteLine($"ApiClient adding X-Lab-Id header: {labId}");
                 request.AddOrUpdateHeader(LabIdHeader, labId.Value.ToString());
             }
-            else
-            {
-                Console.WriteLine("ApiClient no lab id available for X-Lab-Id header");
-            }
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            Console.WriteLine($"ApiClient.InterceptRequest failed: {ex}");
+            // Swallow to avoid breaking the request pipeline; auth failures will be
+            // surfaced by the 401/403 response handling in InterceptResponse.
         }
+    }
+
+    partial void InterceptRequest(RestRequest request)
+    {
+        ApplyRequestHeaders(request);
     }
 
     partial void InterceptResponse(RestRequest request, RestResponse response)
