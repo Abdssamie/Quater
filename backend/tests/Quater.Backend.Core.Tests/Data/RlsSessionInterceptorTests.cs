@@ -29,8 +29,8 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
 
     // ------------------------------------------------------------------
     // Helper: read a PostgreSQL session variable via current_setting().
-    // The second argument 'true' makes it return NULL (empty) instead of
-    // throwing when the variable has not been set.
+    // The second argument 'true' makes it return NULL instead of throwing
+    // when the variable has not been set.
     // ------------------------------------------------------------------
     private static async Task<string?> GetSessionVariableAsync(
         QuaterDbContext context,
@@ -41,8 +41,7 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
                 $"SELECT current_setting('{variableName}', true) AS \"Value\"")
             .FirstOrDefaultAsync();
 
-        // current_setting returns empty string when unset (not NULL), normalise to null
-        return string.IsNullOrEmpty(result) ? null : result;
+        return result;
     }
 
     // ------------------------------------------------------------------
@@ -120,16 +119,16 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
 
         // Assert — system admin sets lab_id to empty string
         var actual = await GetSessionVariableAsync(context, RlsConstants.CurrentLabIdVariable);
-        actual.Should().BeNull(
+        actual.Should().Be(string.Empty,
             because: "system admin context sets current_lab_id to empty string, " +
-                     "which normalises to null in our helper (meaning NULLIF works correctly in RLS policy)");
+                     "which NULLIF treats as NULL in RLS policy");
     }
 
     // ------------------------------------------------------------------
-    // Test 5: No context → query executes without error, variables unset
+    // Test 5: No context → query executes without error, defaults are set
     // ------------------------------------------------------------------
     [Fact]
-    public async Task ConnectionOpened_WithNoContext_SkipsSetAndQuerySucceeds()
+    public async Task ConnectionOpened_WithNoContext_SetsDefaultSessionVariables()
     {
         // Arrange — accessor with no context set at all
         var accessor = new MockLabContextAccessor();
@@ -140,15 +139,51 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
         var act = async () =>
         {
             await context.Database.OpenConnectionAsync();
-            // Verify variables remain unset (empty/null)
+            // Verify defaults are applied to clear any stale connection state
             var labId = await GetSessionVariableAsync(context, RlsConstants.CurrentLabIdVariable);
             var isAdmin = await GetSessionVariableAsync(context, RlsConstants.IsSystemAdminVariable);
-            labId.Should().BeNull(because: "no SET was executed when context is absent");
-            isAdmin.Should().BeNull(because: "no SET was executed when context is absent");
+            labId.Should().Be(string.Empty,
+                because: "default current_lab_id should be empty string (treated as NULL by policies)");
+            isAdmin.Should().Be("false",
+                because: "default is_system_admin should be false to avoid stale session values");
         };
 
         await act.Should().NotThrowAsync(
             because: "the interceptor must gracefully skip when no lab context is configured");
+    }
+
+    // ------------------------------------------------------------------
+    // Test 6: No context after prior context → defaults overwrite stale values
+    // ------------------------------------------------------------------
+    [Fact]
+    public async Task ConnectionOpened_WithNoContextAfterPriorContext_ResetsSessionVariables()
+    {
+        // Arrange
+        var accessor = new MockLabContextAccessor();
+        var labId = Guid.NewGuid();
+        accessor.SetContext(labId, UserRole.Technician);
+
+        await using var context = _fixture.Factory.CreateContextWithRlsInterceptor(accessor);
+        await context.Database.OpenConnectionAsync();
+
+        var initialLabId = await GetSessionVariableAsync(context, RlsConstants.CurrentLabIdVariable);
+        var initialIsAdmin = await GetSessionVariableAsync(context, RlsConstants.IsSystemAdminVariable);
+        initialLabId.Should().Be(labId.ToString(), because: "lab context should set current_lab_id");
+        initialIsAdmin.Should().Be("false", because: "lab context should set is_system_admin to false");
+
+        await context.Database.CloseConnectionAsync();
+
+        // Act — clear context and reopen to simulate pooled connection reuse
+        accessor.ClearContext();
+        await context.Database.OpenConnectionAsync();
+
+        // Assert
+        var labIdAfter = await GetSessionVariableAsync(context, RlsConstants.CurrentLabIdVariable);
+        var isAdminAfter = await GetSessionVariableAsync(context, RlsConstants.IsSystemAdminVariable);
+        labIdAfter.Should().Be(string.Empty,
+            because: "default current_lab_id should clear any prior lab context");
+        isAdminAfter.Should().Be("false",
+            because: "default is_system_admin should overwrite any stale session value");
     }
 }
 
@@ -175,6 +210,13 @@ internal sealed class MockLabContextAccessor : ILabContextAccessor
     public void SetSystemAdmin()
     {
         _isSystemAdmin = true;
+        _currentLabId = null;
+        _currentRole = null;
+    }
+
+    public void ClearContext()
+    {
+        _isSystemAdmin = false;
         _currentLabId = null;
         _currentRole = null;
     }

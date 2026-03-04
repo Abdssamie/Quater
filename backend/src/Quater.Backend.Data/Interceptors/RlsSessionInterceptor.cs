@@ -18,8 +18,7 @@ namespace Quater.Backend.Data.Interceptors;
 /// </para>
 /// <para>
 /// When no lab context is set (e.g., during migrations, seeding, or background services),
-/// the interceptor skips the SET commands rather than setting NULL values, which would
-/// cause RLS policies to evaluate as always-false.
+/// the interceptor applies safe defaults to avoid stale session values on pooled connections.
 /// </para>
 /// <para>
 /// Uses <c>SET</c> (session-scoped) rather than <c>SET LOCAL</c> (transaction-scoped)
@@ -63,8 +62,7 @@ public sealed class RlsSessionInterceptor(
     /// </summary>
     private async Task SetRlsVariablesAsync(DbConnection connection, CancellationToken ct)
     {
-        if (!TryBuildCommands(out var isSystemAdmin, out var labIdValue))
-            return;
+        BuildCommandValues(out var isSystemAdmin, out var labIdValue);
 
         try
         {
@@ -83,10 +81,10 @@ public sealed class RlsSessionInterceptor(
     }
 
     /// <summary>
-    /// Determines whether RLS variables should be set and what values to use.
-    /// Returns <c>false</c> when no context is present (migrations, background services).
+    /// Determines what values to use for the RLS session variables.
+    /// Uses safe defaults when no context is present (migrations, background services).
     /// </summary>
-    private bool TryBuildCommands(out bool isSystemAdmin, out string labIdValue)
+    private void BuildCommandValues(out bool isSystemAdmin, out string labIdValue)
     {
         isSystemAdmin = labContextAccessor.IsSystemAdmin;
         labIdValue = string.Empty;
@@ -95,20 +93,19 @@ public sealed class RlsSessionInterceptor(
         {
             // System admin bypasses RLS — lab ID is irrelevant
             logger?.LogDebug("RlsSessionInterceptor: setting system admin context");
-            return true;
+            return;
         }
 
         if (labContextAccessor.CurrentLabId.HasValue)
         {
             labIdValue = labContextAccessor.CurrentLabId.Value.ToString();
             logger?.LogDebug("RlsSessionInterceptor: setting lab context {LabId}", labIdValue);
-            return true;
+            return;
         }
 
-        // No context set — skip to avoid setting NULL session variables
+        // No context set — reset to safe defaults to avoid stale session values
         // This is normal during EF migrations, seeding, and unauthenticated background work
-        logger?.LogDebug("RlsSessionInterceptor: no lab context — skipping SET commands");
-        return false;
+        logger?.LogDebug("RlsSessionInterceptor: no lab context — applying safe defaults");
     }
 
     /// <summary>
