@@ -6,34 +6,41 @@ namespace Quater.Desktop.Core.Auth.Storage;
 
 public sealed class SecureFileTokenStore : ITokenStore
 {
-    private static readonly string TokenPath = Path.Combine(
+    private static readonly string DefaultTokenPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Quater",
         "tokens.dat");
 
+    private readonly string _tokenPath;
+
+    public SecureFileTokenStore(string? tokenPath = null)
+    {
+        _tokenPath = tokenPath ?? DefaultTokenPath;
+    }
+
     public async Task SaveAsync(TokenData data, CancellationToken ct = default)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(TokenPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(_tokenPath)!);
 
         var json = JsonSerializer.Serialize(data);
         var payload = Encrypt(Encoding.UTF8.GetBytes(json));
 
-        await File.WriteAllBytesAsync(TokenPath, payload, ct);
+        await File.WriteAllBytesAsync(_tokenPath, payload, ct);
 
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
-            File.SetUnixFileMode(TokenPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.SetUnixFileMode(_tokenPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
     }
 
     public async Task<TokenData?> GetAsync(CancellationToken ct = default)
     {
-        if (!File.Exists(TokenPath))
+        if (!File.Exists(_tokenPath))
         {
             return null;
         }
 
-        var payload = await File.ReadAllBytesAsync(TokenPath, ct);
+        var payload = await File.ReadAllBytesAsync(_tokenPath, ct);
         var bytes = Decrypt(payload);
         var json = Encoding.UTF8.GetString(bytes);
 
@@ -42,9 +49,9 @@ public sealed class SecureFileTokenStore : ITokenStore
 
     public Task ClearAsync(CancellationToken ct = default)
     {
-        if (File.Exists(TokenPath))
+        if (File.Exists(_tokenPath))
         {
-            File.Delete(TokenPath);
+            File.Delete(_tokenPath);
         }
 
         return Task.CompletedTask;
