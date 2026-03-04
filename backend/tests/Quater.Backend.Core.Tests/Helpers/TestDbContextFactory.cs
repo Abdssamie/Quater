@@ -162,7 +162,7 @@ public class TestDbContextFactory : IAsyncLifetime
             var mockUserService = new MockCurrentUserService();
 
             optionsBuilder.AddInterceptors(
-                new SoftDeleteInterceptor(),
+                new SoftDeleteInterceptor(mockUserService),
                 new AuditInterceptor(mockUserService),
                 new AuditTrailInterceptor(mockUserService));
         }

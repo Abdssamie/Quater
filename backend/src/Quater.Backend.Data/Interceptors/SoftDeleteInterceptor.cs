@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Interfaces;
 
 namespace Quater.Backend.Data.Interceptors;
@@ -18,12 +19,21 @@ namespace Quater.Backend.Data.Interceptors;
 /// <code>
 /// protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 /// {
-///     optionsBuilder.AddInterceptors(new SoftDeleteInterceptor());
+///     optionsBuilder.AddInterceptors(new SoftDeleteInterceptor(currentUserService));
 /// }
 /// </code>
 /// </remarks>
 public class SoftDeleteInterceptor : SaveChangesInterceptor
 {
+    private readonly ICurrentUserService _currentUserService;
+    private readonly TimeProvider _timeProvider;
+
+    public SoftDeleteInterceptor(ICurrentUserService currentUserService, TimeProvider? timeProvider = null)
+    {
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
     /// <summary>
     /// Intercepts SaveChanges operations to implement soft delete logic.
     /// </summary>
@@ -61,7 +71,7 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
     /// Applies soft delete logic to all entities marked for deletion.
     /// </summary>
     /// <param name="context">The DbContext containing the entities.</param>
-    private static void ApplySoftDelete(DbContext context)
+    private void ApplySoftDelete(DbContext context)
     {
         // Find all entities marked for deletion
         var deletedEntries = context.ChangeTracker
@@ -70,13 +80,21 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             .Where(e => e.Entity is ISoftDelete)
             .ToList(); // Materialize to avoid modification during iteration
 
+        if (deletedEntries.Count == 0)
+        {
+            return;
+        }
+
+        var deletedBy = _currentUserService.GetCurrentUserIdOrSystem().ToString();
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+
         foreach (var entry in deletedEntries)
         {
             // Check if entity has IsDeleted property
             var isDeletedProperty = entry.Entity.GetType().GetProperty("IsDeleted");
             if (isDeletedProperty is null || isDeletedProperty.PropertyType != typeof(bool))
             {
-                throw new InvalidOperationException("Unexpected Error. IAuditable models must " +
+                throw new InvalidOperationException("Unexpected Error. ISoftDelete models must " +
                                                     "have IsDeleted property and it must be bool");
             }
 
@@ -88,7 +106,7 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             var deletedAtProperty = entry.Entity.GetType().GetProperty("DeletedAt");
             if (deletedAtProperty != null && deletedAtProperty.PropertyType == typeof(DateTime?))
             {
-                deletedAtProperty.SetValue(entry.Entity, DateTime.UtcNow);
+                deletedAtProperty.SetValue(entry.Entity, now);
             }
             else
             {
@@ -102,6 +120,11 @@ public class SoftDeleteInterceptor : SaveChangesInterceptor
             {
                 throw new InvalidOperationException("Unexpected Error. ISoftDelete models must " +
                                                     "have DeletedBy property and it must be string?");
+            }
+
+            if (deletedByProperty is not null)
+            {
+                deletedByProperty.SetValue(entry.Entity, deletedBy);
             }
 
             // Ensure owned entities are properly included
