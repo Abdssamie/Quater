@@ -4,7 +4,7 @@
 
 **Goal:** Add deterministic tests for the five audit gap behaviors (auth timing, unauthorized gating, cancellation propagation, soft-delete filters, token key cleanup).
 
-**Architecture:** Use targeted unit tests for auth/token/cancellation behavior and SQLite in-memory integration tests for EF Core query filters. Avoid reflection and avoid timing-based flakiness by asserting immediate, synchronous outcomes.
+**Architecture:** Use targeted unit tests for auth/token/cancellation behavior and SQLite in-memory integration tests for EF Core query filters. Avoid reflection, avoid network calls, and avoid timing-based flakiness by asserting immediate, synchronous outcomes. Where needed, add internal test seams with InternalsVisibleTo.
 
 **Tech Stack:** .NET 10, xUnit, Moq, Avalonia Dispatcher test helpers, EF Core SQLite.
 
@@ -118,23 +118,18 @@ git commit -m "test: cover auth state timing and unauthorized gating"
 
 **Step 1: Write the failing test**
 
-Add a test that triggers `ApiClient.GetAsync` (public API) and verifies that a canceled token provider does not surface `OperationCanceledException` from `InterceptRequest`. To avoid real HTTP, use an invalid base URL and assert that the exception is not `OperationCanceledException`.
+Add a test that invokes a new internal helper in `ApiClientHooks` that contains the `InterceptRequest` logic. This avoids reflection and avoids network calls. Use `InternalsVisibleTo` for `Quater.Desktop.Tests` so the test can call the helper directly.
 
 ```csharp
 [Fact]
-public async Task GetAsync_WhenTokenProviderCancels_DoesNotSurfaceOperationCanceledException()
+public void ApplyRequestHeaders_WhenTokenProviderCancels_DoesNotThrow()
 {
     ApiClient.AccessTokenProvider = ct => Task.FromCanceled<string?>(ct);
-    var client = new Quater.Desktop.Api.Client.ApiClient("http://127.0.0.1:0");
-    var options = new RequestOptions();
+    var request = new RestRequest();
 
-    var exception = await Record.ExceptionAsync(async () =>
-    {
-        await client.GetAsync<object>("/health/live", options, cancellationToken: CancellationToken.None);
-    });
+    var exception = Record.Exception(() => ApiClient.ApplyRequestHeaders(request));
 
-    Assert.NotNull(exception);
-    Assert.IsNotType<OperationCanceledException>(exception);
+    Assert.Null(exception);
 }
 ```
 
@@ -146,7 +141,18 @@ Expected: FAIL with `OperationCanceledException` due to rethrow in `InterceptReq
 
 **Step 3: Write minimal implementation**
 
-No production changes in this plan. Tests only.
+Add an internal helper in `desktop/src/Quater.Desktop.Api/Client/ApiClientHooks.cs`:
+
+```csharp
+internal static void ApplyRequestHeaders(RestRequest request)
+{
+    // Move InterceptRequest body here.
+}
+```
+
+Then update `InterceptRequest` to call `ApplyRequestHeaders(request);`
+
+Add `InternalsVisibleTo("Quater.Desktop.Tests")` to `desktop/src/Quater.Desktop.Api/Generated/Properties/AssemblyInfo.cs` (or create it if missing).
 
 **Step 4: Run test to verify it passes**
 
