@@ -144,7 +144,15 @@ public class UserLabService(QuaterDbContext context) : IUserLabService
         }).ToList();
 
         context.UserLabs.AddRange(userLabs);
-        await context.SaveChangesAsync(ct);
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException { SqlState: "23505" })
+        {
+            throw new ConflictException("One or more lab assignments already exist for this user.");
+        }
 
         return userLabs.Select(ul => new UserLabDto
         {
