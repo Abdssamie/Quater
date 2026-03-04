@@ -33,7 +33,7 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         await _fixture.Container.ResetDatabaseAsync();
 
         _context = _fixture.Container.CreateDbContext();
-        var labContextAccessor = new MockLabContextAccessor();
+        var labContextAccessor = new Quater.Backend.Core.Tests.Data.MockLabContextAccessor();
         labContextAccessor.SetSystemAdmin();
         _service = new AuditLogService(_context, labContextAccessor);
 
