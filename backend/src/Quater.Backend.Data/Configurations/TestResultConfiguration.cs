@@ -109,9 +109,10 @@ public class TestResultConfiguration : IEntityTypeConfiguration<TestResult>
         // is handled by the individual indexes above for query optimization
 
         // Configure relationship to Parameter via Measurement.ParameterId
-        entity.HasOne(e => e.Parameter)
+        entity.HasOne<Parameter>()
             .WithMany()
             .HasForeignKey("Measurement_ParameterId")
+            .HasConstraintName("FK_TestResults_Parameters_Measurement_ParameterId")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Global query filter to match Sample's soft delete filter
