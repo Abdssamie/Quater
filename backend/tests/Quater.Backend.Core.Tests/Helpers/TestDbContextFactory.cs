@@ -161,10 +161,16 @@ public class TestDbContextFactory : IAsyncLifetime
             // Create a mock user service that returns System.GetId()
             var mockUserService = new MockCurrentUserService();
 
+            // No-op lab context for tests: interceptor is present but executes no SET LOCAL
+            // statements (neither IsSystemAdmin nor CurrentLabId is set).
+            // Tests that need RLS behaviour can pass a configured MockLabContextAccessor.
+            var mockLabContext = new MockLabContextAccessor();
+
             optionsBuilder.AddInterceptors(
                 new SoftDeleteInterceptor(mockUserService),
                 new AuditInterceptor(mockUserService),
-                new AuditTrailInterceptor(mockUserService));
+                new AuditTrailInterceptor(mockUserService),
+                new RlsConnectionInterceptor(mockLabContext));
         }
 
         var context = new QuaterDbContext(optionsBuilder.Options);
@@ -213,7 +219,7 @@ public class TestDbContextFactory : IAsyncLifetime
             Email = "system@quater.app",
             NormalizedEmail = "SYSTEM@QUATER.APP",
             EmailConfirmed = true,
-            UserLabs = [ new UserLab { LabId = systemLab.Id, Role = UserRole.Admin } ],
+            UserLabs = [new UserLab { LabId = systemLab.Id, Role = UserRole.Admin }],
             IsActive = true,
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             SecurityStamp = Guid.NewGuid().ToString()
@@ -303,4 +309,27 @@ internal sealed class MockCurrentUserService : ICurrentUserService
     public Guid GetCurrentUserId() => _userId;
 
     public Guid GetCurrentUserIdOrSystem() => _userId;
+}
+
+/// <summary>
+/// No-op mock of ILabContextAccessor for test infrastructure.
+/// Neither IsSystemAdmin nor CurrentLabId is set, so RlsConnectionInterceptor
+/// will execute no SET LOCAL statements — correct for tests that don't test RLS policies.
+/// </summary>
+internal sealed class MockLabContextAccessor : ILabContextAccessor
+{
+    public Guid? CurrentLabId { get; private set; }
+    public UserRole? CurrentRole { get; private set; }
+    public bool IsSystemAdmin { get; private set; }
+
+    public void SetContext(Guid labId, UserRole role)
+    {
+        CurrentLabId = labId;
+        CurrentRole = role;
+    }
+
+    public void SetSystemAdmin()
+    {
+        IsSystemAdmin = true;
+    }
 }

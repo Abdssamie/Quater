@@ -3550,6 +3550,7 @@
           "Users"
         ],
         "summary": "Get current authenticated user's profile",
+        "description": "This endpoint only requires authentication (not lab membership) because:\n1. Users need to fetch their profile before selecting a lab\n2. The profile contains the list of labs the user has access to",
         "parameters": [
           {
             "name": "api-version",

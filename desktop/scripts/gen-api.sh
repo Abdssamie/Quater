@@ -22,14 +22,15 @@ ASPNETCORE_ENVIRONMENT=Development dotnet swagger tofile \
   --additional-properties=packageName=Quater.Desktop.Api,targetFramework=net10.0,netCoreProjectFile=true,library=restsharp,sourceFolder=. \
   -o "$OUTPUT_DIR"
 
-# Move generated code to proper location (flatten structure)
-mkdir -p "$ROOT_DIR/src/Quater.Desktop.Api/Generated"
-rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Api"
-rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Client"
-rm -rf "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Model"
-mv "$OUTPUT_DIR/Quater.Desktop.Api/Api" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
-mv "$OUTPUT_DIR/Quater.Desktop.Api/Client" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
-mv "$OUTPUT_DIR/Quater.Desktop.Api/Model" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/"
+# Move generated code to proper location (flatten structure) while preserving user-written extensions
+mkdir -p "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Api"
+mkdir -p "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Client"
+mkdir -p "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Model"
+
+rsync -a --delete --exclude="*Hooks.cs" --exclude="*.Custom.cs" "$OUTPUT_DIR/Quater.Desktop.Api/Api/" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Api/"
+rsync -a --delete --exclude="*Hooks.cs" --exclude="*.Custom.cs" "$OUTPUT_DIR/Quater.Desktop.Api/Client/" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Client/"
+rsync -a --delete --exclude="*Hooks.cs" --exclude="*.Custom.cs" "$OUTPUT_DIR/Quater.Desktop.Api/Model/" "$ROOT_DIR/src/Quater.Desktop.Api/Generated/Model/"
+
 rm -rf "$OUTPUT_DIR"
 
 echo "OpenAPI client generated in $ROOT_DIR/src/Quater.Desktop.Api/Generated"

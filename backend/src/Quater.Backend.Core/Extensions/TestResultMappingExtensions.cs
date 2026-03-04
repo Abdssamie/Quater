@@ -29,8 +29,8 @@ public static class TestResultMappingExtensions
             TechnicianName = testResult.TechnicianName,
             TestMethod = testResult.TestMethod,
             ComplianceStatus = testResult.ComplianceStatus,
-            Version = testResult.RowVersion is { Length: >= 4 }
-                ? BinaryPrimitives.ReadInt32BigEndian(testResult.RowVersion.AsSpan(0, 4))
+            Version = testResult.RowVersion is { Length: >= 8 }
+                ? BinaryPrimitives.ReadInt64BigEndian(testResult.RowVersion)
                 : 0,
             LastModified = testResult.UpdatedAt ?? testResult.CreatedAt,
             LastModifiedBy = testResult.UpdatedBy ?? testResult.CreatedBy,
