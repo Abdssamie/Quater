@@ -4,6 +4,7 @@ using Quater.Backend.Data.Constants;
 using Quater.Backend.Data.Interceptors;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace Quater.Backend.Core.Tests.Data;
@@ -243,7 +244,7 @@ public class RlsConnectionInterceptorTests
     {
         public List<string> ExecutedCommands { get; } = [];
 
-        public override string ConnectionString { get; set; } = string.Empty;
+        [AllowNull] public override string ConnectionString { get; set; } = string.Empty;
         public override string Database => "fake";
         public override string DataSource => "fake";
         public override string ServerVersion => "0";
@@ -266,7 +267,7 @@ public class RlsConnectionInterceptorTests
 
         public FakeDbCommand(List<string> log) => _log = log;
 
-        public override string CommandText { get; set; } = string.Empty;
+        [AllowNull] public override string CommandText { get; set; } = string.Empty;
         public override int CommandTimeout { get; set; }
         public override CommandType CommandType { get; set; }
         public override bool DesignTimeVisible { get; set; }
@@ -304,9 +305,9 @@ public class RlsConnectionInterceptorTests
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }
         public override bool IsNullable { get; set; }
-        public override string ParameterName { get; set; } = string.Empty;
+        [AllowNull] public override string ParameterName { get; set; } = string.Empty;
         public override int Size { get; set; }
-        public override string SourceColumn { get; set; } = string.Empty;
+        [AllowNull] public override string SourceColumn { get; set; } = string.Empty;
         public override bool SourceColumnNullMapping { get; set; }
         public override object? Value { get; set; }
         public override void ResetDbType() { }

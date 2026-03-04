@@ -3,7 +3,7 @@ using Quater.Backend.Core.Interfaces;
 
 namespace Quater.Backend.Api.BackgroundServices;
 
-public sealed class InvitationExpirationService(
+internal sealed class InvitationExpirationService(
     IServiceProvider serviceProvider,
     ILogger<InvitationExpirationService> logger) : BackgroundService
 {

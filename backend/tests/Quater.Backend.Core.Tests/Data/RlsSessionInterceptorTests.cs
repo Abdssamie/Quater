@@ -37,8 +37,10 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
         string variableName)
     {
         var result = await context.Database
+#pragma warning disable EF1002 // variableName is a constant from RlsConstants, not user input
             .SqlQueryRaw<string>(
                 $"SELECT current_setting('{variableName}', true) AS \"Value\"")
+#pragma warning restore EF1002
             .FirstOrDefaultAsync();
 
         return result;
