@@ -173,6 +173,9 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.DeletedBy);
 
+            // Global query filter: automatically exclude soft-deleted samples from all queries
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             entity.Property(e => e.LabId)
                 .IsRequired();
 
@@ -300,6 +303,9 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.DeletedBy);
 
+            // Global query filter: automatically exclude soft-deleted test results from all queries
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             // Shadow property for client-side sync tracking (not on shared model)
             entity.Property<bool>("IsSynced")
                 .IsRequired()
@@ -385,6 +391,9 @@ public class QuaterLocalContext : DbContext
 
             entity.Property(e => e.DeletedBy);
 
+            // Global query filter: automatically exclude soft-deleted parameters from all queries
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             // Shadow property for client-side sync tracking (not on shared model)
             entity.Property<bool>("IsSynced")
                 .IsRequired()
@@ -455,6 +464,9 @@ public class QuaterLocalContext : DbContext
             entity.Property(e => e.DeletedAt);
 
             entity.Property(e => e.DeletedBy);
+
+            // Global query filter: automatically exclude soft-deleted labs from all queries
+            entity.HasQueryFilter(e => !e.IsDeleted);
 
             // Shadow property for client-side sync tracking (not on shared model)
             entity.Property<bool>("IsSynced")

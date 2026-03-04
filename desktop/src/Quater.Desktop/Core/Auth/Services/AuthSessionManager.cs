@@ -195,7 +195,6 @@ public sealed class AuthSessionManager(
 
         await Dispatcher.UIThread.InvokeAsync(action);
     }
-
     private (Guid? LabId, string LabName) ComputeDefaultLab(UserDto userInfo)
     {
         var defaultLabId = SelectDefaultLabId(userInfo);

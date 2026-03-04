@@ -81,10 +81,8 @@ public sealed class UserInvitationService(
         context.UserInvitations.Add(invitation);
         await context.SaveChangesAsync(ct);
 
-        foreach (var assignment in dto.LabAssignments)
-        {
-            await userLabService.AddUserToLabAsync(user.Id, assignment.LabId, assignment.Role, ct);
-        }
+        var assignments = dto.LabAssignments.Select(a => (a.LabId, a.Role));
+        await userLabService.AddUserToLabsAsync(user.Id, assignments, ct);
 
         await transaction.CommitAsync(ct);
 
@@ -179,6 +177,11 @@ public sealed class UserInvitationService(
         if (invitation.ExpiresAt < now)
             throw new BadRequestException(ErrorMessages.InvitationExpired);
 
+        // UserManager<User> in ASP.NET Core Identity uses the same EF Core DbContext
+        // (via UserStore<User>), so AddPasswordAsync and UpdateAsync participate in the
+        // transaction opened on context.Database automatically.
+        await using var transaction = await context.Database.BeginTransactionAsync(ct);
+
         var passwordResult = await userManager.AddPasswordAsync(invitation.User, dto.Password);
         if (!passwordResult.Succeeded)
         {
@@ -202,6 +205,7 @@ public sealed class UserInvitationService(
         invitation.UpdatedBy = invitation.UserId;
 
         await context.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         await SendWelcomeEmailAsync(invitation.User, ct);
 

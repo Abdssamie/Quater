@@ -182,7 +182,6 @@ public sealed class ApiClientHooksTests : IDisposable
         // Assert
         Assert.Null(token);
     }
-
     [Fact]
     public void ApplyRequestHeaders_WhenTokenProviderCancels_DoesNotThrow()
     {

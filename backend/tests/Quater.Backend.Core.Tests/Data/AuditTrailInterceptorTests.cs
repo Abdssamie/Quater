@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Quater.Backend.Core.Constants;
 using Quater.Backend.Core.Interfaces;
 using Quater.Backend.Core.Tests.Helpers;
@@ -8,6 +9,8 @@ using Quater.Backend.Data.Interceptors;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
 using System.Text.Json;
+using System.Reflection;
+using System.Threading;
 
 namespace Quater.Backend.Core.Tests.Data;
 
@@ -114,13 +117,12 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Assert - Query in fresh context to ensure audit logs are visible
-        // Note: SoftDeleteInterceptor converts Delete to Update (sets IsDeleted=true)
-        // So we expect an Update audit log, not a Delete audit log
+        // Note: SoftDeleteInterceptor converts Delete to a SoftDelete audit action
         using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs.Where(a => a.EntityId == sample.Id).ToListAsync();
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
 
-        var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update);
+        var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.SoftDelete);
         auditLog.Should().NotBeNull();
         auditLog!.EntityType.Should().Be(EntityType.Sample);
 
@@ -148,6 +150,37 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
 
         auditLogs.Should().Contain(a => a.EntityId == sample1.Id && a.Action == AuditAction.Create);
         auditLogs.Should().Contain(a => a.EntityId == sample2.Id && a.Action == AuditAction.Create);
+    }
+
+    #endregion
+
+    #region Per-Context Isolation Tests
+
+    [Fact]
+    public async Task SaveChanges_WhenOtherContextIsSavingAuditLogs_DoesNotSkipCapture()
+    {
+        // Arrange
+        var labId = await GetFirstLabIdAsync();
+        var mockUserService = new MockCurrentUserService();
+        var auditTrailInterceptor = new AuditTrailInterceptor(mockUserService);
+        var auditInterceptor = new AuditInterceptor(mockUserService);
+        var softDeleteInterceptor = new SoftDeleteInterceptor(mockUserService);
+
+        using var contextA = CreateContextWithInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+        using var contextB = CreateContextWithInterceptors(softDeleteInterceptor, auditInterceptor, auditTrailInterceptor);
+
+        MarkAuditInterceptorSavingForContext(auditTrailInterceptor, contextA);
+
+        var sample = MockDataFactory.CreateSample(labId);
+
+        // Act
+        contextB.Samples.Add(sample);
+        await contextB.SaveChangesAsync();
+
+        // Assert
+        using var verifyContext = _fixture.Factory.CreateContext();
+        var auditLog = await verifyContext.AuditLogs.FirstOrDefaultAsync(a => a.EntityId == sample.Id);
+        auditLog.Should().NotBeNull();
     }
 
     #endregion
@@ -741,7 +774,7 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             .UseNpgsql(connectionString)
             .EnableSensitiveDataLogging()
             .AddInterceptors(
-                new SoftDeleteInterceptor(),
+                new SoftDeleteInterceptor(userService),
                 new AuditTrailInterceptor(userService));
 
         var context = new QuaterDbContext(optionsBuilder.Options);
@@ -758,12 +791,53 @@ public class AuditTrailInterceptorTests : IAsyncLifetime
             .UseNpgsql(connectionString)
             .EnableSensitiveDataLogging()
             .AddInterceptors(
-                new SoftDeleteInterceptor(),
+                new SoftDeleteInterceptor(mockUserService),
                 new AuditTrailInterceptor(mockUserService, ipAddress));
 
         var context = new QuaterDbContext(optionsBuilder.Options);
         context.Database.EnsureCreated();
         return context;
+    }
+
+    private QuaterDbContext CreateContextWithInterceptors(params IInterceptor[] interceptors)
+    {
+        var connectionString = $"{_fixture.Factory.ConnectionString};Include Error Detail=true";
+
+        var optionsBuilder = new DbContextOptionsBuilder<QuaterDbContext>()
+            .UseNpgsql(connectionString)
+            .EnableSensitiveDataLogging()
+            .AddInterceptors(interceptors);
+
+        var context = new QuaterDbContext(optionsBuilder.Options);
+        context.Database.EnsureCreated();
+        return context;
+    }
+
+    private static void MarkAuditInterceptorSavingForContext(AuditTrailInterceptor interceptor, DbContext context)
+    {
+        var stateByContextField = typeof(AuditTrailInterceptor).GetField("_stateByContext",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        if (stateByContextField?.GetValue(interceptor) is not null)
+        {
+            var table = stateByContextField.GetValue(interceptor);
+            var getOrCreate = table!.GetType().GetMethod("GetOrCreateValue");
+            var state = getOrCreate!.Invoke(table, [context]);
+            var isSavingProperty = state!.GetType().GetProperty("IsSavingAuditLogs",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            isSavingProperty!.SetValue(state, true);
+            return;
+        }
+
+        var asyncLocalField = typeof(AuditTrailInterceptor).GetField("_isSavingAuditLogs",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        if (asyncLocalField?.GetValue(interceptor) is AsyncLocal<bool> asyncLocal)
+        {
+            asyncLocal.Value = true;
+            return;
+        }
+
+        throw new InvalidOperationException("Unable to mark audit interceptor state for test.");
     }
 
     #endregion

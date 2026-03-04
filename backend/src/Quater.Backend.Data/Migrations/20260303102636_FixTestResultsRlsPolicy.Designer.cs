@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Quater.Backend.Data;
@@ -11,9 +12,11 @@ using Quater.Backend.Data;
 namespace Quater.Backend.Data.Migrations
 {
     [DbContext(typeof(QuaterDbContext))]
-    partial class QuaterDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303102636_FixTestResultsRlsPolicy")]
+    partial class FixTestResultsRlsPolicy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -429,10 +432,9 @@ namespace Quater.Backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
+                    b.Property<int>("Action")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("ArchivedDate")
                         .HasColumnType("timestamp with time zone");
@@ -440,10 +442,9 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EntityType")
-                        .IsRequired()
+                    b.Property<int>("EntityType")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("integer");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
@@ -743,6 +744,9 @@ namespace Quater.Backend.Data.Migrations
                     b.Property<bool>("IsVoided")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("Measurement_ParameterId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ReplacedByTestResultId")
                         .HasColumnType("uuid");
 
@@ -793,6 +797,8 @@ namespace Quater.Backend.Data.Migrations
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("IX_TestResults_IsDeleted");
 
+                    b.HasIndex("Measurement_ParameterId");
+
                     b.HasIndex("SampleId")
                         .HasDatabaseName("IX_TestResults_SampleId");
 
@@ -802,7 +808,11 @@ namespace Quater.Backend.Data.Migrations
                     b.HasIndex("UpdatedAt")
                         .HasDatabaseName("IX_TestResults_UpdatedAt");
 
-                    b.ToTable("TestResults", (string)null);
+                    b.ToTable("TestResults", null, t =>
+                        {
+                            t.Property("Measurement_ParameterId")
+                                .HasColumnName("TestResult_Measurement_ParameterId");
+                        });
                 });
 
             modelBuilder.Entity("Quater.Shared.Models.User", b =>
@@ -1122,6 +1132,11 @@ namespace Quater.Backend.Data.Migrations
 
             modelBuilder.Entity("Quater.Shared.Models.TestResult", b =>
                 {
+                    b.HasOne("Quater.Shared.Models.Parameter", "Parameter")
+                        .WithMany()
+                        .HasForeignKey("Measurement_ParameterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Quater.Shared.Models.Sample", "Sample")
                         .WithMany("TestResults")
                         .HasForeignKey("SampleId")
@@ -1157,6 +1172,8 @@ namespace Quater.Backend.Data.Migrations
 
                     b.Navigation("Measurement")
                         .IsRequired();
+
+                    b.Navigation("Parameter");
 
                     b.Navigation("Sample");
                 });

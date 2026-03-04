@@ -30,10 +30,11 @@ public static class DatabaseSeeder
         QuaterDbContext context,
         UserManager<User> userManager,
         IConfiguration configuration,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken ct = default)
     {
-        // Ensure database is created
-        await context.Database.EnsureCreatedAsync();
+        // Run all pending migrations (creates schema + applies RLS policies)
+        await context.Database.MigrateAsync(ct);
 
         // Seed Admin User
         await SeedAdminUserAsync(context, userManager, configuration, logger);

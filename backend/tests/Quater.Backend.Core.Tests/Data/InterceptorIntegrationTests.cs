@@ -146,7 +146,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         // Assert - Query in fresh context to ensure audit logs are visible
-        // Note: SoftDeleteInterceptor converts Delete to Update (sets IsDeleted=true)
+        // Note: SoftDeleteInterceptor converts Delete to a SoftDelete audit action
         using var verifyContext = _fixture.Factory.CreateContext();
         var auditLogs = await verifyContext.AuditLogs
             .Where(a => a.EntityId == sample.Id)
@@ -154,8 +154,7 @@ public class InterceptorIntegrationTests : IAsyncLifetime
 
         auditLogs.Should().HaveCountGreaterOrEqualTo(1);
 
-        // The audit log should be an Update (soft delete) or Delete (hard delete)
-        var auditLog = auditLogs.FirstOrDefault(a => a.Action == AuditAction.Update || a.Action == AuditAction.Delete);
-        auditLog.Should().NotBeNull();
+        // The audit log should be SoftDelete (SoftDeleteInterceptor converts delete to soft delete)
+        auditLogs.Should().Contain(a => a.Action == AuditAction.SoftDelete);
     }
 }

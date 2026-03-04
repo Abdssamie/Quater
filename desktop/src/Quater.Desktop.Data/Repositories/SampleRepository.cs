@@ -9,13 +9,12 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
     public async Task<Sample?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await context.Samples
-            .FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted, ct);
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
     public async Task<IEnumerable<Sample>> GetAllAsync(CancellationToken ct = default)
     {
         return await context.Samples
-            .Where(s => !s.IsDeleted)
             .OrderByDescending(s => s.CollectionDate)
             .ToListAsync(ct);
     }
@@ -26,7 +25,7 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
         DateTime? endDate = null,
         CancellationToken ct = default)
     {
-        var query = context.Samples.Where(s => !s.IsDeleted);
+        var query = context.Samples.AsQueryable();
 
         if (status.HasValue)
             query = query.Where(s => s.Status == status.Value);
@@ -73,8 +72,9 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
         if (sample == null)
             return false;
 
-        // Use EF Core's Remove which triggers soft delete via interceptor or direct update
-        context.Samples.Remove(sample);
+        // Soft delete: mark as deleted instead of physically removing the row.
+        // DeletedBy is null because DeleteAsync has no caller-identity parameter.
+        sample.MarkDeleted(deletedBy: null);
 
         // Set shadow property to indicate needs sync
         context.Entry(sample).Property("IsSynced").CurrentValue = false;
@@ -85,7 +85,6 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
 
     public async Task<int> GetCountAsync(CancellationToken ct = default)
     {
-        return await context.Samples
-            .CountAsync(s => !s.IsDeleted, ct);
+        return await context.Samples.CountAsync(ct);
     }
 }

@@ -18,7 +18,7 @@ public class SampleDto
     public string CollectorName { get; set; } = string.Empty;
     public string? Notes { get; set; }
     public SampleStatus Status { get; set; }
-    public int Version { get; set; }
+    public long Version { get; set; }
     public DateTime LastModified { get; set; }
     public Guid LastModifiedBy { get; set; }
     public bool IsDeleted { get; set; }
@@ -100,5 +100,5 @@ public class UpdateSampleDto
     public SampleStatus Status { get; set; }
 
     [Required(ErrorMessage = "Version is required")]
-    public int Version { get; set; }
+    public long Version { get; set; }
 }

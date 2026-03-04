@@ -1,4 +1,10 @@
 /*
+ * NOT YET IMPLEMENTED — see P1-03 in docs/plans/2026-03-03-architecture-review-findings.md
+ *
+ * DPoP (RFC 9449) proof-of-possession validation has NOT been implemented.
+ * This file is retained as a stub for future implementation.
+ * This service is NOT registered in the DI container — it has no effect at runtime.
+ *
  * @id: dpop-proof-validator
  * @priority: high
  * @progress: 0

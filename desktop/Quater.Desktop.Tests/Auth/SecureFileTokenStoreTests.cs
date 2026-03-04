@@ -85,7 +85,6 @@ public sealed class SecureFileTokenStoreTests : IDisposable
 
         Assert.False(File.Exists(keyPath));
     }
-
     // -----------------------------------------------------------------------
     // AES-GCM (authenticated encryption)
     // -----------------------------------------------------------------------

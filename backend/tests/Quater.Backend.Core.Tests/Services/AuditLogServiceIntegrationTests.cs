@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Quater.Backend.Core.DTOs;
+using Quater.Backend.Core.Tests.Data;
 using Quater.Backend.Core.Tests.Helpers;
 using Quater.Backend.Data;
 using Quater.Backend.Services;
@@ -32,7 +33,9 @@ public class AuditLogServiceIntegrationTests : IAsyncLifetime
         await _fixture.Container.ResetDatabaseAsync();
 
         _context = _fixture.Container.CreateDbContext();
-        _service = new AuditLogService(_context);
+        var labContextAccessor = new Quater.Backend.Core.Tests.Data.MockLabContextAccessor();
+        labContextAccessor.SetSystemAdmin();
+        _service = new AuditLogService(_context, labContextAccessor);
 
         // Seed some audit logs for testing
         await SeedAuditLogsAsync();

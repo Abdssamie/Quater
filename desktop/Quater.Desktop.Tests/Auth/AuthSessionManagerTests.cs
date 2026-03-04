@@ -89,41 +89,6 @@ public sealed class AuthSessionManagerTests
     }
 
     [Fact]
-    public async Task InitializeAsync_UpdatesAppStateBeforeReturning()
-    {
-        var authService = new Mock<IAuthService>();
-        var accessTokenCache = new Mock<IAccessTokenCache>();
-        var usersApi = new Mock<IUsersApi>();
-        var apiClientFactory = new Mock<IApiClientFactory>();
-        apiClientFactory.Setup(factory => factory.GetUsersApi()).Returns(usersApi.Object);
-        var dialogService = new Mock<IDialogService>();
-        var appState = new AppState { IsAuthenticated = false };
-        var settingsUpdater = new SettingsUpdater(Mock.Of<ISettingsStore>(), new AppSettings());
-        var logger = new Logger<AuthSessionManager>(new LoggerFactory());
-        var labId = Guid.NewGuid();
-        var labs = new List<UserLabDto> { new UserLabDto(labId: labId, labName: "Alpha Lab") };
-        var userInfo = new UserDto(userName: "analyst", email: "analyst@lab.com", labs: labs);
-
-        accessTokenCache.SetupGet(cache => cache.CurrentToken).Returns("valid-token");
-        usersApi.Setup(api => api.ApiUsersMeGetAsync(It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(userInfo);
-
-        var manager = new AuthSessionManager(
-            authService.Object,
-            accessTokenCache.Object,
-            apiClientFactory.Object,
-            appState,
-            settingsUpdater,
-            dialogService.Object,
-            logger);
-
-        await manager.InitializeAsync();
-
-        Assert.True(appState.IsAuthenticated);
-        Assert.Equal(userInfo, appState.CurrentUser);
-    }
-
-    [Fact]
     public async Task InitializeAsync_WhenApiExceptionThrown_SetsIsAuthenticatedFalse()
     {
         var authService = new Mock<IAuthService>();

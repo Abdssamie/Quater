@@ -71,9 +71,9 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
     public DateTime? UpdatedAt { get; private set; }
     public Guid? UpdatedBy { get; private set; }
 
-    // ISoftDelete interface properties
-    public DateTime? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; }
+    // ISoftDelete interface properties — mutated only through MarkDeleted()
+    public DateTime? DeletedAt { get; private set; }
+    public string? DeletedBy { get; private set; }
 
     // IConcurrent interface properties
     [Timestamp]
@@ -82,4 +82,17 @@ public sealed class Sample : IEntity, IAuditable, ISoftDelete, IConcurrent
     // Navigation properties
     public Lab Lab { get; set; } = null!;
     public ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
+
+    // Domain methods
+
+    /// <summary>
+    /// Marks this sample as soft-deleted.
+    /// </summary>
+    /// <param name="deletedBy">Identifier of the actor performing the deletion, or <c>null</c> when unavailable.</param>
+    public void MarkDeleted(string? deletedBy = null)
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        DeletedBy = deletedBy;
+    }
 }
