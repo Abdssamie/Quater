@@ -158,6 +158,13 @@ public sealed class Startup(IConfiguration configuration, IWebHostEnvironment en
         }
 
         app.UseAuthentication();
+
+        // DPoP (RFC 9449) proof-of-possession is NOT YET IMPLEMENTED.
+        // See P1-03 in docs/plans/2026-03-03-architecture-review-findings.md.
+        // The stub files (DPoPMiddleware.cs, DPoPProofValidator.cs) are retained for future implementation.
+        // Tokens are currently unbound bearer tokens with no replay protection.
+        // app.UseMiddleware<DPoPMiddleware>(); // disabled until P1-03 is implemented
+
         app.UseLabContext();
         app.UseAuthorization();
 

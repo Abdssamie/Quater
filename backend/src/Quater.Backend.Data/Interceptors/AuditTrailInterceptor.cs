@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Quater.Backend.Core.Interfaces;
 using Quater.Shared.Enums;
 using Quater.Shared.Interfaces;
 using Quater.Shared.Models;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Quater.Backend.Data.Interceptors;
@@ -39,8 +41,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AuditTrailInterceptor>? _logger;
     private readonly string? _ipAddress;
-    private readonly AsyncLocal<bool> _isSavingAuditLogs = new();
-    private readonly AsyncLocal<List<AuditLogData>> _pendingAuditLogs = new();
+    private readonly ConditionalWeakTable<DbContext, AuditCaptureState> _stateByContext = new();
 
     /// <summary>
     /// Initializes a new instance of the AuditTrailInterceptor.
@@ -65,15 +66,21 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         DbContextEventData eventData,
         InterceptionResult<int> result)
     {
-        if (eventData.Context is null || _isSavingAuditLogs.Value)
+        if (eventData.Context is null)
         {
             return base.SavingChanges(eventData, result);
         }
 
-        CaptureAuditData(eventData.Context);
+        var state = _stateByContext.GetOrCreateValue(eventData.Context);
+        if (state.IsSavingAuditLogs)
+        {
+            return base.SavingChanges(eventData, result);
+        }
+
+        CaptureAuditData(eventData.Context, state);
 
         // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
-        AddAuditLogsToContext(eventData.Context);
+        AddAuditLogsToContext(eventData.Context, state);
 
         return base.SavingChanges(eventData, result);
     }
@@ -86,15 +93,21 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        if (eventData.Context is null || _isSavingAuditLogs.Value)
+        if (eventData.Context is null)
         {
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
-        CaptureAuditData(eventData.Context);
+        var state = _stateByContext.GetOrCreateValue(eventData.Context);
+        if (state.IsSavingAuditLogs)
+        {
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        CaptureAuditData(eventData.Context, state);
 
         // Add audit logs to the context BEFORE SaveChanges completes (same transaction)
-        AddAuditLogsToContext(eventData.Context);
+        AddAuditLogsToContext(eventData.Context, state);
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -102,13 +115,13 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// <summary>
     /// Adds captured audit logs to the context (to be saved in the same transaction).
     /// </summary>
-    private void AddAuditLogsToContext(DbContext context)
+    private static void AddAuditLogsToContext(DbContext context, AuditCaptureState state)
     {
-        var pendingLogs = _pendingAuditLogs.Value;
-        if (pendingLogs == null || pendingLogs.Count == 0)
+        var pendingLogs = state.PendingAuditLogs;
+        if (pendingLogs.Count == 0)
             return;
 
-        _isSavingAuditLogs.Value = true;
+        state.IsSavingAuditLogs = true;
 
         try
         {
@@ -136,7 +149,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         }
         finally
         {
-            _isSavingAuditLogs.Value = false;
+            state.IsSavingAuditLogs = false;
         }
     }
 
@@ -156,7 +169,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
     /// Captures audit data from tracked entity changes before SaveChanges completes.
     /// </summary>
     /// <param name="context">The DbContext containing the entities.</param>
-    private void CaptureAuditData(DbContext context)
+    private void CaptureAuditData(DbContext context, AuditCaptureState state)
     {
         var userId = _currentUserService.GetCurrentUserIdOrSystem();
         _logger?.LogDebug("Capturing audit data for user: {UserId}", userId);
@@ -175,15 +188,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
 
         _logger?.LogDebug("Found {Count} auditable entities to process", auditableEntries.Count);
 
-        // Initialize or clear pending audit logs for this save operation
-        if (_pendingAuditLogs.Value == null)
-        {
-            _pendingAuditLogs.Value = [];
-        }
-        else
-        {
-            _pendingAuditLogs.Value.Clear();
-        }
+        state.PendingAuditLogs.Clear();
 
         foreach (var entry in auditableEntries)
         {
@@ -200,7 +205,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             var action = entry.State switch
             {
                 EntityState.Added => AuditAction.Create,
-                EntityState.Modified => AuditAction.Update,
+                EntityState.Modified => IsSoftDelete(entry) ? AuditAction.SoftDelete : AuditAction.Update,
                 EntityState.Deleted => AuditAction.Delete,
                 _ => AuditAction.Update
             };
@@ -307,7 +312,7 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
             }
 
             // Store audit data for later persistence
-            _pendingAuditLogs.Value.Add(new AuditLogData
+            state.PendingAuditLogs.Add(new AuditLogData
             {
                 UserId = userId,
                 EntityType = entityTypeEnum,
@@ -348,10 +353,21 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         return (result, wasTruncated);
     }
 
+    private static bool IsSoftDelete(EntityEntry entry)
+    {
+        if (entry.Entity is not ISoftDelete)
+        {
+            return false;
+        }
+
+        var isDeletedProperty = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "IsDeleted");
+        return isDeletedProperty is not null && isDeletedProperty.IsModified && isDeletedProperty.CurrentValue is true;
+    }
+
     /// <summary>
     /// Internal data structure to hold audit log information between SavingChanges and SavedChanges events.
     /// </summary>
-    private class AuditLogData
+    private sealed class AuditLogData
     {
         public required Guid UserId { get; init; }
         public required EntityType EntityType { get; init; }
@@ -362,5 +378,11 @@ public class AuditTrailInterceptor : SaveChangesInterceptor
         public required DateTime Timestamp { get; init; }
         public string? IpAddress { get; init; }
         public bool IsTruncated { get; init; }
+    }
+
+    private sealed class AuditCaptureState
+    {
+        public List<AuditLogData> PendingAuditLogs { get; } = [];
+        public bool IsSavingAuditLogs { get; set; }
     }
 }

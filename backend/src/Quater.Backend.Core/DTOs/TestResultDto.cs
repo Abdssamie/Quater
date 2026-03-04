@@ -17,7 +17,7 @@ public class TestResultDto
     public string TechnicianName { get; set; } = string.Empty;
     public TestMethod TestMethod { get; set; }
     public ComplianceStatus ComplianceStatus { get; set; }
-    public int Version { get; set; }
+    public long Version { get; set; }
     public DateTime LastModified { get; set; }
     public Guid LastModifiedBy { get; set; }
     public bool IsDeleted { get; set; }
@@ -83,5 +83,5 @@ public class UpdateTestResultDto
     public TestMethod TestMethod { get; set; }
 
     [Required(ErrorMessage = "Version is required")]
-    public int Version { get; set; }
+    public long Version { get; set; }
 }

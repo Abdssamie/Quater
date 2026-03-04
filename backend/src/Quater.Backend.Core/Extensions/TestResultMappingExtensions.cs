@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Quater.Backend.Core.DTOs;
 using Quater.Shared.Enums;
 using Quater.Shared.Models;
@@ -28,7 +29,9 @@ public static class TestResultMappingExtensions
             TechnicianName = testResult.TechnicianName,
             TestMethod = testResult.TestMethod,
             ComplianceStatus = testResult.ComplianceStatus,
-            Version = 1, // Version removed from model, using constant for backward compatibility
+            Version = testResult.RowVersion is { Length: >= 8 }
+                ? BinaryPrimitives.ReadInt64BigEndian(testResult.RowVersion)
+                : 0,
             LastModified = testResult.UpdatedAt ?? testResult.CreatedAt,
             LastModifiedBy = testResult.UpdatedBy ?? testResult.CreatedBy,
             IsDeleted = testResult.IsDeleted,

@@ -20,22 +20,27 @@ public class TestResultService(
     {
         var testResult = await context.TestResults
             .AsNoTracking()
-            .Include(tr => tr.Parameter)
-            .IgnoreQueryFilters()  // Ignore soft-delete filters to load Parameter navigation property
+            .IgnoreQueryFilters()  // Ignore soft-delete filters to load owned Measurement
             .Where(tr => tr.Id == id && !tr.IsDeleted)  // Manually filter TestResult
             .FirstOrDefaultAsync(ct);
 
         if (testResult == null)
             throw new NotFoundException(ErrorMessages.TestResultNotFound);
 
-        // Parameter should never be null if FK integrity is maintained
-        if (testResult.Parameter == null)
+        var parameterName = await context.Parameters
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => p.Id == testResult.Measurement.ParameterId)
+            .Select(p => p.Name)
+            .FirstOrDefaultAsync(ct);
+
+        if (parameterName == null)
         {
             throw new InvalidOperationException(
                 $"Data integrity error: TestResult {id} references non-existent Parameter {testResult.Measurement.ParameterId}");
         }
 
-        return testResult.ToDto(testResult.Parameter.Name);
+        return testResult.ToDto(parameterName);
     }
 
     public async Task<PagedResult<TestResultDto>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -72,8 +77,7 @@ public class TestResultService(
     {
         var query = context.TestResults
             .AsNoTracking()
-            .Include(tr => tr.Parameter)  // Eager load Parameter
-            .IgnoreQueryFilters()  // Ignore soft-delete filters to load Parameter
+            .IgnoreQueryFilters()
             .Where(tr => tr.SampleId == sampleId && !tr.IsDeleted)  // Manually filter TestResult
             .OrderByDescending(tr => tr.TestDate);
 
@@ -84,10 +88,12 @@ public class TestResultService(
             .Take(pageSize)
             .ToListAsync(ct);
 
-        // Build parameter name dictionary from loaded navigation properties
-        var parameterDict = items
-            .Where(tr => tr.Parameter != null)
-            .ToDictionary(tr => tr.Measurement.ParameterId, tr => tr.Parameter!.Name);
+        var parameterIds = items.Select(tr => tr.Measurement.ParameterId).Distinct().ToList();
+        var parameterDict = await context.Parameters
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => parameterIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Name, ct);
 
         return new PagedResult<TestResultDto>
         {
