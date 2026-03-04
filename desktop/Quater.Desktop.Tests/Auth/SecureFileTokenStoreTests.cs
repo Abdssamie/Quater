@@ -72,6 +72,20 @@ public sealed class SecureFileTokenStoreTests : IDisposable
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task ClearAsync_DeletesKeyFile()
+    {
+        var store = CreateStore();
+        await store.SaveAsync(SampleToken());
+
+        var keyPath = Path.Combine(_tempDir, "quater-keystore");
+        Assert.True(File.Exists(keyPath));
+
+        await store.ClearAsync();
+
+        Assert.False(File.Exists(keyPath));
+    }
+
     // -----------------------------------------------------------------------
     // AES-GCM (authenticated encryption)
     // -----------------------------------------------------------------------

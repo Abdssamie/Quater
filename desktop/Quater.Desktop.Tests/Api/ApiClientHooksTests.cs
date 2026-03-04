@@ -1,5 +1,7 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RestSharp;
 using Quater.Desktop.Api.Client;
 
 namespace Quater.Desktop.Tests.Api;
@@ -7,8 +9,17 @@ namespace Quater.Desktop.Tests.Api;
 /// <summary>
 /// Tests for ApiClientHooks deadlock prevention and behaviour.
 /// </summary>
-public sealed class ApiClientHooksTests
+public sealed class ApiClientHooksTests : IDisposable
 {
+    private readonly Func<CancellationToken, Task<string?>>? _originalAccessTokenProvider;
+    private readonly Func<Guid?>? _originalLabIdProvider;
+
+    public ApiClientHooksTests()
+    {
+        _originalAccessTokenProvider = ApiClient.AccessTokenProvider;
+        _originalLabIdProvider = ApiClient.LabIdProvider;
+    }
+
     /// <summary>
     /// A <see cref="SynchronizationContext"/> that queues continuations but never drains them
     /// while the calling thread is blocked. This simulates the Avalonia/WPF UI thread context
@@ -170,5 +181,24 @@ public sealed class ApiClientHooksTests
 
         // Assert
         Assert.Null(token);
+    }
+
+    [Fact]
+    public void ApplyRequestHeaders_WhenTokenProviderCancels_DoesNotThrow()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        ApiClient.AccessTokenProvider = _ => Task.FromCanceled<string?>(cts.Token);
+        var request = new RestRequest();
+
+        var exception = Record.Exception(() => ApiClient.ApplyRequestHeaders(request));
+
+        Assert.Null(exception);
+    }
+
+    public void Dispose()
+    {
+        ApiClient.AccessTokenProvider = _originalAccessTokenProvider;
+        ApiClient.LabIdProvider = _originalLabIdProvider;
     }
 }

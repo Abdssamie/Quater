@@ -101,6 +101,9 @@ public sealed class SecureFileTokenStore : ITokenStore
         if (File.Exists(_tokenPath))
             File.Delete(_tokenPath);
 
+        if (File.Exists(_keyPath))
+            File.Delete(_keyPath);
+
         return Task.CompletedTask;
     }
 
