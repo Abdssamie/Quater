@@ -81,10 +81,8 @@ public sealed class UserInvitationService(
         context.UserInvitations.Add(invitation);
         await context.SaveChangesAsync(ct);
 
-        foreach (var assignment in dto.LabAssignments)
-        {
-            await userLabService.AddUserToLabAsync(user.Id, assignment.LabId, assignment.Role, ct);
-        }
+        var assignments = dto.LabAssignments.Select(a => (a.LabId, a.Role));
+        await userLabService.AddUserToLabsAsync(user.Id, assignments, ct);
 
         await transaction.CommitAsync(ct);
 
