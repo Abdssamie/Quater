@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Quater.Shared.Models;
-using Quater.Shared.Enums;
 
 namespace Quater.Desktop.Data.Repositories;
 
@@ -19,25 +18,34 @@ public class SampleRepository(QuaterLocalContext context) : ISampleRepository
             .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<Sample>> GetFilteredAsync(
-        SampleStatus? status = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        CancellationToken ct = default)
+    public async Task<IReadOnlyList<Sample>> GetFilteredAsync(SampleQuery query, CancellationToken ct = default)
     {
-        var query = context.Samples.AsQueryable();
+        var samplesQuery = context.Samples.AsQueryable();
 
-        if (status.HasValue)
-            query = query.Where(s => s.Status == status.Value);
+        if (query.Status.HasValue)
+            samplesQuery = samplesQuery.Where(sample => sample.Status == query.Status.Value);
 
-        if (startDate.HasValue)
-            query = query.Where(s => s.CollectionDate >= startDate.Value);
+        if (query.StartDate.HasValue)
+            samplesQuery = samplesQuery.Where(sample => sample.CollectionDate >= query.StartDate.Value);
 
-        if (endDate.HasValue)
-            query = query.Where(s => s.CollectionDate <= endDate.Value);
+        if (query.EndDate.HasValue)
+            samplesQuery = samplesQuery.Where(sample => sample.CollectionDate <= query.EndDate.Value);
 
-        return await query
-            .OrderByDescending(s => s.CollectionDate)
+        if (query.LabId.HasValue)
+            samplesQuery = samplesQuery.Where(sample => sample.LabId == query.LabId.Value);
+
+        var searchText = query.SearchText.Trim();
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var searchPattern = $"%{searchText}%";
+            samplesQuery = samplesQuery.Where(sample =>
+                EF.Functions.Like(sample.CollectorName, searchPattern) ||
+                EF.Functions.Like(sample.Location.Description ?? string.Empty, searchPattern) ||
+                EF.Functions.Like(sample.Notes ?? string.Empty, searchPattern));
+        }
+
+        return await samplesQuery
+            .OrderByDescending(sample => sample.CollectionDate)
             .ToListAsync(ct);
     }
 

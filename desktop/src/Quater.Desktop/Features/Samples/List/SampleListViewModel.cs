@@ -67,11 +67,20 @@ public sealed partial class SampleListViewModel : ViewModelBase
         {
             IsLoading = true;
 
-            var samples = await _sampleRepository.GetFilteredAsync(
-                StatusFilter,
-                StartDateFilter,
-                EndDateFilter,
-                ct);
+            Guid? labId = _appState.CurrentLabId == Guid.Empty
+                ? null
+                : _appState.CurrentLabId;
+
+            var query = new SampleQuery
+            {
+                Status = StatusFilter,
+                StartDate = StartDateFilter,
+                EndDate = EndDateFilter,
+                SearchText = SearchText,
+                LabId = labId
+            };
+
+            var samples = await _sampleRepository.GetFilteredAsync(query, ct);
 
             Samples.Clear();
             foreach (var sample in samples)
