@@ -4,6 +4,9 @@ namespace Quater.Desktop.Core.Sync;
 
 public sealed class SyncStatusService(AppState appState) : ISyncStatusService
 {
+    private int _legacyFailedCount;
+    private int _legacyInProgressCount;
+
     public Task<SyncQueueSummary> GetSummaryAsync(CancellationToken ct = default)
     {
         var failed = appState.FailedSyncCount;
@@ -37,5 +40,31 @@ public sealed class SyncStatusService(AppState appState) : ISyncStatusService
 
         appState.SyncStatusText = $"Retry scheduled for {operationId}";
         return Task.CompletedTask;
+    }
+
+    public SyncStatusSummary GetSummary()
+    {
+        var lastSyncStatusText = appState.LastSyncTime == "Never"
+            ? "Never synced"
+            : $"Last synced at {appState.LastSyncTime}";
+
+        return new SyncStatusSummary(
+            PendingCount: appState.PendingSyncCount,
+            FailedCount: _legacyFailedCount,
+            InProgressCount: _legacyInProgressCount,
+            LastSyncStatusText: lastSyncStatusText);
+    }
+
+    public void UpdateQueueCounts(int pendingCount, int failedCount, int inProgressCount)
+    {
+        appState.PendingSyncCount = pendingCount;
+        _legacyFailedCount = failedCount;
+        _legacyInProgressCount = inProgressCount;
+    }
+
+    public void RetryAllFailed()
+    {
+        appState.PendingSyncCount += _legacyFailedCount;
+        _legacyFailedCount = 0;
     }
 }

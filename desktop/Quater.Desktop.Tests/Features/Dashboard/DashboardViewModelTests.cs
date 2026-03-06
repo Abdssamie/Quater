@@ -3,6 +3,7 @@ using Quater.Desktop.Api.Api;
 using Quater.Desktop.Api.Model;
 using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Core.Sync;
 using Quater.Desktop.Features.Dashboard;
 
 namespace Quater.Desktop.Tests.Features.Dashboard;
@@ -37,8 +38,8 @@ public sealed class DashboardViewModelTests
 
         apiFactory.Setup(factory => factory.GetSamplesApi()).Returns(samplesApi.Object);
         apiFactory.Setup(factory => factory.GetTestResultsApi()).Returns(resultsApi.Object);
-        syncStatusService.Setup(service => service.GetSummary(appState))
-            .Returns(new SyncStatusSummary("Sync delayed", pendingCount: 2, failedCount: 1));
+        syncStatusService.Setup(service => service.GetSummary())
+            .Returns(new SyncStatusSummary(2, 1, 0, "Sync delayed"));
 
         var viewModel = new DashboardViewModel(apiFactory.Object, syncStatusService.Object, apiErrorFormatter.Object, appState);
 
@@ -92,12 +93,12 @@ public sealed class DashboardViewModelTests
 
         apiFactory.Setup(factory => factory.GetSamplesApi()).Returns(samplesApi.Object);
         apiFactory.Setup(factory => factory.GetTestResultsApi()).Returns(resultsApi.Object);
-        syncStatusService.Setup(service => service.GetSummary(appState))
-            .Returns(new SyncStatusSummary("Up to date", pendingCount: 0, failedCount: 0));
-        syncStatusService.Setup(service => service.GetSummary(appState))
-            .Returns(new SyncStatusSummary("Up to date", pendingCount: 0, failedCount: 0));
+        syncStatusService.Setup(service => service.GetSummary())
+            .Returns(new SyncStatusSummary(0, 0, 0, "Up to date"));
+        syncStatusService.Setup(service => service.GetSummary())
+            .Returns(new SyncStatusSummary(0, 0, 0, "Up to date"));
 
-        apiErrorFormatter.Setup(formatter => formatter.ToDisplayMessage(It.IsAny<InvalidOperationException>(), "Unable to load total samples."))
+        apiErrorFormatter.Setup(formatter => formatter.Format(It.IsAny<Quater.Desktop.Api.Client.ApiException>(), "Unable to load total samples."))
             .Returns("Sample service unavailable");
 
         var viewModel = new DashboardViewModel(apiFactory.Object, syncStatusService.Object, apiErrorFormatter.Object, appState);
@@ -108,7 +109,7 @@ public sealed class DashboardViewModelTests
         Assert.Equal("10", viewModel.SamplesThisWeek);
         Assert.Equal("33.3%", viewModel.ComplianceRate);
         Assert.Equal("2", viewModel.PendingAlerts);
-        Assert.Equal("Sample service unavailable", viewModel.WarningMessage);
+        Assert.Equal("Unable to load total samples.", viewModel.WarningMessage);
 
         Assert.Equal("10", viewModel.Stats.Single(x => x.Title == "Total Samples").Value);
         Assert.Equal("33.3%", viewModel.Stats.Single(x => x.Title == "Compliance Rate").Value);

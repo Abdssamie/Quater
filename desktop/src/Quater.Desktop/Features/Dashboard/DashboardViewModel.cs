@@ -4,6 +4,7 @@ using Quater.Desktop.Api.Model;
 using Quater.Desktop.Core;
 using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Core.Sync;
 
 namespace Quater.Desktop.Features.Dashboard;
 
@@ -47,8 +48,8 @@ public sealed partial class DashboardViewModel(
         await LoadSampleCountAsync(warnings, ct);
         await LoadComplianceMetricsAsync(warnings, ct);
 
-        var syncSummary = syncStatusService.GetSummary(appState);
-        SyncIndicator = syncSummary.StatusText;
+        var syncSummary = syncStatusService.GetSummary();
+        SyncIndicator = syncSummary.LastSyncStatusText;
 
         WarningMessage = string.Join(" ", warnings);
 
@@ -71,7 +72,13 @@ public sealed partial class DashboardViewModel(
         }
         catch (Exception ex)
         {
-            warnings.Add(apiErrorFormatter.ToDisplayMessage(ex, "Unable to load total samples."));
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                warnings.Add(apiErrorFormatter.Format(apiException, "Unable to load total samples."));
+                return;
+            }
+
+            warnings.Add("Unable to load total samples.");
         }
     }
 
@@ -99,7 +106,13 @@ public sealed partial class DashboardViewModel(
         }
         catch (Exception ex)
         {
-            warnings.Add(apiErrorFormatter.ToDisplayMessage(ex, "Unable to load compliance metrics."));
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                warnings.Add(apiErrorFormatter.Format(apiException, "Unable to load compliance metrics."));
+                return;
+            }
+
+            warnings.Add("Unable to load compliance metrics.");
         }
     }
 
@@ -110,18 +123,6 @@ public sealed partial class DashboardViewModel(
         return Task.CompletedTask;
     }
 }
-
-public interface IApiErrorFormatter
-{
-    string ToDisplayMessage(Exception exception, string fallbackMessage);
-}
-
-public interface ISyncStatusService
-{
-    SyncStatusSummary GetSummary(AppState appState);
-}
-
-public sealed record SyncStatusSummary(string StatusText, int pendingCount, int failedCount);
 
 public sealed record DashboardStat(
     string Title,
