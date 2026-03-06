@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.TestResults.Edit"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="480"
+             x:Class="Quater.Desktop.Features.TestResults.Edit.TestResultEditorView"
+             x:DataType="vm:TestResultEditorViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="10">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Parameter" VerticalAlignment="Center" />
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ParameterName, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Value" VerticalAlignment="Center" />
+        <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Value, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Unit" VerticalAlignment="Center" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Unit, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Test Date" VerticalAlignment="Center" />
+        <CalendarDatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding TestDate, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Technician" VerticalAlignment="Center" />
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TechnicianName, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Method" VerticalAlignment="Center" />
+        <ComboBox Grid.Row="5" Grid.Column="1"
+                  ItemsSource="{Binding TestMethods}"
+                  SelectedItem="{Binding TestMethod, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Sample" VerticalAlignment="Center" />
+        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding SampleId}" IsReadOnly="True" />
+    </Grid>
+</UserControl>

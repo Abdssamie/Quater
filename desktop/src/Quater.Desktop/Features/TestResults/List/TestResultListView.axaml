@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.TestResults.List"
+             xmlns:edit="clr-namespace:Quater.Desktop.Features.TestResults.Edit"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="Quater.Desktop.Features.TestResults.List.TestResultListView"
+             x:DataType="vm:TestResultListViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="20">
+        <suki:GlassCard Grid.Row="0" Margin="0,0,0,15" Padding="15">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Test Results" Classes="h2" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding TotalCount, StringFormat='({0} total)'}"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource SukiText_Medium}" />
+                <ProgressBar IsIndeterminate="True"
+                             IsVisible="{Binding IsLoading}"
+                             Width="120"
+                             Height="4"
+                             VerticalAlignment="Center" />
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" HorizontalAlignment="Right" />
+                <Button Content="+ New Result"
+                        Classes="accent"
+                        Command="{Binding CreateResultCommand}" />
+            </StackPanel>
+        </suki:GlassCard>
+
+        <suki:GlassCard Grid.Row="1" Padding="15">
+                <DataGrid ItemsSource="{Binding TestResults}"
+                          SelectedItem="{Binding SelectedResult}"
+                          IsReadOnly="True"
+                          AutoGenerateColumns="False"
+                          GridLinesVisibility="All">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Parameter" Binding="{Binding ParameterName}" Width="*" />
+                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
+                        <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="*" />
+                        <DataGridTextColumn Header="Test Date" Binding="{Binding TestDate, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" Width="*" />
+                        <DataGridTextColumn Header="Technician" Binding="{Binding TechnicianName}" Width="*" />
+                        <DataGridTextColumn Header="Method" Binding="{Binding TestMethod}" Width="*" />
+                        <DataGridTemplateColumn Header="Compliance" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Padding="8,4"
+                                            CornerRadius="12"
+                                            HorizontalAlignment="Left"
+                                            Background="{Binding ComplianceColor}">
+                                        <TextBlock Text="{Binding ComplianceStatusDisplay}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White" />
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Actions" Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <Button Content="Edit"
+                                                Command="{Binding $parent[DataGrid].((vm:TestResultListViewModel)DataContext).EditResultCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="Delete"
+                                                Classes="danger"
+                                                Command="{Binding $parent[DataGrid].((vm:TestResultListViewModel)DataContext).DeleteResultCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+        </suki:GlassCard>
+
+        <suki:GlassCard Grid.Row="2" Padding="15" Margin="0,15,0,0" IsVisible="{Binding IsEditorOpen}">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="10">
+                    <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Test Result Editor" Classes="h3" FontWeight="Bold" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Sample ID" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Editor.SampleId}" IsReadOnly="True" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Parameter" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Editor.ParameterName, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Value" VerticalAlignment="Center" />
+                    <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Editor.Value, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Unit" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Editor.Unit, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Test Date" VerticalAlignment="Center" />
+                    <CalendarDatePicker Grid.Row="5" Grid.Column="1" SelectedDate="{Binding Editor.TestDate, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Technician" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Editor.TechnicianName, Mode=TwoWay}" />
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Method" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="7" Grid.Column="1"
+                              ItemsSource="{Binding Editor.TestMethods}"
+                              SelectedItem="{Binding Editor.TestMethod, Mode=TwoWay}" />
+                </Grid>
+        </suki:GlassCard>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,15,0,0" IsVisible="{Binding IsEditorOpen}">
+            <Button Content="Cancel" Command="{Binding CancelEditorCommand}" />
+            <Button Content="Save" Classes="accent" Command="{Binding SaveEditorCommand}" />
+        </StackPanel>
+    </Grid>
+</UserControl>
