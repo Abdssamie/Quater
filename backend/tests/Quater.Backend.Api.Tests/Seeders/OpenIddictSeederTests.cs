@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using Quater.Backend.Api.Seeders;
 using Quater.Backend.Api.Tests.Fixtures;
+using System.Collections.Generic;
 
 namespace Quater.Backend.Api.Tests.Seeders;
 
@@ -20,7 +21,13 @@ public sealed class OpenIddictSeederTests(ApiTestFixture fixture)
         var serviceProvider = scope.ServiceProvider;
         var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
+        List<object> existingApplications = [];
         await foreach (var application in manager.ListAsync())
+        {
+            existingApplications.Add(application);
+        }
+
+        foreach (var application in existingApplications)
         {
             await manager.DeleteAsync(application);
         }

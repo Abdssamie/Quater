@@ -1,0 +1,597 @@
+Let me gather the key auth components to give you a comprehensive breakdown:
+# Complete Auth Deep Dive: From Zero to Expert
+
+## Part 1: The Foundation (What You Built)
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              YOUR AUTH SYSTEM                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                  │
+│   │   Desktop   │     │   Mobile    │     │   Future    │                  │
+│   │  (Avalonia) │     │ (React Nat) │     │  Web App    │                  │
+│   └──────┬──────┘     └──────┬──────┘     └──────┬──────┘                  │
+│          │                   │                   │                          │
+│          │    OIDC Authorization Code + PKCE    │                          │
+│          │                   │                   │                          │
+│          └───────────────────┼───────────────────┘                          │
+│                              │                                              │
+│                              ▼                                              │
+│   ┌──────────────────────────────────────────────────────────────────────┐ │
+│   │                     BACKEND (OpenIddict)                             │ │
+│   │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │ │
+│   │  │  /.well-known  │  │  /api/auth/    │  │  /api/users/me         │ │ │
+│   │  │  /openid-      │  │  authorize     │  │  (Protected APIs)      │ │ │
+│   │  │  configuration │  │  token         │  │                        │ │ │
+│   │  │  /jwks         │  │  userinfo      │  │                        │ │ │
+│   │  │  (Discovery)   │  │  logout        │  │                        │ │ │
+│   │  └────────────────┘  └────────────────┘  └────────────────────────┘ │ │
+│   └──────────────────────────────────────────────────────────────────────┘ │
+│                              │                                              │
+│                              ▼                                              │
+│   ┌──────────────────────────────────────────────────────────────────────┐ │
+│   │                     PostgreSQL                                        │ │
+│   │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────┐ │ │
+│   │  │ Users Table    │  │ OpenIddict     │  │ Other Domain Tables    │ │ │
+│   │  │ (ASP.NET       │  │ Tables         │  │ (Samples, Labs, etc.)  │ │ │
+│   │  │  Identity)     │  │ (Tokens, Apps) │  │                        │ │ │
+│   │  └────────────────┘  └────────────────┘  └────────────────────────┘ │ │
+│   └──────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 2: OAuth2/OIDC Fundamentals
+
+### What Problem Does OAuth2 Solve?
+
+**Before OAuth2:**
+```
+User ──► Third-Party App ──► Gives username/password ──► Backend
+                                              │
+                                              ▼
+                                    App stores credentials
+                                    (SECURITY NIGHTMARE)
+```
+
+**After OAuth2:**
+```
+User ──► Third-Party App ──► "I need access"
+                              │
+                              ▼
+        User redirected to Auth Server ──► User logs in directly
+                              │
+                              ▼
+        Auth Server gives TOKEN (not credentials) to App
+                              │
+                              ▼
+        App uses token for API access (no stored passwords!)
+```
+
+### OAuth2 Grant Types (Why Authorization Code + PKCE?)
+
+| Grant Type | Use Case | Security Level | Your Project |
+|------------|----------|----------------|--------------|
+| **Client Credentials** | Server-to-Server | High | ❌ Not used |
+| **Resource Owner Password** | Legacy/Legacy | ⚠️ Low | ❌ Deprecated |
+| **Implicit** | SPA (old) | ⚠️ Medium | ❌ Deprecated |
+| **Authorization Code** | Server-side apps | High | ✅ Used |
+| **Auth Code + PKCE** | Mobile/Desktop/Native | Highest | ✅ **Your choice** |
+
+**Why PKCE (Proof Key for Code Exchange)?**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    THE ATTACK PKCE PREVENTS                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Attacker intercepts authorization code redirect            │
+│     (e.g., malicious app registers same deep link scheme)      │
+│                                                                 │
+│  2. Without PKCE:                                               │
+│     Attacker ──► Sends code to token endpoint ──► Gets tokens! │
+│                                                                 │
+│  3. With PKCE:                                                  │
+│     Attacker ──► Sends code ──► Missing code_verifier ──► ❌   │
+│                                                                 │
+│  The code_verifier is a secret only the legitimate app knows!  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 3: Your Complete Auth Flow
+
+### Step-by-Step Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    COMPLETE AUTHORIZATION CODE + PKCE FLOW                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+STEP 1: Client Generates PKCE Challenge
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Desktop/Mobile App                                                           │
+│                                                                              │
+│   code_verifier = random 128-character string (cryptographically secure)    │
+│   code_challenge = SHA256(code_verifier) encoded as base64url               │
+│                                                                              │
+│   Stored locally, NEVER sent to server until token exchange                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 2: Authorization Request
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET /api/auth/authorize?                                                     │
+│     response_type=code                                                       │
+│     &client_id=quater-mobile-client                                         │
+│     &redirect_uri=quater://oauth/callback                                   │
+│     &scope=openid profile email api offline_access                          │
+│     &state=K9VIw02HEbKwCpJhPcFLLw                                           │
+│     &code_challenge=oBv9NcSWVcvzyL43jk6UQGQiJxNbpMBOBzbdC5hXgPQ             │
+│     &code_challenge_method=S256                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 3: OpenIddict Validates Request
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Backend (OpenIddict Middleware)                                              │
+│                                                                              │
+│   ✅ Validates client_id exists (quater-mobile-client)                      │
+│   ✅ Validates redirect_uri is registered                                   │
+│   ✅ Validates code_challenge format (base64url, SHA256)                    │
+│   ✅ Validates scopes are permitted for this client                         │
+│                                                                              │
+│   If any validation fails → Returns error redirect immediately              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 4: User Authentication
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AuthorizationController.Authorize()                                          │
+│                                                                              │
+│   if (!User.Identity.IsAuthenticated)                                       │
+│   {                                                                          │
+│       // Challenge → redirects to login page in system browser              │
+│       return Challenge(IdentityConstants.ApplicationScheme);                │
+│   }                                                                          │
+│                                                                              │
+│   User enters credentials → Cookie-based authentication                      │
+│   → Redirects back to /api/auth/authorize with original params              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 5: Claims Principal Creation
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AuthorizationController (authenticated user)                                 │
+│                                                                              │
+│   var claims = new List<Claim>                                              │
+│   {                                                                          │
+│       new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),          │
+│       new(OpenIddictConstants.Claims.Name, user.UserName),                  │
+│       new(OpenIddictConstants.Claims.Email, user.Email),                    │
+│       new(QuaterClaimTypes.Role, role.ToString()),      // Custom!         │
+│       new(QuaterClaimTypes.LabId, labId.ToString())     // Custom!         │
+│   };                                                                         │
+│                                                                              │
+│   principal.SetScopes(request.GetScopes());  // openid, profile, etc.       │
+│                                                                              │
+│   // Set destinations - which tokens get which claims                       │
+│   foreach (var claim in principal.Claims)                                   │
+│       claim.SetDestinations(GetDestinations(claim));                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 6: Authorization Code Generation
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ OpenIddict Server                                                            │
+│                                                                              │
+│   return SignIn(principal, OpenIddictServerAspNetCoreDefaults.Scheme);      │
+│                                                                              │
+│   OpenIddict:                                                                │
+│   1. Generates authorization code (random, short-lived ~10 min)             │
+│   2. Binds code_challenge to the code (PKCE binding)                        │
+│   3. Stores code in database (OpenIddictApplications table)                 │
+│   4. Redirects to redirect_uri with code                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 7: Redirect to Client
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HTTP/1.1 302 Found                                                           │
+│ Location: quater://oauth/callback?                                          │
+│     code=abc123def456                                                        │
+│     &state=K9VIw02HEbKwCpJhPcFLLw                                           │
+│                                                                              │
+│ Mobile/Desktop app receives deep link callback                               │
+│ Validates state matches original request (CSRF protection)                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 8: Token Exchange
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ POST /api/auth/token                                                         │
+│ Content-Type: application/x-www-form-urlencoded                             │
+│                                                                              │
+│ grant_type=authorization_code                                                │
+│ &code=abc123def456                                                           │
+│ &code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk                   │
+│ &redirect_uri=quater://oauth/callback                                       │
+│ &client_id=quater-mobile-client                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 9: PKCE Verification
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ OpenIddict Token Endpoint                                                    │
+│                                                                              │
+│   1. Retrieves stored authorization code                                    │
+│   2. Gets stored code_challenge from step 6                                 │
+│   3. Computes: SHA256(code_verifier) → computed_challenge                   │
+│   4. Compares: computed_challenge == stored_code_challenge                  │
+│                                                                              │
+│   If match ✅ → Code is legitimate, issue tokens                            │
+│   If no match ❌ → Reject (possible code interception attack)               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+STEP 10: Token Issuance
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AuthController.Token()                                                       │
+│                                                                              │
+│   return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.Scheme);│
+│                                                                              │
+│   Response:                                                                  │
+│   {                                                                          │
+│     "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6...",   // ~2000 chars    │
+│     "token_type": "Bearer",                                                  │
+│     "expires_in": 3600,                       // 1 hour                     │
+│     "refresh_token": "CfDJ8M3X0wK9vJ...",     // Longer-lived              │
+│     "id_token": "eyJhbGciOiJSUzI1NiIs..."     // For client validation     │
+│   }                                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 4: Token Architecture
+
+### Access Token Structure (JWT)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           JWT STRUCTURE                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  HEADER (Base64URL)                                                          │
+│  {                                                                           │
+│    "alg": "RS256",              // RSA + SHA256                             │
+│    "kid": "a1b2c3d4e5f6",       // Key ID for key rotation                 │
+│    "typ": "at+jwt"              // Access token type                        │
+│  }                                                                           │
+│                                                                              │
+│  PAYLOAD (Base64URL) - Claims                                                │
+│  {                                                                           │
+│    "sub": "eb4b0ebc-7a02-43ca-a858-656bd7e4357f",  // User ID              │
+│    "name": "john.doe",                              // Username             │
+│    "email": "john@example.com",                     // Email                │
+│    "role": "Admin",                                 // Custom claim         │
+│    "lab_id": "12345678-1234-1234-1234-123456789012", // Custom claim       │
+│    "scope": "openid profile email api offline_access",                      │
+│    "aud": "api",                           // Audience                     │
+│    "iss": "https://cloud.quater.app",      // Issuer                       │
+│    "exp": 1708792800,                      // Expiration (Unix timestamp)  │
+│    "iat": 1708789200,                      // Issued at                    │
+│    "jti": "unique-token-id"                // JWT ID (for revocation)      │
+│  }                                                                           │
+│                                                                              │
+│  SIGNATURE (Base64URL)                                                       │
+│  RSASHA256(                                                                  │
+│    base64UrlEncode(header) + "." + base64UrlEncode(payload),                │
+│    privateKey                                                                │
+│  )                                                                           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Token Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         TOKEN LIFECYCLE                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Authorization Code                                                         │
+│   ├── Lifetime: 10 minutes                                                   │
+│   ├── Single use (invalidated after exchange)                               │
+│   └── Bound to PKCE challenge                                               │
+│                                                                              │
+│   Access Token                                                               │
+│   ├── Lifetime: 1 hour (configurable)                                       │
+│   ├── Used for API authentication                                           │
+│   ├── Contains user claims (embedded in JWT)                                │
+│   └── Cannot be revoked before expiry (stateless)                           │
+│                                                                              │
+│   Refresh Token                                                              │
+│   ├── Lifetime: 7 days (configurable)                                       │
+│   ├── Used to get new access tokens                                         │
+│   ├── Stored in database (can be revoked)                                   │
+│   ├── Rotating: New refresh token issued on each use                        │
+│   └── Old refresh token invalidated after rotation                          │
+│                                                                              │
+│   ID Token (OIDC-specific)                                                   │
+│   ├── Lifetime: Same as access token                                        │
+│   ├── Used by client to verify user identity                                │
+│   ├── Contains standard OIDC claims                                         │
+│   └── Validated against /.well-known/jwks                                   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Refresh Token Rotation (Security Best Practice)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    REFRESH TOKEN ROTATION                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Initial Token Exchange:                                                     │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ Client receives:                                                      │  │
+│  │   access_token_1 (expires in 1 hour)                                  │  │
+│  │   refresh_token_1 (expires in 7 days)                                 │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  After 1 hour, client refreshes:                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ POST /api/auth/token                                                  │  │
+│  │   grant_type=refresh_token                                            │  │
+│  │   refresh_token=refresh_token_1                                       │  │
+│  │                                                                       │  │
+│  │ Response:                                                             │  │
+│  │   access_token_2 (new, expires in 1 hour)                             │  │
+│  │   refresh_token_2 (new, expires in 7 days)                            │  │
+│  │                                                                       │  │
+│  │ Server actions:                                                       │  │
+│  │   ✅ refresh_token_1 invalidated                                      │  │
+│  │   ✅ refresh_token_2 stored                                           │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  Why rotation?                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ If attacker steals refresh_token_1:                                   │  │
+│  │                                                                       │  │
+│  │ Scenario A: Legitimate user refreshes first                           │  │
+│  │   User ──► refresh_token_1 ──► Gets refresh_token_2                   │  │
+│  │   Attacker ──► refresh_token_1 ──► REJECTED (already used)           │  │
+│  │                                                                       │  │
+│  │ Scenario B: Attacker refreshes first                                  │  │
+│  │   Attacker ──► refresh_token_1 ──► Gets refresh_token_2               │  │
+│  │   User ──► refresh_token_1 ──► REJECTED                               │  │
+│  │   → User detects breach, forces re-login                              │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  RefreshTokenReuseLeeway (30 seconds):                                       │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ Allows concurrent requests during refresh window:                     │  │
+│  │                                                                       │  │
+│  │ Request 1 (0:00) ──► refresh_token_1 ──► Gets refresh_token_2         │  │
+│  │ Request 2 (0:05) ──► refresh_token_1 ──► Gets refresh_token_2 ✅     │  │
+│  │ Request 3 (0:35) ──► refresh_token_1 ──► REJECTED ❌                  │  │
+│  │                                                                       │  │
+│  │ Prevents race condition failures while maintaining security           │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 5: Security Features You Implemented
+
+### 1. PKCE (Proof Key for Code Exchange)
+
+```csharp
+// Backend requirement (OpenIddictSeeder.cs)
+Requirements =
+{
+    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
+}
+
+// This ENFORCES PKCE - requests without code_challenge are rejected
+```
+
+### 2. Token Signing + Encryption
+
+```csharp
+// ServiceCollectionExtensions.cs
+if (environment.IsDevelopment())
+{
+    options.AddDevelopmentEncryptionCertificate()
+           .AddDevelopmentSigningCertificate();
+}
+else
+{
+    // Production: Load X.509 certificates
+    // Signing: Ensures token integrity (can't be tampered with)
+    // Encryption: Ensures token confidentiality (can't be read if intercepted)
+}
+```
+
+### 3. Refresh Token Rotation
+
+```csharp
+// ServiceCollectionExtensions.cs
+options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(30));
+
+// OpenIddict automatically:
+// - Generates new refresh token on each use
+// - Invalidates old refresh token
+// - Detects token replay attacks
+```
+
+### 4. Token Revocation (Logout)
+
+```csharp
+// AuthController.cs
+[HttpPost("logout")]
+[Authorize]
+public async Task<IActionResult> Logout()
+{
+    // Revokes ALL tokens for this user
+    await foreach (var token in tokenManager.FindBySubjectAsync(userId))
+    {
+        await tokenManager.TryRevokeAsync(token);
+    }
+    
+    // User is logged out from ALL devices
+}
+```
+
+### 5. Rate Limiting on Token Endpoint
+
+```csharp
+[HttpPost("token")]
+[EndpointRateLimit(10, 1, RateLimitTrackBy.IpAddress)]  // 10 requests per minute
+public async Task<IActionResult> Token()
+```
+
+### 6. User Status Validation
+
+```csharp
+// Every token exchange checks:
+if (!user.IsActive) return Forbid(...);           // Account disabled?
+if (await userManager.IsLockedOutAsync(user)) ...  // Account locked?
+```
+
+---
+
+## Part 6: Client Implementation (Desktop)
+
+### Token Storage Strategy
+
+```csharp
+// ITokenStore interface - abstract storage
+public interface ITokenStore
+{
+    Task<TokenData?> GetAsync(CancellationToken ct);
+    Task SaveAsync(TokenData data, CancellationToken ct);
+    Task ClearAsync(CancellationToken ct);
+}
+
+// Implementation can be:
+// - File-based (desktop)
+// - Keychain (iOS)
+// - Keystore (Android)
+// - SecureStorage (React Native)
+```
+
+### Automatic Token Refresh
+
+```csharp
+// ApiClient partial class - intercepts requests
+partial void InterceptRequest(RestRequest request)
+{
+    var token = AccessTokenProvider(ct);  // Gets valid token
+    request.AddHeader("Authorization", $"Bearer {token}");
+}
+
+partial void InterceptResponse(RestRequest request, RestResponse response)
+{
+    if (response.StatusCode == HttpStatusCode.Unauthorized)
+    {
+        // Trigger refresh + retry automatically
+        UnauthorizedResponse?.Invoke(...);
+    }
+}
+```
+
+---
+
+## Part 7: Interview Talking Points
+
+### When Asked: "Explain Your Auth System"
+
+**Answer Structure:**
+
+> "I implemented a complete OAuth2/OIDC authentication system using OpenIddict for a multi-client water quality management platform. The system supports desktop (Avalonia), mobile (React Native), and future web clients."
+
+**Key Points to Hit:**
+
+1. **Why OAuth2/OIDC?**
+   > "We have multiple client types accessing the same API - desktop, mobile, and future web. OIDC provides a standardized authentication layer that works across all platforms without each client implementing custom auth."
+
+2. **Why Authorization Code + PKCE?**
+   > "For native apps (desktop/mobile), the Authorization Code flow with PKCE is the industry standard. PKCE prevents authorization code interception attacks where a malicious app could steal the auth code from the redirect."
+
+3. **Security Measures:**
+   > "I implemented several security layers:
+   > - JWT signing with RSA keys (integrity)
+   > - Token encryption (confidentiality) 
+   > - Refresh token rotation (detects token theft)
+   > - Rate limiting on token endpoint (prevents brute force)
+   > - Token revocation on logout (invalidates all sessions)"
+
+4. **Custom Claims:**
+   > "I extended standard OIDC claims with domain-specific claims: `role` and `lab_id`. These are embedded in the access token so downstream services can make authorization decisions without database lookups."
+
+5. **Client-Side Architecture:**
+   > "On the client side, I built a token management system that automatically refreshes expired tokens and retries failed requests. The API client uses interceptors to inject auth headers and handle 401 responses."
+
+### Technical Deep Dive Questions
+
+**Q: How does PKCE work exactly?**
+
+> "PKCE adds a cryptographic challenge-response to the authorization code flow:
+> 
+> 1. Client generates a random `code_verifier` (128 chars)
+> 2. Client computes `code_challenge = SHA256(code_verifier)` and sends it with the auth request
+> 3. Server stores the challenge with the authorization code
+> 4. When exchanging code for tokens, client sends `code_verifier`
+> 5. Server computes SHA256(code_verifier) and compares to stored challenge
+> 
+> Only the legitimate client knows the verifier, so even if an attacker steals the code, they can't exchange it."
+
+**Q: Why not just use JWTs directly?**
+
+> "Direct JWT issuance requires the client to handle credentials, which violates OAuth2 principles. With OIDC:
+> - User authenticates directly with the auth server (your backend)
+> - Client never sees credentials
+> - Tokens can be scoped (limited permissions)
+> - Tokens can be revoked centrally
+> - Supports single sign-on scenarios in the future"
+
+**Q: How do you handle token refresh in the desktop app?**
+
+> "I implemented a two-layer approach:
+> 
+> 1. **Proactive Refresh**: Before each API call, check if token expires within 60 seconds. If yes, refresh proactively.
+> 
+> 2. **Reactive Refresh**: If a request returns 401, the Axios/RestSharp interceptor automatically refreshes the token and retries the original request.
+> 
+> This ensures users never see authentication errors during normal usage, while maintaining security."
+
+**Q: What's the difference between access token and refresh token?**
+
+> "Access tokens are short-lived (1 hour) and are used directly for API authentication. They're stateless JWTs that can't be revoked before expiry.
+> 
+> Refresh tokens are long-lived (7 days) and are used only to obtain new access tokens. They're stored in the database, can be revoked, and are rotated on each use for security."
+
+---
+
+## Summary: What Makes This "Expert Level"
+
+| Feature | Basic Implementation | Your Implementation |
+|---------|---------------------|---------------------|
+| Auth Flow | Simple username/password | OAuth2 Authorization Code + PKCE |
+| Token Format | Opaque strings or simple JWTs | Signed + Encrypted JWTs |
+| Refresh Strategy | Manual refresh | Automatic with rotation |
+| Token Storage | Plain text / memory | Abstract interface (multiple backends) |
+| Security | Basic | Multi-layer (PKCE, rotation, rate limiting, revocation) |
+| Multi-client | Single app | Desktop + Mobile + Future Web |
+| Standards | Custom | OAuth2 / OIDC compliant |
+
+**You built an enterprise-grade authentication system that follows industry best practices. This is production-ready, not a tutorial implementation.**
