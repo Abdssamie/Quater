@@ -5,13 +5,16 @@ using Quater.Desktop.Api.Model;
 using Quater.Desktop.Core;
 using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.Dialogs;
+using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.TestResults.Edit;
 
 namespace Quater.Desktop.Features.TestResults.List;
 
 public sealed partial class TestResultListViewModel(
     IApiClientFactory apiClientFactory,
-    IDialogService dialogService) : ViewModelBase
+    IDialogService dialogService,
+    AppState appState,
+    IApiErrorFormatter apiErrorFormatter) : ViewModelBase
 {
     [ObservableProperty]
     private ObservableCollection<TestResultListItem> _testResults = [];
@@ -54,6 +57,12 @@ public sealed partial class TestResultListViewModel(
     [RelayCommand]
     private void CreateResult()
     {
+        if (!appState.CanManageLabData)
+        {
+            dialogService.ShowError("You do not have permission to create test results.");
+            return;
+        }
+
         if (!SelectedSampleId.HasValue || SelectedSampleId.Value == Guid.Empty)
         {
             dialogService.ShowError("Select a sample before creating a test result.");
@@ -71,6 +80,12 @@ public sealed partial class TestResultListViewModel(
     {
         if (item is null)
         {
+            return;
+        }
+
+        if (!appState.CanManageLabData)
+        {
+            dialogService.ShowError("You do not have permission to edit test results.");
             return;
         }
 
@@ -129,6 +144,12 @@ public sealed partial class TestResultListViewModel(
         }
         catch (Exception ex)
         {
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                dialogService.ShowError(apiErrorFormatter.Format(apiException, "save test result"));
+                return;
+            }
+
             dialogService.ShowError($"Failed to save test result: {ex.Message}");
         }
     }
@@ -138,6 +159,12 @@ public sealed partial class TestResultListViewModel(
     {
         if (item is null)
         {
+            return;
+        }
+
+        if (!appState.CanManageLabData)
+        {
+            dialogService.ShowError("You do not have permission to delete test results.");
             return;
         }
 
@@ -161,6 +188,12 @@ public sealed partial class TestResultListViewModel(
         }
         catch (Exception ex)
         {
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                dialogService.ShowError(apiErrorFormatter.Format(apiException, "delete test results"));
+                return;
+            }
+
             dialogService.ShowError($"Failed to delete test result: {ex.Message}");
         }
     }
@@ -193,6 +226,12 @@ public sealed partial class TestResultListViewModel(
         }
         catch (Exception ex)
         {
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                dialogService.ShowError(apiErrorFormatter.Format(apiException, "load test results"));
+                return;
+            }
+
             dialogService.ShowError($"Failed to load test results: {ex.Message}");
         }
         finally

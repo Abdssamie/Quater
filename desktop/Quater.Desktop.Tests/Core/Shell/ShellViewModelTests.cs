@@ -54,11 +54,13 @@ public sealed class ShellViewModelTests
     [Fact]
     public void NavigateToTestResults_WhenLabSelected_NavigatesToRoute()
     {
+        var labId = Guid.NewGuid();
         var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
         var appState = new AppState
         {
             IsAuthenticated = true,
-            CurrentLabId = Guid.NewGuid()
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_2)]
         };
 
         navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());

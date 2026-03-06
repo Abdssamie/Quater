@@ -24,14 +24,14 @@ public sealed class SampleListViewModelTests
         var sampleRepository = new Mock<ISampleRepository>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState { CurrentLabId = Guid.NewGuid() };
+        var appState = CreateWritableAppState();
 
         sampleRepository.Setup(repository => repository.GetFilteredAsync(It.IsAny<SampleQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         sampleRepository.Setup(repository => repository.GetCountAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
 
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState)
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>())
         {
             StatusFilter = SharedSampleStatus.Pending,
             StartDateFilter = new DateTime(2026, 02, 01, 0, 0, 0, DateTimeKind.Utc),
@@ -58,13 +58,13 @@ public sealed class SampleListViewModelTests
         var sampleRepository = new Mock<ISampleRepository>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState();
+        var appState = CreateWritableAppState();
 
         dialogService.Setup(service => service.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(false);
 
         var sample = CreateSample();
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         viewModel.Samples.Add(sample);
         viewModel.TotalCount = 1;
 
@@ -81,7 +81,7 @@ public sealed class SampleListViewModelTests
         var sampleRepository = new Mock<ISampleRepository>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState();
+        var appState = CreateWritableAppState();
 
         dialogService.Setup(service => service.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(true);
@@ -89,7 +89,7 @@ public sealed class SampleListViewModelTests
             .ReturnsAsync(true);
 
         var sample = CreateSample();
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         viewModel.Samples.Add(sample);
         viewModel.TotalCount = 1;
 
@@ -106,7 +106,7 @@ public sealed class SampleListViewModelTests
         var sampleRepository = new Mock<ISampleRepository>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState();
+        var appState = CreateWritableAppState();
 
         dialogService.Setup(service => service.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(true);
@@ -114,7 +114,7 @@ public sealed class SampleListViewModelTests
             .ReturnsAsync(false);
 
         var sample = CreateSample();
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         viewModel.Samples.Add(sample);
         viewModel.TotalCount = 1;
 
@@ -132,7 +132,7 @@ public sealed class SampleListViewModelTests
         var sampleApi = new Mock<ISamplesApi>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState { CurrentLabId = Guid.NewGuid() };
+        var appState = CreateWritableAppState();
 
         sampleRepository.Setup(repository => repository.GetFilteredAsync(It.IsAny<SampleQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -151,7 +151,7 @@ public sealed class SampleListViewModelTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SampleDto(id: Guid.NewGuid(), collectorName: "Field Collector", labId: appState.CurrentLabId));
 
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         await viewModel.InitializeAsync();
 
         viewModel.CreateSampleCommand.Execute(null);
@@ -174,7 +174,7 @@ public sealed class SampleListViewModelTests
         var sampleApi = new Mock<ISamplesApi>();
         var apiFactory = new Mock<IApiClientFactory>();
         var dialogService = new Mock<IDialogService>();
-        var appState = new AppState { CurrentLabId = Guid.NewGuid() };
+        var appState = CreateWritableAppState();
 
         sampleRepository.Setup(repository => repository.GetFilteredAsync(It.IsAny<SampleQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -209,7 +209,7 @@ public sealed class SampleListViewModelTests
                 varVersion: 4,
                 labId: sample.LabId));
 
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         viewModel.Samples.Add(sample);
 
         viewModel.EditSampleCommand.Execute(sample);
@@ -236,7 +236,7 @@ public sealed class SampleListViewModelTests
             AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)]
         };
 
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
 
         viewModel.CreateSampleCommand.Execute(null);
 
@@ -259,7 +259,7 @@ public sealed class SampleListViewModelTests
 
         var sample = CreateSample();
         sample.LabId = labId;
-        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState, Mock.Of<IApiErrorFormatter>());
         viewModel.Samples.Add(sample);
 
         await viewModel.DeleteSampleCommand.ExecuteAsync(sample);
@@ -280,6 +280,16 @@ public sealed class SampleListViewModelTests
             CollectionDate = new DateTime(2026, 02, 14, 0, 0, 0, DateTimeKind.Utc),
             CollectorName = "Collector",
             Location = new Location(34.0, -6.8, "North Site", "Region/District/Site")
+        };
+    }
+
+    private static AppState CreateWritableAppState()
+    {
+        var labId = Guid.NewGuid();
+        return new AppState
+        {
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_2)]
         };
     }
 }

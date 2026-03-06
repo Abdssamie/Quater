@@ -173,7 +173,7 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     private bool IsNavigationItemVisible(NavigationItem item)
     {
-        return !IsLabScopedNavigationItem(item) || HasSelectedLab;
+        return !IsLabScopedNavigationItem(item) || (HasSelectedLab && _appState.CanManageLabData);
     }
 
     private void EnsureLabScopedViewHasLabContext()
@@ -222,7 +222,8 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     public void NavigateTo(NavigationItem item)
     {
-        if ((item.ViewModelType == typeof(SampleListViewModel) || item.ViewModelType == typeof(TestResultListViewModel)) && !HasSelectedLab)
+        if ((item.ViewModelType == typeof(SampleListViewModel) || item.ViewModelType == typeof(TestResultListViewModel))
+            && (!HasSelectedLab || !_appState.CanManageLabData))
         {
             return;
         }
@@ -239,7 +240,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToSamples()
     {
-        if (!HasSelectedLab)
+        if (!HasSelectedLab || !_appState.CanManageLabData)
         {
             return;
         }
@@ -250,7 +251,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToTestResults()
     {
-        if (!HasSelectedLab)
+        if (!HasSelectedLab || !_appState.CanManageLabData)
         {
             return;
         }
