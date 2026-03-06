@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.Samples.Edit"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="560"
+             x:Class="Quater.Desktop.Features.Samples.Edit.SampleEditorView"
+             x:DataType="vm:SampleEditorViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="10">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Type" VerticalAlignment="Center" />
+        <ComboBox Grid.Row="0" Grid.Column="1"
+                  ItemsSource="{Binding SampleTypes}"
+                  SelectedItem="{Binding Type, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Latitude" VerticalAlignment="Center" />
+        <NumericUpDown Grid.Row="1" Grid.Column="1"
+                       Minimum="-90" Maximum="90" Increment="0.0001"
+                       Value="{Binding LocationLatitude, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Longitude" VerticalAlignment="Center" />
+        <NumericUpDown Grid.Row="2" Grid.Column="1"
+                       Minimum="-180" Maximum="180" Increment="0.0001"
+                       Value="{Binding LocationLongitude, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Description" VerticalAlignment="Center" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LocationDescription, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Hierarchy" VerticalAlignment="Center" />
+        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LocationHierarchy, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Collection Date" VerticalAlignment="Center" />
+        <CalendarDatePicker Grid.Row="5" Grid.Column="1" SelectedDate="{Binding CollectionDate, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Collector" VerticalAlignment="Center" />
+        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding CollectorName, Mode=TwoWay}" />
+
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="Notes" VerticalAlignment="Top" />
+        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding Notes, Mode=TwoWay}" AcceptsReturn="True" MinHeight="70" />
+
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Status" VerticalAlignment="Center" IsVisible="{Binding IsEditMode}" />
+        <ComboBox Grid.Row="8" Grid.Column="1"
+                  ItemsSource="{Binding SampleStatuses}"
+                  SelectedItem="{Binding Status, Mode=TwoWay}"
+                  IsVisible="{Binding IsEditMode}" />
+    </Grid>
+</UserControl>

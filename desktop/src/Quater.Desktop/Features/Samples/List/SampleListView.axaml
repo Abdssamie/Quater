@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Quater.Desktop.Features.Samples.List"
+             xmlns:edit="clr-namespace:Quater.Desktop.Features.Samples.Edit"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:converters="clr-namespace:Quater.Desktop.Converters"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -13,7 +14,7 @@
         <converters:BoolNotConverter x:Key="BoolNotConverter" />
     </UserControl.Resources>
 
-    <Grid RowDefinitions="Auto, *" Margin="20">
+    <Grid RowDefinitions="Auto, *, Auto, Auto" Margin="20">
         <suki:GlassCard Grid.Row="0" Margin="0,0,0,15" Padding="15">
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBox Text="{Binding SearchText}" Watermark="Search samples..."
@@ -89,5 +90,17 @@
                 </DataGrid>
             </Grid>
         </suki:GlassCard>
+
+        <suki:GlassCard Grid.Row="2" Padding="15" Margin="0,15,0,0" IsVisible="{Binding IsEditorOpen}">
+            <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                <TextBlock Grid.Row="0" Text="Sample Editor" Classes="h3" FontWeight="Bold" />
+                <edit:SampleEditorView Grid.Row="1" DataContext="{Binding Editor}" />
+            </Grid>
+        </suki:GlassCard>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,15,0,0" IsVisible="{Binding IsEditorOpen}">
+            <Button Content="Cancel" Command="{Binding CancelEditorCommand}" />
+            <Button Content="Save" Classes="accent" Command="{Binding SaveEditorCommand}" />
+        </StackPanel>
     </Grid>
 </UserControl>

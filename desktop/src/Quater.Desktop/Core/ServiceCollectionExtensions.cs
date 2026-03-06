@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<Features.Dashboard.DashboardViewModel>();
         services.AddTransient<Features.Samples.List.SampleListViewModel>();
+        services.AddTransient<Features.Samples.Edit.SampleEditorViewModel>();
         services.AddTransient<Features.TestResults.List.TestResultListViewModel>();
         services.AddTransient<Features.TestResults.Edit.TestResultEditorViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
