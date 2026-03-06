@@ -7,6 +7,7 @@ using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Auth.Storage;
 using Quater.Desktop.Core.Dialogs;
+using Quater.Desktop.Core.Export;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Startup;
@@ -28,6 +29,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISukiToastManager, SukiToastManager>();
         services.AddSingleton<ISukiDialogManager, SukiDialogManager>();
         services.AddSingleton<IDialogService, SukiDialogService>();
+        services.AddSingleton<IPermissionService, PermissionService>();
+        services.AddSingleton<ICsvExportService, CsvExportService>();
 
         return services;
     }
@@ -49,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Samples.Edit.SampleEditorViewModel>();
         services.AddTransient<Features.TestResults.List.TestResultListViewModel>();
         services.AddTransient<Features.TestResults.Edit.TestResultEditorViewModel>();
+        services.AddTransient<Features.Audit.List.AuditListViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
         services.AddTransient<Features.Onboarding.OnboardingViewModel>();
 
