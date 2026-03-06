@@ -7,6 +7,29 @@ namespace Quater.Backend.Api.Seeders;
 /// </summary>
 public static class OpenIddictSeeder
 {
+    private sealed record ClientSeedConfig(
+        string ClientId,
+        string DisplayName,
+        IReadOnlyList<string> RedirectUris);
+
+    private static readonly ClientSeedConfig[] ClientConfigs =
+    [
+        new(
+            "quater-desktop-client",
+            "Quater Desktop Client",
+            [
+                "http://127.0.0.1/callback",
+                "http://127.0.0.1:7890/callback"
+            ]),
+        new(
+            "quater-mobile-client",
+            "Quater Mobile Client",
+            [
+                "quater://oauth/callback",
+                "http://127.0.0.1/callback"
+            ])
+    ];
+
     /// <summary>
     /// Seeds the default OpenIddict client application for desktop apps.
     /// Uses authorization code flow with PKCE (public client, no client secret).
@@ -16,22 +39,29 @@ public static class OpenIddictSeeder
     {
         var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
-        // Get client configuration from environment variables
-        var clientId = Environment.GetEnvironmentVariable("OPENIDDICT_CLIENT_ID") ?? "quater-desktop-client";
+        foreach (var clientConfig in ClientConfigs)
+        {
+            var descriptor = CreateDescriptor(clientConfig);
+            var existingClient = await manager.FindByClientIdAsync(clientConfig.ClientId);
 
-        // Create OpenIddict application descriptor for public client with authorization code + PKCE
+            if (existingClient != null)
+            {
+                await manager.UpdateAsync(existingClient, descriptor);
+                continue;
+            }
+
+            await manager.CreateAsync(descriptor);
+        }
+    }
+
+    private static OpenIddictApplicationDescriptor CreateDescriptor(ClientSeedConfig clientConfig)
+    {
         var descriptor = new OpenIddictApplicationDescriptor
         {
-            ClientId = clientId,
-            DisplayName = "Quater Desktop Client",
+            ClientId = clientConfig.ClientId,
+            DisplayName = clientConfig.DisplayName,
             ClientType = OpenIddictConstants.ClientTypes.Public,
             ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
-            RedirectUris =
-            {
-                new Uri("quater://oauth/callback"),       // Mobile deep link (retained for mobile app compatibility)
-                new Uri("http://127.0.0.1/callback"),     // Desktop loopback
-                new Uri("http://127.0.0.1:7890/callback") // Desktop loopback (non-privileged port)
-            },
             Permissions =
             {
                 OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -51,17 +81,11 @@ public static class OpenIddictSeeder
             }
         };
 
-        // Check if client already exists
-        var existingClient = await manager.FindByClientIdAsync(clientId);
-        if (existingClient != null)
+        foreach (var redirectUri in clientConfig.RedirectUris)
         {
-            // Update existing client to ensure redirect URIs are current
-            await manager.UpdateAsync(existingClient, descriptor);
+            descriptor.RedirectUris.Add(new Uri(redirectUri));
         }
-        else
-        {
-            // Create new client
-            await manager.CreateAsync(descriptor);
-        }
+
+        return descriptor;
     }
 }

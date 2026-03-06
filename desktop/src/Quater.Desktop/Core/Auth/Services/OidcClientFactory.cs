@@ -18,6 +18,7 @@ public sealed class OidcClientFactory(AppSettings appSettings)
             RedirectUri = redirectUrl,
             Scope = "openid profile email api offline_access",
             Browser = browser,
+            IdentityTokenValidator = new JwtIdentityTokenValidator(),
             Policy = new Policy
             {
                 RequireIdentityTokenSignature = true

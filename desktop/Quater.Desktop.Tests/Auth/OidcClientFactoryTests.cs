@@ -45,6 +45,17 @@ public sealed class OidcClientFactoryTests
     }
 
     [Fact]
+    public void Create_ConfiguresIdentityTokenValidator()
+    {
+        var settings = new AppSettings { BackendUrl = "https://auth.example.com" };
+        var factory = new OidcClientFactory(settings);
+
+        var client = factory.Create();
+
+        Assert.NotNull(client.Options.IdentityTokenValidator);
+    }
+
+    [Fact]
     public void Create_ClientId_IsNeverMobileClient()
     {
         var settings = new AppSettings { BackendUrl = "https://auth.example.com" };
