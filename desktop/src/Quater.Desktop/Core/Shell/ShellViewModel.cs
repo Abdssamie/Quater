@@ -7,6 +7,7 @@ using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.Audit.List;
+using Quater.Desktop.Features.Sync.Center;
 using Quater.Desktop.Features.Auth;
 using Quater.Desktop.Features.Samples.List;
 using Quater.Desktop.Features.TestResults.List;
@@ -114,11 +115,18 @@ public sealed partial class ShellViewModel : ViewModelBase
                 OnPropertyChanged(nameof(NavigationItems));
                 EnsureLabScopedViewHasLabContext();
             }
+            else if (args.PropertyName == nameof(AppState.SyncStatusText)
+                || args.PropertyName == nameof(AppState.PendingSyncCount)
+                || args.PropertyName == nameof(AppState.FailedSyncCount))
+            {
+                UpdateSyncStatus();
+            }
         };
 
         CurrentLabName = _appState.CurrentLabName;
         SelectedLab = _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
         UpdateAuthState();
+        UpdateSyncStatus();
     }
 
     public override async Task InitializeAsync(CancellationToken ct = default)
@@ -299,8 +307,19 @@ public sealed partial class ShellViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void NavigateToSyncCenter()
+    {
+        _navigationService.NavigateTo<SyncCenterViewModel>();
+    }
+
+    [RelayCommand]
     private async Task Logout()
     {
         await _authSessionManager.HandleLogoutAsync();
+    }
+
+    private void UpdateSyncStatus()
+    {
+        SyncStatus = $"{_appState.SyncStatusText} (pending: {_appState.PendingSyncCount}, failed: {_appState.FailedSyncCount})";
     }
 }

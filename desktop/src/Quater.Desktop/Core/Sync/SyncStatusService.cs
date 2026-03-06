@@ -4,32 +4,38 @@ namespace Quater.Desktop.Core.Sync;
 
 public sealed class SyncStatusService(AppState appState) : ISyncStatusService
 {
-    private int _failedCount;
-    private int _inProgressCount;
-
-    public SyncStatusSummary GetSummary()
+    public Task<SyncQueueSummary> GetSummaryAsync(CancellationToken ct = default)
     {
-        var lastSyncStatusText = appState.LastSyncTime == "Never"
-            ? "Never synced"
-            : $"Last synced at {appState.LastSyncTime}";
+        var failed = appState.FailedSyncCount;
+        var pending = appState.PendingSyncCount;
+        var inProgress = appState.IsSyncing ? 1 : 0;
 
-        return new SyncStatusSummary(
-            PendingCount: appState.PendingSyncCount,
-            FailedCount: _failedCount,
-            InProgressCount: _inProgressCount,
-            LastSyncStatusText: lastSyncStatusText);
+        var syncText = string.IsNullOrWhiteSpace(appState.SyncStatusText)
+            ? $"Last sync: {appState.LastSyncTime}"
+            : appState.SyncStatusText;
+
+        return Task.FromResult(new SyncQueueSummary(pending, failed, inProgress, syncText));
     }
 
-    public void UpdateQueueCounts(int pendingCount, int failedCount, int inProgressCount)
+    public Task RetryAllFailedAsync(CancellationToken ct = default)
     {
-        appState.PendingSyncCount = pendingCount;
-        _failedCount = failedCount;
-        _inProgressCount = inProgressCount;
+        appState.PendingSyncCount += appState.FailedSyncCount;
+        appState.FailedSyncCount = 0;
+        appState.SyncStatusText = "Retry scheduled";
+        return Task.CompletedTask;
     }
 
-    public void RetryAllFailed()
+    public Task RetryAsync(string operationId, CancellationToken ct = default)
     {
-        appState.PendingSyncCount += _failedCount;
-        _failedCount = 0;
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationId);
+
+        if (appState.FailedSyncCount > 0)
+        {
+            appState.FailedSyncCount -= 1;
+            appState.PendingSyncCount += 1;
+        }
+
+        appState.SyncStatusText = $"Retry scheduled for {operationId}";
+        return Task.CompletedTask;
     }
 }

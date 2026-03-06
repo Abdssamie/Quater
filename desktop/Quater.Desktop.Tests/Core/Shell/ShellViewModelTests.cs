@@ -7,6 +7,7 @@ using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Shell;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.Audit.List;
+using Quater.Desktop.Features.Sync.Center;
 using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
@@ -84,7 +85,10 @@ public sealed class ShellViewModelTests
             AvailableLabs =
             [
                 new UserLabDto(Guid.NewGuid(), "Lab A", UserRole.NUMBER_2, DateTime.UtcNow)
-            ]
+            ],
+            SyncStatusText = "Up to Date",
+            PendingSyncCount = 0,
+            FailedSyncCount = 0
         };
 
         navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
@@ -121,6 +125,48 @@ public sealed class ShellViewModelTests
         Assert.Contains(viewModel.NavigationItems, item => item.ViewModelType == typeof(AuditListViewModel));
     }
 
+    [Fact]
+    public void NavigateToSyncCenter_WhenAuthenticated_NavigatesToRoute()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.Setup(service => service.NavigateTo<SyncCenterViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        viewModel.NavigateToSyncCenterCommand.Execute(null);
+
+        navigationService.Verify(service => service.NavigateTo<SyncCenterViewModel>(), Times.Once);
+    }
+
+    [Fact]
+    public void SyncStatus_WhenAppStateChanges_UpdatesShellStatusText()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            SyncStatusText = "Up to Date",
+            PendingSyncCount = 0,
+            FailedSyncCount = 0
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        appState.SyncStatusText = "Retry scheduled";
+        appState.PendingSyncCount = 3;
+        appState.FailedSyncCount = 1;
+
+        Assert.Equal("Retry scheduled (pending: 3, failed: 1)", viewModel.SyncStatus);
+    }
+
     private static IReadOnlyList<NavigationItem> CreateNavigationItems()
     {
         return
@@ -128,7 +174,8 @@ public sealed class ShellViewModelTests
             new NavigationItem("Dashboard", string.Empty, typeof(Quater.Desktop.Features.Dashboard.DashboardViewModel), 0),
             new NavigationItem("Samples", string.Empty, typeof(Quater.Desktop.Features.Samples.List.SampleListViewModel), 1),
             new NavigationItem("Test Results", string.Empty, typeof(TestResultListViewModel), 2),
-            new NavigationItem("Audit", string.Empty, typeof(AuditListViewModel), 3)
+            new NavigationItem("Audit", string.Empty, typeof(AuditListViewModel), 3),
+            new NavigationItem("Sync Center", string.Empty, typeof(SyncCenterViewModel), 4)
         ];
     }
 

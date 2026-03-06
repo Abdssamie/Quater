@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPermissionService, PermissionService>();
         services.AddSingleton<ICsvExportService, CsvExportService>();
         services.AddSingleton<ISyncStatusService, SyncStatusService>();
+        services.AddSingleton<IConflictResolutionService, ConflictResolutionService>();
 
         return services;
     }
@@ -56,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.TestResults.List.TestResultListViewModel>();
         services.AddTransient<Features.TestResults.Edit.TestResultEditorViewModel>();
         services.AddTransient<Features.Audit.List.AuditListViewModel>();
+        services.AddTransient<Features.Sync.Center.SyncCenterViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
         services.AddTransient<Features.Onboarding.OnboardingViewModel>();
 
