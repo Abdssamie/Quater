@@ -240,4 +240,31 @@ public sealed class TestResultListViewModelTests
         Assert.Equal("Fail", vm.TestResults[0].ComplianceStatusDisplay);
         Assert.False(vm.IsEditorOpen);
     }
+
+    [Fact]
+    public async Task DeleteResult_WhenApiReturnsForbidden_ShowsPermissionErrorMessage()
+    {
+        var api = new Mock<ITestResultsApi>(MockBehavior.Strict);
+        var factory = new Mock<IApiClientFactory>(MockBehavior.Strict);
+        var dialogs = new Mock<IDialogService>(MockBehavior.Strict);
+
+        var id = Guid.NewGuid();
+        factory.Setup(x => x.GetTestResultsApi()).Returns(api.Object);
+        dialogs.Setup(x => x.ShowConfirmationAsync("Delete Test Result", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        api.Setup(x => x.ApiTestResultsIdDeleteAsync(id, It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Quater.Desktop.Api.Client.ApiException(403, "Forbidden"));
+
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object)
+        {
+            TotalCount = 1
+        };
+
+        var row = new TestResultListItem(id, Guid.NewGuid(), "Turbidity", 1.2, "NTU", DateTime.UtcNow, "Nora", ApiTestMethod.NUMBER_2, "Warning", "#CA8A04", 2);
+        vm.TestResults.Add(row);
+
+        await vm.DeleteResultCommand.ExecuteAsync(row);
+
+        dialogs.Verify(x => x.ShowError("You do not have permission to delete test results."), Times.Once);
+    }
 }

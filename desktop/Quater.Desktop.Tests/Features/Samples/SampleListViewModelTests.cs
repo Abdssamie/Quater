@@ -223,6 +223,52 @@ public sealed class SampleListViewModelTests
         Assert.Equal(SharedSampleStatus.Completed, sample.Status);
     }
 
+    [Fact]
+    public void CreateSampleCommand_WhenCurrentLabRoleIsViewer_DoesNotOpenEditor()
+    {
+        var labId = Guid.NewGuid();
+        var sampleRepository = new Mock<ISampleRepository>();
+        var apiFactory = new Mock<IApiClientFactory>();
+        var dialogService = new Mock<IDialogService>();
+        var appState = new AppState
+        {
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)]
+        };
+
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+
+        viewModel.CreateSampleCommand.Execute(null);
+
+        Assert.Null(viewModel.Editor);
+        Assert.False(viewModel.IsEditorOpen);
+    }
+
+    [Fact]
+    public async Task DeleteSampleCommand_WhenCurrentLabRoleIsViewer_DoesNotConfirmOrDelete()
+    {
+        var labId = Guid.NewGuid();
+        var sampleRepository = new Mock<ISampleRepository>();
+        var apiFactory = new Mock<IApiClientFactory>();
+        var dialogService = new Mock<IDialogService>();
+        var appState = new AppState
+        {
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)]
+        };
+
+        var sample = CreateSample();
+        sample.LabId = labId;
+        var viewModel = new SampleListViewModel(sampleRepository.Object, apiFactory.Object, dialogService.Object, appState);
+        viewModel.Samples.Add(sample);
+
+        await viewModel.DeleteSampleCommand.ExecuteAsync(sample);
+
+        dialogService.Verify(service => service.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        sampleRepository.Verify(repository => repository.DeleteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Single(viewModel.Samples);
+    }
+
     private static Sample CreateSample()
     {
         return new Sample
