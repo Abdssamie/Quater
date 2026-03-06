@@ -36,9 +36,10 @@ public class RlsSessionInterceptorTests : IAsyncLifetime
         QuaterDbContext context,
         string variableName)
     {
+        var safeVariableName = variableName.Replace("'", "''");
         var result = await context.Database
-            .SqlQueryRaw<string>(
-                $"SELECT current_setting('{variableName}', true) AS \"Value\"")
+            .SqlQuery<string>(
+                $"SELECT current_setting('{safeVariableName}', true) AS \"Value\"")
             .FirstOrDefaultAsync();
 
         return result;
