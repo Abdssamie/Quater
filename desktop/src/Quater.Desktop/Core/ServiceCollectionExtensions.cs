@@ -11,6 +11,7 @@ using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Startup;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Core.Sync;
 using Quater.Desktop.Data;
 using Serilog;
 using SukiUI.Dialogs;
@@ -28,6 +29,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISukiToastManager, SukiToastManager>();
         services.AddSingleton<ISukiDialogManager, SukiDialogManager>();
         services.AddSingleton<IDialogService, SukiDialogService>();
+        services.AddSingleton<ISyncStatusService, SyncStatusService>();
+        services.AddSingleton<IConflictResolutionService, ConflictResolutionService>();
 
         return services;
     }
@@ -49,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.Samples.Edit.SampleEditorViewModel>();
         services.AddTransient<Features.TestResults.List.TestResultListViewModel>();
         services.AddTransient<Features.TestResults.Edit.TestResultEditorViewModel>();
+        services.AddTransient<Features.Sync.Center.SyncCenterViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
         services.AddTransient<Features.Onboarding.OnboardingViewModel>();
 
