@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.Diagnostics"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="Quater.Desktop.Features.Diagnostics.DiagnosticsView"
+             x:DataType="vm:DiagnosticsViewModel">
+
+    <Grid RowDefinitions="Auto,*" Margin="20" RowSpacing="12">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="Diagnostics" Classes="h2" FontWeight="Bold" />
+            <Button Content="Check Backend"
+                    Command="{Binding CheckBackendHealthCommand}" />
+        </StackPanel>
+
+        <suki:GlassCard Grid.Row="1" Padding="16">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="220,*" RowSpacing="10" ColumnSpacing="12">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Backend URL" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BackendUrl}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Backend Status" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BackendStatus}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Runtime" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RuntimeVersion}" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Operating System" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding OperatingSystem}" />
+            </Grid>
+        </suki:GlassCard>
+    </Grid>
+</UserControl>
