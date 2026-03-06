@@ -4,6 +4,7 @@ using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Shell;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Features.Sync.Center;
 using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
@@ -68,6 +69,48 @@ public sealed class ShellViewModelTests
         viewModel.NavigateToTestResultsCommand.Execute(null);
 
         navigationService.Verify(service => service.NavigateTo<TestResultListViewModel>(), Times.Once);
+    }
+
+    [Fact]
+    public void NavigateToSyncCenter_WhenAuthenticated_NavigatesToRoute()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.Setup(service => service.NavigateTo<SyncCenterViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        viewModel.NavigateToSyncCenterCommand.Execute(null);
+
+        navigationService.Verify(service => service.NavigateTo<SyncCenterViewModel>(), Times.Once);
+    }
+
+    [Fact]
+    public void SyncStatus_WhenAppStateChanges_UpdatesShellStatusText()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            SyncStatusText = "Up to Date",
+            PendingSyncCount = 0,
+            FailedSyncCount = 0
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        appState.SyncStatusText = "Retry scheduled";
+        appState.PendingSyncCount = 3;
+        appState.FailedSyncCount = 1;
+
+        Assert.Equal("Retry scheduled (pending: 3, failed: 1)", viewModel.SyncStatus);
     }
 
     private static ShellViewModel CreateViewModel(INavigationService navigationService, AppState appState)
