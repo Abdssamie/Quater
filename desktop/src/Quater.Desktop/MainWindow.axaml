@@ -32,7 +32,9 @@
 
         <DataTemplate DataType="{x:Type shell:ShellViewModel}">
             <Grid>
-                <suki:SukiSideMenu IsVisible="{Binding IsAuthenticated}">
+                <suki:SukiSideMenu IsVisible="{Binding IsAuthenticated}"
+                                   ItemsSource="{Binding NavigationItems}"
+                                   SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}">
                     <suki:SukiSideMenu.HeaderContent>
                         <StackPanel Spacing="8" Margin="20">
                             <StackPanel Spacing="2">
@@ -59,24 +61,18 @@
                         </StackPanel>
                     </suki:SukiSideMenu.HeaderContent>
 
-                    <suki:SukiSideMenuItem Header="Dashboard">
-                        <suki:SukiSideMenuItem.Icon>
-                            <PathIcon Data="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
-                        </suki:SukiSideMenuItem.Icon>
-                        <suki:SukiSideMenuItem.PageContent>
-                            <ContentControl Content="{Binding CurrentView}" />
-                        </suki:SukiSideMenuItem.PageContent>
-                    </suki:SukiSideMenuItem>
-
-                    <suki:SukiSideMenuItem Header="Samples"
-                                           IsVisible="{Binding HasSelectedLab}">
-                        <suki:SukiSideMenuItem.Icon>
-                            <PathIcon Data="M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z" />
-                        </suki:SukiSideMenuItem.Icon>
-                        <suki:SukiSideMenuItem.PageContent>
-                            <ContentControl Content="{Binding CurrentView}" />
-                        </suki:SukiSideMenuItem.PageContent>
-                    </suki:SukiSideMenuItem>
+                    <suki:SukiSideMenu.ItemTemplate>
+                        <DataTemplate>
+                            <suki:SukiSideMenuItem Header="{Binding Label}">
+                                <suki:SukiSideMenuItem.Icon>
+                                    <PathIcon Data="{Binding IconPath}" />
+                                </suki:SukiSideMenuItem.Icon>
+                                <suki:SukiSideMenuItem.PageContent>
+                                    <ContentControl Content="{Binding $parent[shell:ShellViewModel].CurrentView}" />
+                                </suki:SukiSideMenuItem.PageContent>
+                            </suki:SukiSideMenuItem>
+                        </DataTemplate>
+                    </suki:SukiSideMenu.ItemTemplate>
                 </suki:SukiSideMenu>
 
                 <ContentControl Content="{Binding CurrentView}" 

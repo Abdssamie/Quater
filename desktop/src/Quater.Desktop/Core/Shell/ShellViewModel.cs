@@ -7,6 +7,8 @@ using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.Auth;
+using Quater.Desktop.Features.Samples.List;
+using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
 namespace Quater.Desktop.Core.Shell;
@@ -19,6 +21,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly SettingsUpdater _settingsUpdater;
     private readonly ISettingsStore _settingsStore;
     private readonly AuthSessionManager _authSessionManager;
+    private bool _isSyncingSelectedNavigationItem;
 
     public ISukiToastManager ToastManager { get; }
 
@@ -40,7 +43,13 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private UserLabDto? _selectedLab;
 
+    [ObservableProperty]
+    private NavigationItem? _selectedNavigationItem;
+
     public IReadOnlyList<UserLabDto> AvailableLabs => _appState.AvailableLabs;
+
+    public IReadOnlyList<NavigationItem> NavigationItems =>
+        [.. _navigationService.NavigationItems.Where(IsNavigationItemVisible)];
 
     public bool HasSelectedLab => _appState.CurrentLabId != Guid.Empty;
 
@@ -63,7 +72,11 @@ public sealed partial class ShellViewModel : ViewModelBase
         _settingsStore = settingsStore;
         _authSessionManager = authSessionManager;
 
-        _navigationService.CurrentViewChanged += (_, vm) => CurrentView = vm;
+        _navigationService.CurrentViewChanged += (_, vm) =>
+        {
+            CurrentView = vm;
+            SyncSelectedNavigationItem();
+        };
         _appState.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(AppState.IsAuthenticated))
@@ -78,6 +91,7 @@ public sealed partial class ShellViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(AvailableLabs));
                 OnPropertyChanged(nameof(IsLabSelectorVisible));
+                OnPropertyChanged(nameof(NavigationItems));
                 if (_appState.CurrentLabId != Guid.Empty && _appState.AvailableLabs.All(lab => lab.LabId != _appState.CurrentLabId))
                 {
                     _appState.CurrentLabId = Guid.Empty;
@@ -93,6 +107,8 @@ public sealed partial class ShellViewModel : ViewModelBase
             {
                 SelectedLab = _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
                 OnPropertyChanged(nameof(HasSelectedLab));
+                OnPropertyChanged(nameof(NavigationItems));
+                EnsureLabScopedViewHasLabContext();
             }
         };
 
@@ -128,6 +144,16 @@ public sealed partial class ShellViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasSelectedLab));
     }
 
+    partial void OnSelectedNavigationItemChanged(NavigationItem? value)
+    {
+        if (_isSyncingSelectedNavigationItem || value is null)
+        {
+            return;
+        }
+
+        NavigateTo(value);
+    }
+
     private async Task SaveSelectedLabAsync(Guid labId)
     {
         if (_settingsUpdater.Current.LastUsedLabId == labId)
@@ -137,6 +163,46 @@ public sealed partial class ShellViewModel : ViewModelBase
 
         _settingsUpdater.Current.LastUsedLabId = labId;
         await _settingsUpdater.SaveAsync();
+    }
+
+    private static bool IsLabScopedNavigationItem(NavigationItem item)
+    {
+        return item.ViewModelType == typeof(SampleListViewModel)
+            || item.ViewModelType == typeof(TestResultListViewModel);
+    }
+
+    private bool IsNavigationItemVisible(NavigationItem item)
+    {
+        return !IsLabScopedNavigationItem(item) || HasSelectedLab;
+    }
+
+    private void EnsureLabScopedViewHasLabContext()
+    {
+        if (HasSelectedLab || CurrentView is null)
+        {
+            return;
+        }
+
+        var currentType = CurrentView.GetType();
+        if (currentType == typeof(SampleListViewModel) || currentType == typeof(TestResultListViewModel))
+        {
+            _navigationService.NavigateTo<Features.Dashboard.DashboardViewModel>();
+        }
+    }
+
+    private void SyncSelectedNavigationItem()
+    {
+        if (CurrentView is null)
+        {
+            return;
+        }
+
+        var currentType = CurrentView.GetType();
+        var matchingItem = _navigationService.NavigationItems.FirstOrDefault(item => item.ViewModelType == currentType);
+
+        _isSyncingSelectedNavigationItem = true;
+        SelectedNavigationItem = matchingItem;
+        _isSyncingSelectedNavigationItem = false;
     }
 
 
@@ -156,7 +222,40 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     public void NavigateTo(NavigationItem item)
     {
+        if ((item.ViewModelType == typeof(SampleListViewModel) || item.ViewModelType == typeof(TestResultListViewModel)) && !HasSelectedLab)
+        {
+            return;
+        }
+
         _navigationService.NavigateTo(item);
+    }
+
+    [RelayCommand]
+    private void NavigateToDashboard()
+    {
+        _navigationService.NavigateTo<Features.Dashboard.DashboardViewModel>();
+    }
+
+    [RelayCommand]
+    private void NavigateToSamples()
+    {
+        if (!HasSelectedLab)
+        {
+            return;
+        }
+
+        _navigationService.NavigateTo<SampleListViewModel>();
+    }
+
+    [RelayCommand]
+    private void NavigateToTestResults()
+    {
+        if (!HasSelectedLab)
+        {
+            return;
+        }
+
+        _navigationService.NavigateTo<TestResultListViewModel>();
     }
 
     [RelayCommand]
