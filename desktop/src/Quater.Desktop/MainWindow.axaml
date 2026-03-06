@@ -8,6 +8,7 @@
                  xmlns:splash="clr-namespace:Quater.Desktop.Core.Splash"
                  xmlns:dashboard="clr-namespace:Quater.Desktop.Features.Dashboard"
                  xmlns:samples="clr-namespace:Quater.Desktop.Features.Samples.List"
+                 xmlns:testResults="clr-namespace:Quater.Desktop.Features.TestResults.List"
                  xmlns:auth="clr-namespace:Quater.Desktop.Features.Auth"
                  xmlns:onboarding="clr-namespace:Quater.Desktop.Features.Onboarding"
                  xmlns:converters="clr-namespace:Quater.Desktop.Converters"
@@ -89,6 +90,10 @@
         
         <DataTemplate DataType="{x:Type samples:SampleListViewModel}">
             <samples:SampleListView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type testResults:TestResultListViewModel}">
+            <testResults:TestResultListView />
         </DataTemplate>
         
         <DataTemplate DataType="{x:Type auth:LoginViewModel}">
