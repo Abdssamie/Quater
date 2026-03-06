@@ -11,6 +11,7 @@
                  xmlns:testResults="clr-namespace:Quater.Desktop.Features.TestResults.List"
                  xmlns:audit="clr-namespace:Quater.Desktop.Features.Audit.List"
                  xmlns:syncCenter="clr-namespace:Quater.Desktop.Features.Sync.Center"
+                 xmlns:diagnostics="clr-namespace:Quater.Desktop.Features.Diagnostics"
                  xmlns:auth="clr-namespace:Quater.Desktop.Features.Auth"
                  xmlns:onboarding="clr-namespace:Quater.Desktop.Features.Onboarding"
                  xmlns:converters="clr-namespace:Quater.Desktop.Converters"
@@ -100,6 +101,10 @@
 
         <DataTemplate DataType="{x:Type syncCenter:SyncCenterViewModel}">
             <syncCenter:SyncCenterView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type diagnostics:DiagnosticsViewModel}">
+            <diagnostics:DiagnosticsView />
         </DataTemplate>
         
         <DataTemplate DataType="{x:Type auth:LoginViewModel}">

@@ -58,6 +58,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Features.TestResults.Edit.TestResultEditorViewModel>();
         services.AddTransient<Features.Audit.List.AuditListViewModel>();
         services.AddTransient<Features.Sync.Center.SyncCenterViewModel>();
+        services.AddTransient<Features.Diagnostics.DiagnosticsViewModel>();
         services.AddTransient<Features.Auth.LoginViewModel>();
         services.AddTransient<Features.Onboarding.OnboardingViewModel>();
 
@@ -94,6 +95,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IAccessTokenCache, AccessTokenCache>();
         services.AddSingleton<IApiClientFactory, ApiClientFactory>();
+        services.AddSingleton<IApiErrorFormatter, ApiErrorFormatter>();
 
         return services;
     }

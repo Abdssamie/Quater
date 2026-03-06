@@ -43,6 +43,10 @@ public sealed partial class AppState : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<UserLabDto> _availableLabs = Array.Empty<UserLabDto>();
+
+    public UserRole? CurrentLabRole => AvailableLabs.FirstOrDefault(lab => lab.LabId == CurrentLabId)?.Role;
+
+    public bool CanManageLabData => CurrentLabRole is UserRole.NUMBER_2 or UserRole.NUMBER_3;
     
     public void SetConnected()
     {

@@ -91,6 +91,20 @@ public sealed class ApplicationStartupService(
           typeof(Features.Audit.List.AuditListViewModel),
           3
       ));
+
+      navigationService.RegisterRoute<Features.Sync.Center.SyncCenterViewModel>(new(
+          "Sync Center",
+          "M12,3C16.42,3 20,4.79 20,7C20,9.21 16.42,11 12,11C7.58,11 4,9.21 4,7C4,4.79 7.58,3 12,3M4,9V12C4,14.21 7.58,16 12,16C16.42,16 20,14.21 20,12V9C20,11.21 16.42,13 12,13C7.58,13 4,11.21 4,9M4,14V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V14C20,16.21 16.42,18 12,18C7.58,18 4,16.21 4,14M16.5,8.25L15.16,6.91L12,10.07L10.67,8.74L9.33,10.08L12,12.75L16.5,8.25Z",
+          typeof(Features.Sync.Center.SyncCenterViewModel),
+          4
+      ));
+
+      navigationService.RegisterRoute<Features.Diagnostics.DiagnosticsViewModel>(new(
+          "Diagnostics",
+          "M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,7V13H13V7H11M11,15V17H13V15H11Z",
+          typeof(Features.Diagnostics.DiagnosticsViewModel),
+          5
+      ));
    }
 
    private void ConfigureApiUnauthorizedHandler()

@@ -20,6 +20,7 @@ public sealed partial class SampleListViewModel : ViewModelBase
     private readonly IApiClientFactory _apiClientFactory;
     private readonly IDialogService _dialogService;
     private readonly AppState _appState;
+    private readonly IApiErrorFormatter _apiErrorFormatter;
 
     [ObservableProperty]
     private ObservableCollection<Sample> _samples = [];
@@ -58,12 +59,14 @@ public sealed partial class SampleListViewModel : ViewModelBase
         ISampleRepository sampleRepository,
         IApiClientFactory apiClientFactory,
         IDialogService dialogService,
-        AppState appState)
+        AppState appState,
+        IApiErrorFormatter apiErrorFormatter)
     {
         _sampleRepository = sampleRepository;
         _apiClientFactory = apiClientFactory;
         _dialogService = dialogService;
         _appState = appState;
+        _apiErrorFormatter = apiErrorFormatter;
     }
 
     public override async Task InitializeAsync(CancellationToken ct = default)
@@ -125,6 +128,12 @@ public sealed partial class SampleListViewModel : ViewModelBase
     [RelayCommand]
     private void CreateSample()
     {
+        if (!_appState.CanManageLabData)
+        {
+            _dialogService.ShowError("You do not have permission to create samples.");
+            return;
+        }
+
         var editor = new SampleEditorViewModel();
         editor.InitializeForCreate();
 
@@ -138,6 +147,12 @@ public sealed partial class SampleListViewModel : ViewModelBase
     {
         if (sample is null)
         {
+            return;
+        }
+
+        if (!_appState.CanManageLabData)
+        {
+            _dialogService.ShowError("You do not have permission to edit samples.");
             return;
         }
 
@@ -200,7 +215,7 @@ public sealed partial class SampleListViewModel : ViewModelBase
         }
         catch (ApiException ex)
         {
-            _dialogService.ShowError($"Failed to save sample: {ex.Message}");
+            _dialogService.ShowError(_apiErrorFormatter.Format(ex, "save sample"));
         }
         catch (Exception ex)
         {
@@ -213,18 +228,35 @@ public sealed partial class SampleListViewModel : ViewModelBase
     {
         if (sample is null) return;
 
+        if (!_appState.CanManageLabData)
+        {
+            _dialogService.ShowError("You do not have permission to delete samples.");
+            return;
+        }
+
         var confirmed = await _dialogService.ShowConfirmationAsync(
             "Delete Sample",
             $"Are you sure you want to delete sample {sample.Id}?");
 
         if (!confirmed) return;
 
-        var deleted = await _sampleRepository.DeleteAsync(sample.Id);
-        if (deleted)
+        try
         {
-            Samples.Remove(sample);
-            TotalCount--;
-            _dialogService.ShowSuccess("Sample deleted successfully");
+            var deleted = await _sampleRepository.DeleteAsync(sample.Id);
+            if (deleted)
+            {
+                Samples.Remove(sample);
+                TotalCount--;
+                _dialogService.ShowSuccess("Sample deleted successfully");
+            }
+        }
+        catch (ApiException ex)
+        {
+            _dialogService.ShowError(_apiErrorFormatter.Format(ex, "delete samples"));
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Failed to delete sample: {ex.Message}");
         }
     }
 
