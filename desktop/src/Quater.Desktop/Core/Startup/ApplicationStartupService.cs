@@ -84,6 +84,13 @@ public sealed class ApplicationStartupService(
           typeof(Features.TestResults.List.TestResultListViewModel),
           2
       ));
+
+      navigationService.RegisterRoute<Features.Audit.List.AuditListViewModel>(new(
+          "Audit",
+          "M3,3H21V7H3V3M5,9H19V11H5V9M5,13H19V15H5V13M5,17H19V19H5V17Z",
+          typeof(Features.Audit.List.AuditListViewModel),
+          3
+      ));
    }
 
    private void ConfigureApiUnauthorizedHandler()

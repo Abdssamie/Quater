@@ -6,6 +6,7 @@ using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Features.Audit.List;
 using Quater.Desktop.Features.Auth;
 using Quater.Desktop.Features.Samples.List;
 using Quater.Desktop.Features.TestResults.List;
@@ -21,6 +22,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly SettingsUpdater _settingsUpdater;
     private readonly ISettingsStore _settingsStore;
     private readonly AuthSessionManager _authSessionManager;
+    private readonly IPermissionService _permissionService;
     private bool _isSyncingSelectedNavigationItem;
 
     public ISukiToastManager ToastManager { get; }
@@ -62,7 +64,8 @@ public sealed partial class ShellViewModel : ViewModelBase
         SettingsUpdater settingsUpdater,
         ISukiToastManager toastManager,
         ISettingsStore settingsStore,
-        AuthSessionManager authSessionManager)
+        AuthSessionManager authSessionManager,
+        IPermissionService permissionService)
     {
         _navigationService = navigationService;
         _appState = appState;
@@ -71,6 +74,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         ToastManager = toastManager;
         _settingsStore = settingsStore;
         _authSessionManager = authSessionManager;
+        _permissionService = permissionService;
 
         _navigationService.CurrentViewChanged += (_, vm) =>
         {
@@ -168,12 +172,28 @@ public sealed partial class ShellViewModel : ViewModelBase
     private static bool IsLabScopedNavigationItem(NavigationItem item)
     {
         return item.ViewModelType == typeof(SampleListViewModel)
-            || item.ViewModelType == typeof(TestResultListViewModel);
+            || item.ViewModelType == typeof(TestResultListViewModel)
+            || item.ViewModelType == typeof(AuditListViewModel);
     }
 
     private bool IsNavigationItemVisible(NavigationItem item)
     {
+        if (item.ViewModelType == typeof(AuditListViewModel))
+        {
+            return HasSelectedLab && _permissionService.CanAccessAuditWorkflow(GetSelectedLab());
+        }
+
         return !IsLabScopedNavigationItem(item) || HasSelectedLab;
+    }
+
+    private UserLabDto? GetSelectedLab()
+    {
+        if (_appState.CurrentLabId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
     }
 
     private void EnsureLabScopedViewHasLabContext()
@@ -184,7 +204,9 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
 
         var currentType = CurrentView.GetType();
-        if (currentType == typeof(SampleListViewModel) || currentType == typeof(TestResultListViewModel))
+        if (currentType == typeof(SampleListViewModel)
+            || currentType == typeof(TestResultListViewModel)
+            || currentType == typeof(AuditListViewModel))
         {
             _navigationService.NavigateTo<Features.Dashboard.DashboardViewModel>();
         }
@@ -222,7 +244,14 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     public void NavigateTo(NavigationItem item)
     {
-        if ((item.ViewModelType == typeof(SampleListViewModel) || item.ViewModelType == typeof(TestResultListViewModel)) && !HasSelectedLab)
+        if ((item.ViewModelType == typeof(SampleListViewModel)
+            || item.ViewModelType == typeof(TestResultListViewModel)
+            || item.ViewModelType == typeof(AuditListViewModel)) && !HasSelectedLab)
+        {
+            return;
+        }
+
+        if (item.ViewModelType == typeof(AuditListViewModel) && !_permissionService.CanAccessAuditWorkflow(GetSelectedLab()))
         {
             return;
         }
@@ -256,6 +285,17 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
 
         _navigationService.NavigateTo<TestResultListViewModel>();
+    }
+
+    [RelayCommand]
+    private void NavigateToAudit()
+    {
+        if (!HasSelectedLab || !_permissionService.CanAccessAuditWorkflow(GetSelectedLab()))
+        {
+            return;
+        }
+
+        _navigationService.NavigateTo<AuditListViewModel>();
     }
 
     [RelayCommand]

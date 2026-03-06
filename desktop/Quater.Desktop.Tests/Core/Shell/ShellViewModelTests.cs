@@ -1,9 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Quater.Desktop.Api.Model;
+using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Shell;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Features.Audit.List;
 using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
@@ -70,7 +73,69 @@ public sealed class ShellViewModelTests
         navigationService.Verify(service => service.NavigateTo<TestResultListViewModel>(), Times.Once);
     }
 
-    private static ShellViewModel CreateViewModel(INavigationService navigationService, AppState appState)
+    [Fact]
+    public void NavigationItems_WhenLabSelectedWithoutAuditPermission_HidesAuditItem()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = Guid.NewGuid(),
+            AvailableLabs =
+            [
+                new UserLabDto(Guid.NewGuid(), "Lab A", UserRole.NUMBER_2, DateTime.UtcNow)
+            ]
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.SetupGet(service => service.NavigationItems).Returns(CreateNavigationItems());
+
+        var permissionService = new Mock<IPermissionService>(MockBehavior.Strict);
+        permissionService.Setup(service => service.CanAccessAuditWorkflow(It.IsAny<UserLabDto?>())).Returns(false);
+
+        var viewModel = CreateViewModel(navigationService.Object, appState, permissionService.Object);
+
+        Assert.DoesNotContain(viewModel.NavigationItems, item => item.ViewModelType == typeof(AuditListViewModel));
+    }
+
+    [Fact]
+    public void NavigationItems_WhenLabSelectedWithAuditPermission_ShowsAuditItem()
+    {
+        var selectedLab = new UserLabDto(Guid.NewGuid(), "Lab A", UserRole.NUMBER_3, DateTime.UtcNow);
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = selectedLab.LabId,
+            AvailableLabs = [selectedLab]
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.SetupGet(service => service.NavigationItems).Returns(CreateNavigationItems());
+
+        var permissionService = new Mock<IPermissionService>(MockBehavior.Strict);
+        permissionService.Setup(service => service.CanAccessAuditWorkflow(It.IsAny<UserLabDto?>())).Returns(true);
+
+        var viewModel = CreateViewModel(navigationService.Object, appState, permissionService.Object);
+
+        Assert.Contains(viewModel.NavigationItems, item => item.ViewModelType == typeof(AuditListViewModel));
+    }
+
+    private static IReadOnlyList<NavigationItem> CreateNavigationItems()
+    {
+        return
+        [
+            new NavigationItem("Dashboard", string.Empty, typeof(Quater.Desktop.Features.Dashboard.DashboardViewModel), 0),
+            new NavigationItem("Samples", string.Empty, typeof(Quater.Desktop.Features.Samples.List.SampleListViewModel), 1),
+            new NavigationItem("Test Results", string.Empty, typeof(TestResultListViewModel), 2),
+            new NavigationItem("Audit", string.Empty, typeof(AuditListViewModel), 3)
+        ];
+    }
+
+    private static ShellViewModel CreateViewModel(
+        INavigationService navigationService,
+        AppState appState,
+        IPermissionService? permissionService = null)
     {
         var serviceProvider = new ServiceCollection()
             .AddTransient<Quater.Desktop.Features.Auth.LoginViewModel>(_ => null!)
@@ -83,6 +148,7 @@ public sealed class ShellViewModelTests
             settingsUpdater: null!,
             toastManager: Mock.Of<ISukiToastManager>(),
             settingsStore: Mock.Of<ISettingsStore>(),
-            authSessionManager: null!);
+            authSessionManager: null!,
+            permissionService: permissionService ?? Mock.Of<IPermissionService>());
     }
 }
