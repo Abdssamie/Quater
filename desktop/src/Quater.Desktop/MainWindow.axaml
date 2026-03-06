@@ -37,7 +37,9 @@
             <Grid>
                 <suki:SukiSideMenu IsVisible="{Binding IsAuthenticated}"
                                    ItemsSource="{Binding NavigationItems}"
-                                   SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}">
+                                   SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
+                                   UseCustomContent="True"
+                                   Content="{Binding CurrentView}">
                     <suki:SukiSideMenu.HeaderContent>
                         <StackPanel Spacing="8" Margin="20">
                             <StackPanel Spacing="2">
@@ -70,9 +72,6 @@
                                 <suki:SukiSideMenuItem.Icon>
                                     <PathIcon Data="{Binding IconPath}" />
                                 </suki:SukiSideMenuItem.Icon>
-                                <suki:SukiSideMenuItem.PageContent>
-                                    <ContentControl Content="{Binding $parent[shell:ShellViewModel].CurrentView}" />
-                                </suki:SukiSideMenuItem.PageContent>
                             </suki:SukiSideMenuItem>
                         </DataTemplate>
                     </suki:SukiSideMenu.ItemTemplate>

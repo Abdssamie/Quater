@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Quater.Desktop.Core.Navigation;
 
-public sealed class SukiNavigationService(IServiceProvider serviceProvider) : INavigationService
+public sealed class SukiNavigationService(
+    IServiceProvider serviceProvider,
+    ILogger<SukiNavigationService>? logger = null) : INavigationService
 {
     private readonly Dictionary<Type, NavigationItem> _routes = new();
     private readonly ObservableCollection<NavigationItem> _navigationItems = [];
@@ -58,5 +61,19 @@ public sealed class SukiNavigationService(IServiceProvider serviceProvider) : IN
 
         var viewModel = (ViewModelBase)serviceProvider.GetRequiredService(item.ViewModelType);
         CurrentView = viewModel;
+
+        _ = InitializeViewAsync(viewModel);
+    }
+
+    private async Task InitializeViewAsync(ViewModelBase viewModel)
+    {
+        try
+        {
+            await viewModel.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Failed to initialize view model {ViewModelType}", viewModel.GetType().Name);
+        }
     }
 }
