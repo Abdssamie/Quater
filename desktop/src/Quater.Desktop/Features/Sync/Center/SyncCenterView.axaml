@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sync="clr-namespace:Quater.Desktop.Features.Sync.Center"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="620"
+             x:Class="Quater.Desktop.Features.Sync.Center.SyncCenterView"
+             x:DataType="sync:SyncCenterViewModel">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12" Margin="20">
+        <TextBlock Text="Sync Center" FontSize="24" FontWeight="SemiBold" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+            <Border Background="#E5F3FF" CornerRadius="8" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="Pending" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding PendingCount}" FontSize="20" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="#FFEFEF" CornerRadius="8" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="Failed" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding FailedCount}" FontSize="20" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Background="#EEF7EE" CornerRadius="8" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="In Progress" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding InProgressCount}" FontSize="20" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Spacing="8">
+            <TextBlock Text="Quick Actions" FontWeight="SemiBold" />
+            <WrapPanel ItemWidth="200" ItemHeight="38">
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+                <Button Content="Retry All Failed" Command="{Binding RetryAllFailedCommand}" />
+                <Button Content="Resolve: Keep Local"
+                        Command="{Binding ResolveConflictCommand}"
+                        CommandParameter="{x:Static sync:SyncCenterView.KeepLocalRequest}" />
+                <Button Content="Resolve: Keep Server"
+                        Command="{Binding ResolveConflictCommand}"
+                        CommandParameter="{x:Static sync:SyncCenterView.KeepServerRequest}" />
+                <Button Content="Resolve: Reload"
+                        Command="{Binding ResolveConflictCommand}"
+                        CommandParameter="{x:Static sync:SyncCenterView.ReloadRequest}" />
+            </WrapPanel>
+        </StackPanel>
+
+        <TextBlock Grid.Row="3" Text="{Binding LastSyncStatusText}" Opacity="0.7" />
+    </Grid>
+</UserControl>

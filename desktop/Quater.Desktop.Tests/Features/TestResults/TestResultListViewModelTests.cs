@@ -3,6 +3,7 @@ using Quater.Desktop.Api.Api;
 using Quater.Desktop.Api.Model;
 using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.Dialogs;
+using Quater.Desktop.Core.State;
 using Quater.Desktop.Features.TestResults.List;
 
 namespace Quater.Desktop.Tests.Features.TestResults;
@@ -42,7 +43,7 @@ public sealed class TestResultListViewModelTests
 
         factory.Setup(x => x.GetTestResultsApi()).Returns(api.Object);
 
-        var vm = new TestResultListViewModel(factory.Object, dialogs.Object);
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), Mock.Of<IApiErrorFormatter>());
 
         await vm.LoadResultsCommand.ExecuteAsync(null);
 
@@ -69,7 +70,7 @@ public sealed class TestResultListViewModelTests
 
         factory.Setup(x => x.GetTestResultsApi()).Returns(api.Object);
 
-        var vm = new TestResultListViewModel(factory.Object, dialogs.Object)
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), Mock.Of<IApiErrorFormatter>())
         {
             SelectedSampleId = sampleId
         };
@@ -94,7 +95,11 @@ public sealed class TestResultListViewModelTests
         dialogs.Setup(x => x.ShowSuccess(It.IsAny<string>()));
         api.Setup(x => x.ApiTestResultsIdDeleteAsync(id, It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var vm = new TestResultListViewModel(factory.Object, dialogs.Object)
+        var formatter = new Mock<IApiErrorFormatter>(MockBehavior.Strict);
+        formatter.Setup(x => x.Format(It.IsAny<Quater.Desktop.Api.Client.ApiException>(), "delete test results"))
+            .Returns("You do not have permission to delete test results.");
+
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), formatter.Object)
         {
             TotalCount = 1
         };
@@ -158,7 +163,7 @@ public sealed class TestResultListViewModelTests
                 pageNumber: 1,
                 pageSize: 50));
 
-        var vm = new TestResultListViewModel(factory.Object, dialogs.Object)
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), Mock.Of<IApiErrorFormatter>())
         {
             SelectedSampleId = sampleId
         };
@@ -210,7 +215,11 @@ public sealed class TestResultListViewModelTests
                 complianceStatus: ApiComplianceStatus.NUMBER_1,
                 varVersion: 4));
 
-        var vm = new TestResultListViewModel(factory.Object, dialogs.Object)
+        var formatter = new Mock<IApiErrorFormatter>(MockBehavior.Strict);
+        formatter.Setup(x => x.Format(It.IsAny<Quater.Desktop.Api.Client.ApiException>(), "delete test results"))
+            .Returns("You do not have permission to delete test results.");
+
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), formatter.Object)
         {
             TotalCount = 1
         };
@@ -239,5 +248,77 @@ public sealed class TestResultListViewModelTests
         Assert.Equal(12.3, vm.TestResults[0].Value);
         Assert.Equal("Fail", vm.TestResults[0].ComplianceStatusDisplay);
         Assert.False(vm.IsEditorOpen);
+    }
+
+    [Fact]
+    public async Task DeleteResult_WhenApiReturnsForbidden_ShowsPermissionErrorMessage()
+    {
+        var api = new Mock<ITestResultsApi>(MockBehavior.Strict);
+        var factory = new Mock<IApiClientFactory>(MockBehavior.Strict);
+        var dialogs = new Mock<IDialogService>(MockBehavior.Strict);
+
+        var id = Guid.NewGuid();
+        factory.Setup(x => x.GetTestResultsApi()).Returns(api.Object);
+        dialogs.Setup(x => x.ShowConfirmationAsync("Delete Test Result", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        dialogs.Setup(x => x.ShowError("You do not have permission to delete test results."));
+
+        api.Setup(x => x.ApiTestResultsIdDeleteAsync(id, It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Quater.Desktop.Api.Client.ApiException(403, "Forbidden"));
+
+        var formatter = new Mock<IApiErrorFormatter>(MockBehavior.Strict);
+        formatter.Setup(x => x.Format(It.IsAny<Quater.Desktop.Api.Client.ApiException>(), "delete test results"))
+            .Returns("You do not have permission to delete test results.");
+
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, CreateWritableAppState(), formatter.Object)
+        {
+            TotalCount = 1
+        };
+
+        var row = new TestResultListItem(id, Guid.NewGuid(), "Turbidity", 1.2, "NTU", DateTime.UtcNow, "Nora", ApiTestMethod.NUMBER_2, "Warning", "#CA8A04", 2);
+        vm.TestResults.Add(row);
+
+        await vm.DeleteResultCommand.ExecuteAsync(row);
+
+        dialogs.Verify(x => x.ShowError("You do not have permission to delete test results."), Times.Once);
+    }
+
+    [Fact]
+    public void CreateResultCommand_WhenCurrentLabRoleIsViewer_DoesNotOpenEditor()
+    {
+        var api = new Mock<ITestResultsApi>(MockBehavior.Strict);
+        var factory = new Mock<IApiClientFactory>(MockBehavior.Strict);
+        var dialogs = new Mock<IDialogService>(MockBehavior.Strict);
+        var labId = Guid.NewGuid();
+        var sampleId = Guid.NewGuid();
+
+        factory.Setup(x => x.GetTestResultsApi()).Returns(api.Object);
+        dialogs.Setup(x => x.ShowError("You do not have permission to create test results."));
+
+        var appState = new AppState
+        {
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)]
+        };
+
+        var vm = new TestResultListViewModel(factory.Object, dialogs.Object, appState, Mock.Of<IApiErrorFormatter>())
+        {
+            SelectedSampleId = sampleId
+        };
+
+        vm.CreateResultCommand.Execute(null);
+
+        Assert.Null(vm.Editor);
+        Assert.False(vm.IsEditorOpen);
+        dialogs.Verify(x => x.ShowError("You do not have permission to create test results."), Times.Once);
+    }
+
+    private static AppState CreateWritableAppState()
+    {
+        var labId = Guid.NewGuid();
+        return new AppState
+        {
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_2)]
+        };
     }
 }

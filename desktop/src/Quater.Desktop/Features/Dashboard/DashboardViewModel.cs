@@ -1,14 +1,19 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Quater.Desktop.Api.Model;
 using Quater.Desktop.Core;
+using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Core.Sync;
 
 namespace Quater.Desktop.Features.Dashboard;
 
-public sealed partial class DashboardViewModel : ViewModelBase
+public sealed partial class DashboardViewModel(
+    IApiClientFactory apiClientFactory,
+    ISyncStatusService syncStatusService,
+    IApiErrorFormatter apiErrorFormatter,
+    AppState appState) : ViewModelBase
 {
-    private readonly AppState _appState;
-    
     [ObservableProperty]
     private string _complianceRate = "0%";
     
@@ -17,52 +22,104 @@ public sealed partial class DashboardViewModel : ViewModelBase
     
     [ObservableProperty]
     private string _pendingAlerts = "0";
+
+    [ObservableProperty]
+    private string _syncIndicator = "Unknown";
+
+    [ObservableProperty]
+    private string _warningMessage = string.Empty;
     
     [ObservableProperty]
     private ObservableCollection<DashboardStat> _stats = [];
     
     [ObservableProperty]
     private ObservableCollection<RecentSample> _recentSamples = [];
-    
-    public DashboardViewModel(AppState appState)
-    {
-        _appState = appState;
-    }
-    
+
     public override async Task InitializeAsync(CancellationToken ct = default)
     {
-        await LoadStatsAsync(ct);
+        await LoadMetricsAsync(ct);
         await LoadRecentSamplesAsync(ct);
     }
-    
-    private Task LoadStatsAsync(CancellationToken ct)
+
+    private async Task LoadMetricsAsync(CancellationToken ct)
     {
+        var warnings = new List<string>();
+
+        await LoadSampleCountAsync(warnings, ct);
+        await LoadComplianceMetricsAsync(warnings, ct);
+
+        var syncSummary = syncStatusService.GetSummary();
+        SyncIndicator = syncSummary.LastSyncStatusText;
+
+        WarningMessage = string.Join(" ", warnings);
+
         Stats =
         [
-            new("Total Samples", "1,248", "M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z"),
-            new("Compliance Rate", "94.2%", "M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z", true),
-            new("Critical Alerts", "3", "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z", false, true),
-            new("Active Labs", "4", "M12,7V3H2V21H22V7H12M6,19H4V17H6V19M6,15H4V13H6V15M6,11H4V9H6V11M6,7H4V5H6V7M10,19H8V17H10V19M10,15H8V13H10V15M10,11H8V9H10V11M10,7H8V5H10V7M20,19H12V17H20V19M20,15H12V13H20V15M20,11H12V9H20V11Z")
+            new("Total Samples", SamplesThisWeek, "M18,17L21,22H3L6,17H18M18,17L14,5H10L6,17H18M15,4H9L8,4H9L12,1L15,4Z"),
+            new("Compliance Rate", ComplianceRate, "M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z", true),
+            new("Critical Alerts", PendingAlerts, "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z", false, true),
+            new("Sync", SyncIndicator, "M12,3C16.42,3 20,4.79 20,7C20,9.21 16.42,11 12,11C7.58,11 4,9.21 4,7C4,4.79 7.58,3 12,3M4,9V12C4,14.21 7.58,16 12,16C16.42,16 20,14.21 20,12V9C20,11.21 16.42,13 12,13C7.58,13 4,11.21 4,9")
         ];
-        
-        ComplianceRate = "94.2%";
-        SamplesThisWeek = "128";
-        PendingAlerts = "3";
-        
-        return Task.CompletedTask;
     }
-    
+
+    private async Task LoadSampleCountAsync(List<string> warnings, CancellationToken ct)
+    {
+        try
+        {
+            var samplesApi = apiClientFactory.GetSamplesApi();
+            var sampleResponse = await samplesApi.ApiSamplesGetAsync(cancellationToken: ct);
+            SamplesThisWeek = sampleResponse.TotalCount.ToString();
+        }
+        catch (Exception ex)
+        {
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                warnings.Add(apiErrorFormatter.Format(apiException, "Unable to load total samples."));
+                return;
+            }
+
+            warnings.Add("Unable to load total samples.");
+        }
+    }
+
+    private async Task LoadComplianceMetricsAsync(List<string> warnings, CancellationToken ct)
+    {
+        try
+        {
+            var resultsApi = apiClientFactory.GetTestResultsApi();
+            var resultResponse = await resultsApi.ApiTestResultsGetAsync(cancellationToken: ct);
+            var items = resultResponse.Items ?? [];
+
+            if (items.Count == 0)
+            {
+                ComplianceRate = "0.0%";
+                PendingAlerts = "0";
+                return;
+            }
+
+            var compliantCount = items.Count(item => item.ComplianceStatus == ComplianceStatus.NUMBER_0);
+            var alertCount = items.Count(item => item.ComplianceStatus is ComplianceStatus.NUMBER_1 or ComplianceStatus.NUMBER_2);
+            var rate = (double)compliantCount / items.Count * 100d;
+
+            ComplianceRate = $"{rate:0.0}%";
+            PendingAlerts = alertCount.ToString();
+        }
+        catch (Exception ex)
+        {
+            if (ex is Quater.Desktop.Api.Client.ApiException apiException)
+            {
+                warnings.Add(apiErrorFormatter.Format(apiException, "Unable to load compliance metrics."));
+                return;
+            }
+
+            warnings.Add("Unable to load compliance metrics.");
+        }
+    }
+
     private Task LoadRecentSamplesAsync(CancellationToken ct)
     {
-        RecentSamples =
-        [
-            new("ECH-2026-001", "Source Rivière A", "Phosphate", "0.4 mg/L", "Conforme"),
-            new("ECH-2026-002", "Station Traitement B", "Turbidité", "1.2 UTN", "Conforme"),
-            new("ECH-2026-003", "Puits #4", "Nitrates", "55 mg/L", "Non Conforme"),
-            new("ECH-2026-004", "Source Rivière A", "pH", "7.2", "Conforme"),
-            new("ECH-2026-005", "Réservoir C", "E. Coli", "0 UFC", "Conforme"),
-        ];
-        
+        RecentSamples = [];
+
         return Task.CompletedTask;
     }
 }

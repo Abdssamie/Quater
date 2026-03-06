@@ -1,9 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Quater.Desktop.Api.Model;
+using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.Shell;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Features.Audit.List;
+using Quater.Desktop.Features.Sync.Center;
 using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
@@ -53,11 +57,13 @@ public sealed class ShellViewModelTests
     [Fact]
     public void NavigateToTestResults_WhenLabSelected_NavigatesToRoute()
     {
+        var labId = Guid.NewGuid();
         var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
         var appState = new AppState
         {
             IsAuthenticated = true,
-            CurrentLabId = Guid.NewGuid()
+            CurrentLabId = labId,
+            AvailableLabs = [new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_2)]
         };
 
         navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
@@ -70,7 +76,171 @@ public sealed class ShellViewModelTests
         navigationService.Verify(service => service.NavigateTo<TestResultListViewModel>(), Times.Once);
     }
 
-    private static ShellViewModel CreateViewModel(INavigationService navigationService, AppState appState)
+    [Fact]
+    public void NavigationItems_WhenCurrentLabRoleIsViewer_HidesLabScopedEntries()
+    {
+        var labId = Guid.NewGuid();
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = labId,
+            AvailableLabs =
+            [
+                new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)
+            ]
+        };
+
+        navigationService.SetupGet(service => service.NavigationItems)
+            .Returns(
+            [
+                new NavigationItem("Dashboard", "icon", typeof(Quater.Desktop.Features.Dashboard.DashboardViewModel)),
+                new NavigationItem("Samples", "icon", typeof(Quater.Desktop.Features.Samples.List.SampleListViewModel), 1),
+                new NavigationItem("Test Results", "icon", typeof(TestResultListViewModel), 2)
+            ]);
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        Assert.DoesNotContain(viewModel.NavigationItems, item => item.ViewModelType == typeof(Quater.Desktop.Features.Samples.List.SampleListViewModel));
+        Assert.DoesNotContain(viewModel.NavigationItems, item => item.ViewModelType == typeof(TestResultListViewModel));
+    }
+
+    [Fact]
+    public void NavigationItems_WhenLabSelectedWithoutAuditPermission_HidesAuditItem()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var selectedLabId = Guid.NewGuid();
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = selectedLabId,
+            AvailableLabs =
+            [
+                new UserLabDto(selectedLabId, "Lab A", UserRole.NUMBER_2, DateTime.UtcNow)
+            ]
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.SetupGet(service => service.NavigationItems).Returns(CreateNavigationItems());
+
+        var permissionService = new Mock<IPermissionService>(MockBehavior.Strict);
+        permissionService.Setup(service => service.CanAccessAuditWorkflow(It.IsAny<UserLabDto?>())).Returns(false);
+
+        var viewModel = CreateViewModel(navigationService.Object, appState, permissionService.Object);
+
+        Assert.DoesNotContain(viewModel.NavigationItems, item => item.ViewModelType == typeof(AuditListViewModel));
+    }
+
+    [Fact]
+    public void NavigationItems_WhenLabSelectedWithAuditPermission_ShowsAuditItem()
+    {
+        var selectedLab = new UserLabDto(Guid.NewGuid(), "Lab A", UserRole.NUMBER_3, DateTime.UtcNow);
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = selectedLab.LabId,
+            AvailableLabs = [selectedLab]
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.SetupGet(service => service.NavigationItems).Returns(CreateNavigationItems());
+
+        var permissionService = new Mock<IPermissionService>(MockBehavior.Strict);
+        permissionService.Setup(service => service.CanAccessAuditWorkflow(It.IsAny<UserLabDto?>())).Returns(true);
+
+        var viewModel = CreateViewModel(navigationService.Object, appState, permissionService.Object);
+
+        Assert.Contains(viewModel.NavigationItems, item => item.ViewModelType == typeof(AuditListViewModel));
+    }
+
+    [Fact]
+    public void NavigateToSamples_WhenCurrentLabRoleIsViewer_DoesNotNavigate()
+    {
+        var labId = Guid.NewGuid();
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = labId,
+            AvailableLabs =
+            [
+                new UserLabDto(labId: labId, labName: "Lab A", role: UserRole.NUMBER_1)
+            ]
+        };
+
+        navigationService.SetupGet(service => service.NavigationItems).Returns([]);
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        viewModel.NavigateToSamplesCommand.Execute(null);
+
+        navigationService.Verify(service => service.NavigateTo<Quater.Desktop.Features.Samples.List.SampleListViewModel>(), Times.Never);
+    }
+
+    [Fact]
+    public void NavigateToSyncCenter_WhenAuthenticated_NavigatesToRoute()
+    {
+        var selectedLabId = Guid.NewGuid();
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            CurrentLabId = selectedLabId,
+            AvailableLabs = [new UserLabDto(selectedLabId, "Lab A", UserRole.NUMBER_2, DateTime.UtcNow)]
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+        navigationService.Setup(service => service.NavigateTo<SyncCenterViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        viewModel.NavigateToSyncCenterCommand.Execute(null);
+
+        navigationService.Verify(service => service.NavigateTo<SyncCenterViewModel>(), Times.Once);
+    }
+
+    [Fact]
+    public void SyncStatus_WhenAppStateChanges_UpdatesShellStatusText()
+    {
+        var navigationService = new Mock<INavigationService>(MockBehavior.Strict);
+        var appState = new AppState
+        {
+            IsAuthenticated = true,
+            SyncStatusText = "Up to Date",
+            PendingSyncCount = 0,
+            FailedSyncCount = 0
+        };
+
+        navigationService.Setup(service => service.NavigateTo<Quater.Desktop.Features.Dashboard.DashboardViewModel>());
+
+        var viewModel = CreateViewModel(navigationService.Object, appState);
+
+        appState.SyncStatusText = "Retry scheduled";
+        appState.PendingSyncCount = 3;
+        appState.FailedSyncCount = 1;
+
+        Assert.Equal("Retry scheduled (pending: 3, failed: 1)", viewModel.SyncStatus);
+    }
+
+    private static IReadOnlyList<NavigationItem> CreateNavigationItems()
+    {
+        return
+        [
+            new NavigationItem("Dashboard", string.Empty, typeof(Quater.Desktop.Features.Dashboard.DashboardViewModel), 0),
+            new NavigationItem("Samples", string.Empty, typeof(Quater.Desktop.Features.Samples.List.SampleListViewModel), 1),
+            new NavigationItem("Test Results", string.Empty, typeof(TestResultListViewModel), 2),
+            new NavigationItem("Audit", string.Empty, typeof(AuditListViewModel), 3),
+            new NavigationItem("Sync Center", string.Empty, typeof(SyncCenterViewModel), 4)
+        ];
+    }
+
+    private static ShellViewModel CreateViewModel(
+        INavigationService navigationService,
+        AppState appState,
+        IPermissionService? permissionService = null)
     {
         var serviceProvider = new ServiceCollection()
             .AddTransient<Quater.Desktop.Features.Auth.LoginViewModel>(_ => null!)
@@ -83,6 +253,7 @@ public sealed class ShellViewModelTests
             settingsUpdater: null!,
             toastManager: Mock.Of<ISukiToastManager>(),
             settingsStore: Mock.Of<ISettingsStore>(),
-            authSessionManager: null!);
+            authSessionManager: null!,
+            permissionService: permissionService ?? Mock.Of<IPermissionService>());
     }
 }

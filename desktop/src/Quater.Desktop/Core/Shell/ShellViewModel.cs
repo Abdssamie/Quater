@@ -6,8 +6,10 @@ using Quater.Desktop.Core.Auth.Services;
 using Quater.Desktop.Core.Navigation;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Core.State;
+using Quater.Desktop.Features.Audit.List;
 using Quater.Desktop.Features.Auth;
 using Quater.Desktop.Features.Samples.List;
+using Quater.Desktop.Features.Sync.Center;
 using Quater.Desktop.Features.TestResults.List;
 using SukiUI.Toasts;
 
@@ -21,6 +23,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly SettingsUpdater _settingsUpdater;
     private readonly ISettingsStore _settingsStore;
     private readonly AuthSessionManager _authSessionManager;
+    private readonly IPermissionService _permissionService;
     private bool _isSyncingSelectedNavigationItem;
 
     public ISukiToastManager ToastManager { get; }
@@ -62,7 +65,8 @@ public sealed partial class ShellViewModel : ViewModelBase
         SettingsUpdater settingsUpdater,
         ISukiToastManager toastManager,
         ISettingsStore settingsStore,
-        AuthSessionManager authSessionManager)
+        AuthSessionManager authSessionManager,
+        IPermissionService permissionService)
     {
         _navigationService = navigationService;
         _appState = appState;
@@ -71,12 +75,14 @@ public sealed partial class ShellViewModel : ViewModelBase
         ToastManager = toastManager;
         _settingsStore = settingsStore;
         _authSessionManager = authSessionManager;
+        _permissionService = permissionService;
 
         _navigationService.CurrentViewChanged += (_, vm) =>
         {
             CurrentView = vm;
             SyncSelectedNavigationItem();
         };
+
         _appState.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(AppState.IsAuthenticated))
@@ -110,11 +116,18 @@ public sealed partial class ShellViewModel : ViewModelBase
                 OnPropertyChanged(nameof(NavigationItems));
                 EnsureLabScopedViewHasLabContext();
             }
+            else if (args.PropertyName == nameof(AppState.SyncStatusText)
+                || args.PropertyName == nameof(AppState.PendingSyncCount)
+                || args.PropertyName == nameof(AppState.FailedSyncCount))
+            {
+                UpdateSyncStatus();
+            }
         };
 
         CurrentLabName = _appState.CurrentLabName;
         SelectedLab = _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
         UpdateAuthState();
+        UpdateSyncStatus();
     }
 
     public override async Task InitializeAsync(CancellationToken ct = default)
@@ -168,12 +181,31 @@ public sealed partial class ShellViewModel : ViewModelBase
     private static bool IsLabScopedNavigationItem(NavigationItem item)
     {
         return item.ViewModelType == typeof(SampleListViewModel)
-            || item.ViewModelType == typeof(TestResultListViewModel);
+            || item.ViewModelType == typeof(TestResultListViewModel)
+            || item.ViewModelType == typeof(AuditListViewModel)
+            || item.ViewModelType == typeof(SyncCenterViewModel);
     }
 
     private bool IsNavigationItemVisible(NavigationItem item)
     {
-        return !IsLabScopedNavigationItem(item) || HasSelectedLab;
+        if (item.ViewModelType == typeof(AuditListViewModel))
+        {
+            return HasSelectedLab
+                && _appState.CanManageLabData
+                && _permissionService.CanAccessAuditWorkflow(GetSelectedLab());
+        }
+
+        return !IsLabScopedNavigationItem(item) || (HasSelectedLab && _appState.CanManageLabData);
+    }
+
+    private UserLabDto? GetSelectedLab()
+    {
+        if (_appState.CurrentLabId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return _appState.AvailableLabs.FirstOrDefault(lab => lab.LabId == _appState.CurrentLabId);
     }
 
     private void EnsureLabScopedViewHasLabContext()
@@ -184,7 +216,10 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
 
         var currentType = CurrentView.GetType();
-        if (currentType == typeof(SampleListViewModel) || currentType == typeof(TestResultListViewModel))
+        if (currentType == typeof(SampleListViewModel)
+            || currentType == typeof(TestResultListViewModel)
+            || currentType == typeof(AuditListViewModel)
+            || currentType == typeof(SyncCenterViewModel))
         {
             _navigationService.NavigateTo<Features.Dashboard.DashboardViewModel>();
         }
@@ -205,7 +240,6 @@ public sealed partial class ShellViewModel : ViewModelBase
         _isSyncingSelectedNavigationItem = false;
     }
 
-
     private void UpdateAuthState()
     {
         IsAuthenticated = _appState.IsAuthenticated;
@@ -222,7 +256,16 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     public void NavigateTo(NavigationItem item)
     {
-        if ((item.ViewModelType == typeof(SampleListViewModel) || item.ViewModelType == typeof(TestResultListViewModel)) && !HasSelectedLab)
+        if ((item.ViewModelType == typeof(SampleListViewModel)
+             || item.ViewModelType == typeof(TestResultListViewModel)
+             || item.ViewModelType == typeof(AuditListViewModel)
+             || item.ViewModelType == typeof(SyncCenterViewModel))
+            && (!HasSelectedLab || !_appState.CanManageLabData))
+        {
+            return;
+        }
+
+        if (item.ViewModelType == typeof(AuditListViewModel) && !_permissionService.CanAccessAuditWorkflow(GetSelectedLab()))
         {
             return;
         }
@@ -239,7 +282,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToSamples()
     {
-        if (!HasSelectedLab)
+        if (!HasSelectedLab || !_appState.CanManageLabData)
         {
             return;
         }
@@ -250,7 +293,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToTestResults()
     {
-        if (!HasSelectedLab)
+        if (!HasSelectedLab || !_appState.CanManageLabData)
         {
             return;
         }
@@ -259,8 +302,35 @@ public sealed partial class ShellViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void NavigateToAudit()
+    {
+        if (!HasSelectedLab || !_appState.CanManageLabData || !_permissionService.CanAccessAuditWorkflow(GetSelectedLab()))
+        {
+            return;
+        }
+
+        _navigationService.NavigateTo<AuditListViewModel>();
+    }
+
+    [RelayCommand]
+    private void NavigateToSyncCenter()
+    {
+        if (!HasSelectedLab || !_appState.CanManageLabData)
+        {
+            return;
+        }
+
+        _navigationService.NavigateTo<SyncCenterViewModel>();
+    }
+
+    [RelayCommand]
     private async Task Logout()
     {
         await _authSessionManager.HandleLogoutAsync();
+    }
+
+    private void UpdateSyncStatus()
+    {
+        SyncStatus = $"{_appState.SyncStatusText} (pending: {_appState.PendingSyncCount}, failed: {_appState.FailedSyncCount})";
     }
 }

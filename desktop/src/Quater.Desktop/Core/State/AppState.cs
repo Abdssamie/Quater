@@ -22,6 +22,12 @@ public sealed partial class AppState : ObservableObject
     
     [ObservableProperty]
     private int _pendingSyncCount;
+
+    [ObservableProperty]
+    private int _failedSyncCount;
+
+    [ObservableProperty]
+    private string _syncStatusText = "Up to Date";
     
     [ObservableProperty]
     private string _currentLabName = string.Empty;
@@ -37,6 +43,10 @@ public sealed partial class AppState : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<UserLabDto> _availableLabs = Array.Empty<UserLabDto>();
+
+    public UserRole? CurrentLabRole => AvailableLabs.FirstOrDefault(lab => lab.LabId == CurrentLabId)?.Role;
+
+    public bool CanManageLabData => CurrentLabRole is UserRole.NUMBER_2 or UserRole.NUMBER_3;
     
     public void SetConnected()
     {
