@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Quater.Desktop.Features.Audit.List"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d"
+             d:DesignWidth="1200"
+             d:DesignHeight="800"
+             x:Class="Quater.Desktop.Features.Audit.List.AuditListView"
+             x:DataType="vm:AuditListViewModel">
+
+    <Grid RowDefinitions="Auto,*" Margin="20">
+        <suki:GlassCard Grid.Row="0" Margin="0,0,0,15" Padding="15">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Compliance Audit" Classes="h2" FontWeight="Bold" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding TotalCount, StringFormat='({0} total)'}"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource SukiText_Medium}" />
+                <Button Content="Apply Filters" Command="{Binding LoadAuditLogsCommand}" />
+                <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" />
+            </StackPanel>
+        </suki:GlassCard>
+
+        <suki:GlassCard Grid.Row="1" Padding="15">
+            <DataGrid ItemsSource="{Binding AuditLogs}"
+                      IsReadOnly="True"
+                      AutoGenerateColumns="False"
+                      GridLinesVisibility="All">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" Width="*" />
+                    <DataGridTextColumn Header="User" Binding="{Binding UserEmail}" Width="*" />
+                    <DataGridTextColumn Header="Entity" Binding="{Binding EntityType}" Width="*" />
+                    <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="*" />
+                    <DataGridTextColumn Header="Entity Id" Binding="{Binding EntityId}" Width="2*" />
+                    <DataGridTextColumn Header="IP" Binding="{Binding IpAddress}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </suki:GlassCard>
+    </Grid>
+</UserControl>

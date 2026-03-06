@@ -1,4 +1,6 @@
 using System.Text;
+using System.Globalization;
+using Quater.Desktop.Api.Model;
 
 namespace Quater.Desktop.Core.Export;
 
@@ -19,6 +21,36 @@ public sealed class CsvExportService : ICsvExportService
                 .Select(header => row.TryGetValue(header, out var value) ? Escape(value) : string.Empty)
                 .ToArray();
             builder.AppendLine(string.Join(',', values));
+        }
+
+        return builder.ToString();
+    }
+
+    public string ExportAuditLogs(IReadOnlyList<AuditLogDto> auditLogs)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Id,Timestamp,UserId,UserEmail,EntityType,EntityId,Action,IpAddress,IsArchived");
+
+        foreach (var log in auditLogs)
+        {
+            builder.Append(Escape(log.Id.ToString()));
+            builder.Append(',');
+            builder.Append(Escape(log.Timestamp.ToString("O", CultureInfo.InvariantCulture)));
+            builder.Append(',');
+            builder.Append(Escape(log.UserId.ToString()));
+            builder.Append(',');
+            builder.Append(Escape(log.UserEmail));
+            builder.Append(',');
+            builder.Append(Escape(log.EntityType?.ToString() ?? string.Empty));
+            builder.Append(',');
+            builder.Append(Escape(log.EntityId.ToString()));
+            builder.Append(',');
+            builder.Append(Escape(log.Action?.ToString() ?? string.Empty));
+            builder.Append(',');
+            builder.Append(Escape(log.IpAddress));
+            builder.Append(',');
+            builder.Append(log.IsArchived ? "true" : "false");
+            builder.AppendLine();
         }
 
         return builder.ToString();

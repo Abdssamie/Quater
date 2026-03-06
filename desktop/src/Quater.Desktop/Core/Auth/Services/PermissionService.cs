@@ -60,4 +60,9 @@ public sealed class PermissionService(AppState appState) : IPermissionService
 
         return currentLab.Role >= minimumRole;
     }
+
+    public bool CanAccessAuditWorkflow(UserLabDto? selectedLab)
+    {
+        return selectedLab is not null && selectedLab.Role >= UserRole.NUMBER_2;
+    }
 }
