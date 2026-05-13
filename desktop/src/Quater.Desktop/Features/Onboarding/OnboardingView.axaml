@@ -39,9 +39,14 @@
 
                 <TextBlock Text="{Binding ErrorMessage}" Foreground="#C0392B" TextWrapping="Wrap"
                            IsVisible="{Binding ErrorMessage, Converter={StaticResource StringNotEmptyConverter}}" />
+                <TextBlock Text="Checking backend connectivity..."
+                           Opacity="0.7"
+                           IsVisible="{Binding IsConnecting}" />
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
-                    <Button Content="Continue" Command="{Binding ContinueCommand}" />
+                    <Button Content="Continue"
+                            Command="{Binding ContinueCommand}"
+                            IsEnabled="{Binding IsConnecting, Converter={StaticResource BoolInvertConverter}}" />
                 </StackPanel>
             </StackPanel>
         </Border>

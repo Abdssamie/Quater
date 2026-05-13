@@ -1,5 +1,4 @@
 using Moq;
-using Quater.Desktop.Api.Api;
 using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.Settings;
 using Quater.Desktop.Features.Diagnostics;
@@ -11,17 +10,15 @@ public sealed class DiagnosticsViewModelTests
     [Fact]
     public async Task InitializeAsync_LoadsBackendUrlAndRuntimeDiagnostics()
     {
-        var apiFactory = new Mock<IApiClientFactory>(MockBehavior.Strict);
+        var connectivityProbe = new Mock<IBackendConnectivityProbe>(MockBehavior.Strict);
         var settingsStore = new Mock<ISettingsStore>(MockBehavior.Strict);
-        var versionApi = new Mock<IVersionApi>(MockBehavior.Strict);
 
         settingsStore.Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AppSettings { BackendUrl = "https://lab.quater.local:7443" });
-        apiFactory.Setup(factory => factory.GetVersionApi()).Returns(versionApi.Object);
-        versionApi.Setup(api => api.ApiVersionGetAsync(It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        connectivityProbe.Setup(probe => probe.ProbeAsync("https://lab.quater.local:7443", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var viewModel = new DiagnosticsViewModel(settingsStore.Object, apiFactory.Object);
+        var viewModel = new DiagnosticsViewModel(settingsStore.Object, connectivityProbe.Object);
 
         await viewModel.InitializeAsync();
 
@@ -32,19 +29,17 @@ public sealed class DiagnosticsViewModelTests
     }
 
     [Fact]
-    public async Task CheckBackendHealthCommand_WhenVersionProbeFails_SetsUnreachableStatus()
+    public async Task CheckBackendHealthCommand_WhenHealthProbeFails_SetsUnreachableStatus()
     {
-        var apiFactory = new Mock<IApiClientFactory>(MockBehavior.Strict);
+        var connectivityProbe = new Mock<IBackendConnectivityProbe>(MockBehavior.Strict);
         var settingsStore = new Mock<ISettingsStore>(MockBehavior.Strict);
-        var versionApi = new Mock<IVersionApi>(MockBehavior.Strict);
 
         settingsStore.Setup(store => store.LoadAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AppSettings { BackendUrl = "https://cloud.quater.app" });
-        apiFactory.Setup(factory => factory.GetVersionApi()).Returns(versionApi.Object);
-        versionApi.Setup(api => api.ApiVersionGetAsync(It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Quater.Desktop.Api.Client.ApiException(503, "Unavailable"));
+        connectivityProbe.Setup(probe => probe.ProbeAsync("https://cloud.quater.app", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Unavailable"));
 
-        var viewModel = new DiagnosticsViewModel(settingsStore.Object, apiFactory.Object);
+        var viewModel = new DiagnosticsViewModel(settingsStore.Object, connectivityProbe.Object);
 
         await viewModel.InitializeAsync();
         await viewModel.CheckBackendHealthCommand.ExecuteAsync(null);

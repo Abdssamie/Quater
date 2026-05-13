@@ -95,6 +95,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IAccessTokenCache, AccessTokenCache>();
         services.AddSingleton<IApiClientFactory, ApiClientFactory>();
+        services.AddSingleton<IBackendConnectivityProbe, BackendConnectivityProbe>();
         services.AddSingleton<IApiErrorFormatter, ApiErrorFormatter>();
 
         return services;

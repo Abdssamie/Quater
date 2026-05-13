@@ -9,7 +9,7 @@ namespace Quater.Desktop.Features.Diagnostics;
 
 public sealed partial class DiagnosticsViewModel(
     ISettingsStore settingsStore,
-    IApiClientFactory apiClientFactory) : ViewModelBase
+    IBackendConnectivityProbe connectivityProbe) : ViewModelBase
 {
     [ObservableProperty]
     private string _backendUrl = string.Empty;
@@ -42,8 +42,7 @@ public sealed partial class DiagnosticsViewModel(
         try
         {
             IsChecking = true;
-            var versionApi = apiClientFactory.GetVersionApi();
-            await versionApi.ApiVersionGetAsync(cancellationToken: ct);
+            await connectivityProbe.ProbeAsync(BackendUrl, ct);
             BackendStatus = "Reachable";
         }
         catch

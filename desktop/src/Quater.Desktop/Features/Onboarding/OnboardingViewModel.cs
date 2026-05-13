@@ -1,14 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Quater.Desktop.Core;
+using Quater.Desktop.Core.Api;
 using Quater.Desktop.Core.Settings;
 
 namespace Quater.Desktop.Features.Onboarding;
 
-public sealed partial class OnboardingViewModel : ViewModelBase
+public sealed partial class OnboardingViewModel(
+    SettingsUpdater settingsUpdater,
+    IBackendConnectivityProbe connectivityProbe) : ViewModelBase
 {
     private const string DefaultCustomUrl = "http://127.0.0.1:5198";
-    private readonly SettingsUpdater _settingsUpdater;
 
     public event EventHandler? OnboardingCompleted;
 
@@ -21,38 +23,53 @@ public sealed partial class OnboardingViewModel : ViewModelBase
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
-    public OnboardingViewModel(SettingsUpdater settingsUpdater)
-    {
-        _settingsUpdater = settingsUpdater;
-    }
+    [ObservableProperty]
+    private bool _isConnecting;
 
     [RelayCommand]
-    private async Task ContinueAsync()
+    private async Task ContinueAsync(CancellationToken ct = default)
     {
-        if (UseCloud)
-        {
-            var cloudUrl = AppSettings.QuaterCloudUrl.TrimEnd('/');
-            await _settingsUpdater.UpdateBackendUrlAsync(cloudUrl);
-            await _settingsUpdater.MarkOnboardedAsync();
-            OnboardingCompleted?.Invoke(this, EventArgs.Empty);
-            return;
-        }
+        ErrorMessage = string.Empty;
+        IsConnecting = true;
 
+        try
+        {
+            var targetUrl = UseCloud ? AppSettings.QuaterCloudUrl.TrimEnd('/') : NormalizeCustomUrl();
+            if (string.IsNullOrWhiteSpace(targetUrl))
+            {
+                return;
+            }
+
+            await connectivityProbe.ProbeAsync(targetUrl, ct);
+            await settingsUpdater.UpdateBackendUrlAsync(targetUrl, ct);
+            await settingsUpdater.MarkOnboardedAsync(ct);
+            OnboardingCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        catch
+        {
+            ErrorMessage = "Could not reach the backend. Verify the URL and that the server is running.";
+        }
+        finally
+        {
+            IsConnecting = false;
+        }
+    }
+
+    private string NormalizeCustomUrl()
+    {
         if (string.IsNullOrWhiteSpace(CustomUrl))
         {
             ErrorMessage = "Server URL is required.";
-            return;
+            return string.Empty;
         }
 
         if (!TryNormalizeUrl(CustomUrl, out var normalized))
         {
             ErrorMessage = "Invalid URL. Use a full http or https URL.";
-            return;
+            return string.Empty;
         }
 
-        await _settingsUpdater.UpdateBackendUrlAsync(normalized.TrimEnd('/'));
-        await _settingsUpdater.MarkOnboardedAsync();
-        OnboardingCompleted?.Invoke(this, EventArgs.Empty);
+        return normalized.TrimEnd('/');
     }
 
     partial void OnUseCloudChanged(bool value)
